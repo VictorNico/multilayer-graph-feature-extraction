@@ -93,7 +93,7 @@ def save_graph(cwd, graph, name, rows_len, prefix, cols_len):
 
     return filename
 
-def save_digraph(cwd, graph, name, rows_len, prefix, cols_len):
+def save_digraph(cwd, graph, name, rows_len, cols_len, prefix=None):
     """Save directed graph
     Args:
       graph: An instance of digraph
@@ -105,15 +105,15 @@ def save_digraph(cwd, graph, name, rows_len, prefix, cols_len):
       None
     """
 
-    create_domain(cwd+'/graph_storage/'+prefix)
+    create_domain(cwd+'/graph_storage/')
     
     timestr = time.strftime("%Y_%m_%d_%H_%M_%S")
-    filename = cwd+'/graph_storage/'+prefix+'/'+name+'_'+str(rows_len)+'_'+str(cols_len)+'_'+timestr+'.gml.gz'
+    filename = cwd+'/graph_storage/'+name+'_'+str(rows_len)+'_'+str(cols_len)+'_'+timestr+'.gml.gz'
     write_graphml_lxml(graph, filename)
 
     return filename
     
-def save_dataset(cwd, dataframe, name, prefix, sep='\t'):
+def save_dataset(cwd, dataframe, name, prefix=None, sep='\t'):
     """Save a dataframe
     Args:
       dataframe: An instance of dataframe
@@ -124,10 +124,10 @@ def save_dataset(cwd, dataframe, name, prefix, sep='\t'):
       None
     """
 
-    create_domain(cwd+'/data_selection_storage/'+prefix)
+    create_domain(cwd+'/data_selection_storage')
     
     timestr = time.strftime("%Y_%m_%d_%H_%M_%S")
-    filename = cwd+'/data_selection_storage/'+prefix+'/'+name+'_'+timestr+'.csv'
+    filename = cwd+'/data_selection_storage'+'/'+name+'_'+timestr+'.csv'
     dataframe.to_csv(filename, sep=sep, encoding='utf-8')
 
     return filename

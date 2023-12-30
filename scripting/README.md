@@ -4,7 +4,7 @@
 
 
     .scripting
-    ├── modules                                 # folder with all pipelines file modules
+    ├── modules/                                 # folder with all pipelines file modules
     │    ├── __init__.py                    	# modules initializer
     │    ├── eda.py                    			# exploratory data analyser module
     │    ├── eda.py                    			# file module
@@ -14,7 +14,7 @@
     │    ├── preprocessing.py                   # preprocessing module
     │    ├── report.py                        	# report module
     │    └── test.py                        	# test validator module
-    ├── datasets                                # datasets folder of the application
+    ├── datasets/                                # datasets folder of the application
     │    ├── credit_risk_dataset.csv            # credit risk dataset gave by Dr. Nzekon
     │    └── New_data_first.xlsx                # Afriland First Bank dataset
     ├── CHANGELOG                              	# Track changes on the project
@@ -60,14 +60,14 @@ python3.8 -m pip install name_package
 
 Numerous of these packages are already installed by default. 
 
-There is also a need of make environnement to easy run the code. On Linux or Mac OS
+There is also a need of make environnement to easy run the code and parallel for parallel execution approach. On Linux or Mac OS
 ```bash
-sudo apt install make
+sudo apt install make parallel
 # on linux
 ```
 
 ```bash
-brew install make 
+brew install make parallel
 # on Mac
 ```
 

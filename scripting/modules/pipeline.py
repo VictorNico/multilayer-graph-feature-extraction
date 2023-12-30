@@ -154,10 +154,10 @@ def make_preprocessing(dataset, to_remove, domain, cwd, target_variable, verbose
 	print(f"{get_na_columns(DATA_OHE_LB_LBU_STDU_STDWO)}")
 	# save preprocessed 1st one data
 	link_to_preprocessed_factor_data = save_dataset(
-		cwd= cwd+'/outputs/mlna_preprocessing', 
+		cwd= cwd+'/mlna_preprocessing', 
 		dataframe= DATA_OHE_LB_LBU_STDU_STDWO, 
 		name= f'{domain}_preprocessed', 
-		prefix= domain, 
+		# prefix= domain, 
 		sep= ','
 		)
 
@@ -169,10 +169,10 @@ def make_preprocessing(dataset, to_remove, domain, cwd, target_variable, verbose
 		verbose= verbose
 		)
 	link_to_preprocessed_disc_data = save_dataset(
-		cwd= cwd+'/outputs/mlna_preprocessing', 
+		cwd= cwd+'/mlna_preprocessing', 
 		dataframe= DATA_DISCRETIZE, 
 		name= f'{domain}_preprocessed_discretize', 
-		prefix= domain, 
+		# prefix= domain, 
 		sep= ','
 		)
 	print(f"{get_na_columns(DATA_DISCRETIZE)}")
@@ -180,10 +180,10 @@ def make_preprocessing(dataset, to_remove, domain, cwd, target_variable, verbose
 	DATA_DISCRETIZE_OHE_2, OHE_2 = nominal_factor_encoding(DATA_DISCRETIZE, list(set([*numeric_with_outliers_columns, *numeric_uniform_colums])-set([target_variable])))
 
 	link_to_preprocessed_all_data = save_dataset(
-		cwd= cwd+'/outputs/mlna_preprocessing', 
+		cwd= cwd+'/mlna_preprocessing', 
 		dataframe= DATA_DISCRETIZE_OHE_2, 
 		name= f'{domain}_preprocessed_all', 
-		prefix= domain, 
+		# prefix= domain, 
 		sep= ','
 		)
 	print(f"discretize data shape: {DATA_DISCRETIZE_OHE_2.shape}") if verbose else None
@@ -219,7 +219,7 @@ def make_mlna_1_variable(default, value, OHE, nominal_factor_colums, cwd, domain
 
 		# save the graph
 		save_graph(
-			cwd= cwd+'/outputs/mlna_1', 
+			cwd= cwd+'/mlna_1', 
 			graph= MLN, 
 			name= f'{nominal_factor_colums[i]}_mln', 
 			rows_len= value.shape[0], 
@@ -264,7 +264,7 @@ def make_mlna_1_variable(default, value, OHE, nominal_factor_colums, cwd, domain
 		# save descriptors
 		extract_df = pd.DataFrame(extracts)
 		link_to_preprocessed_all_data = save_dataset(
-			cwd= cwd+'/outputs/mlna_1', 
+			cwd= cwd+'/mlna_1', 
 			dataframe= extract_df, 
 			name= f'{domain}_extracted_features_mln_for_{nominal_factor_colums[i]}', 
 			prefix= domain, 
@@ -286,7 +286,7 @@ def make_mlna_1_variable(default, value, OHE, nominal_factor_colums, cwd, domain
 				domain= f'classic_mln_{nominal_factor_colums[i]}', 
 				prefix=domain,
 				verbose=verbose,
-				cwd= cwd+'/outputs/mlna_1'
+				cwd= cwd+'/mlna_1'
 				)
 			)
 
@@ -302,7 +302,7 @@ def make_mlna_1_variable(default, value, OHE, nominal_factor_colums, cwd, domain
 				domain= f'classic_-_mlna_{nominal_factor_colums[i]}', 
 				prefix=domain,
 				verbose=verbose,
-				cwd= cwd+'/outputs/mlna_1'
+				cwd= cwd+'/mlna_1'
 				)
 			)
 
@@ -318,7 +318,7 @@ def make_mlna_1_variable(default, value, OHE, nominal_factor_colums, cwd, domain
 				domain= f'classic_mln_-_mlna_{nominal_factor_colums[i]}', 
 				prefix=domain,
 				verbose=verbose,
-				cwd= cwd+'/outputs/mlna_1'
+				cwd= cwd+'/mlna_1'
 				)
 			)
 
@@ -330,7 +330,7 @@ def make_mlna_1_variable(default, value, OHE, nominal_factor_colums, cwd, domain
 			    modelDictName= modelD,
 			    plotTitle= "Classic features importance",
 			    prefix= domain, 
-			    cwd= cwd+'/outputs/mlna_1',
+			    cwd= cwd+'/mlna_1',
 			    graph_a= [*OHE[i]],
 			    save= True
 			)
@@ -341,7 +341,7 @@ def make_mlna_1_variable(default, value, OHE, nominal_factor_colums, cwd, domain
 			    modelDictName= modelD,
 			    plotTitle= f"Classic + mln features importance for_{nominal_factor_colums[i]}",
 			    prefix= domain, 
-			    cwd= cwd+'/outputs/mlna_1',
+			    cwd= cwd+'/mlna_1',
 			    graph_a= [*OHE[i]],
 			    save= True
 			)
@@ -352,7 +352,7 @@ def make_mlna_1_variable(default, value, OHE, nominal_factor_colums, cwd, domain
 			    modelDictName= modelD,
 			    plotTitle= f"Classic - mln attributs features importance for_{nominal_factor_colums[i]}",
 			    prefix= domain, 
-			    cwd= cwd+'/outputs/mlna_1',
+			    cwd= cwd+'/mlna_1',
 			    graph_a= [*OHE[i]],
 			    save= True
 			)
@@ -363,7 +363,7 @@ def make_mlna_1_variable(default, value, OHE, nominal_factor_colums, cwd, domain
 			    modelDictName= modelD,
 			    plotTitle= f"Classic + mln - mln attributs features importance for_{nominal_factor_colums[i]}",
 			    prefix= domain, 
-			    cwd= cwd+'/outputs/mlna_1',
+			    cwd= cwd+'/mlna_1',
 			    graph_a= [*OHE[i]],
 			    save= True
 			)
@@ -374,7 +374,7 @@ def make_mlna_1_variable(default, value, OHE, nominal_factor_colums, cwd, domain
 		table = print_summary([default,*logic_i],modelD)
 		create_file(
 			content= table[1], 
-			cwd= cwd+'/outputs/mlna_1', 
+			cwd= cwd+'/mlna_1', 
 			prefix= domain, 
 			filename= f"mlna_for_{nominal_factor_colums[i]}", 
 			extension=".html"
@@ -382,7 +382,7 @@ def make_mlna_1_variable(default, value, OHE, nominal_factor_colums, cwd, domain
 	table = print_summary([default,*logic],modelD)
 	create_file(
 		content= table[1], 
-		cwd= cwd+'/outputs/mlna_1', 
+		cwd= cwd+'/mlna_1', 
 		prefix= domain, 
 		filename= f"mlna_for_all_categorial data", 
 		extension=".html"
@@ -407,7 +407,7 @@ def make_mlna_k_variable(default, value, OHE, nominal_factor_colums, cwd, domain
 			case_k= '_'.join([f'{nominal_factor_colums[i]}' for i in layer_config])
 			# save the graph
 			save_graph(
-				cwd= cwd+f'/outputs/mlna_{k}', 
+				cwd= cwd+f'/mlna_{k}', 
 				graph= MLN, 
 				name= f'{case_k}_mln', 
 				rows_len= value.shape[0], 
@@ -450,7 +450,7 @@ def make_mlna_k_variable(default, value, OHE, nominal_factor_colums, cwd, domain
 			# save descriptors
 			extract_df = pd.DataFrame(extracts)
 			link_to_preprocessed_all_data = save_dataset(
-				cwd= cwd+f'/outputs/mlna_{k}', 
+				cwd= cwd+f'/mlna_{k}', 
 				dataframe= extract_df, 
 				name= f'{domain}_extracted_features_mln_for_{case_k}', 
 				prefix= domain, 
@@ -471,7 +471,7 @@ def make_mlna_k_variable(default, value, OHE, nominal_factor_colums, cwd, domain
 					domain= f'classic_mln_{case_k}', 
 					prefix=domain,
 					verbose=verbose,
-					cwd= cwd+f'/outputs/mlna_{k}'
+					cwd= cwd+f'/mlna_{k}'
 					)
 				)
 
@@ -487,7 +487,7 @@ def make_mlna_k_variable(default, value, OHE, nominal_factor_colums, cwd, domain
 					domain= f'classic_-_mlna_{case_k}', 
 					prefix=domain,
 					verbose=verbose,
-					cwd= cwd+f'/outputs/mlna_{k}'
+					cwd= cwd+f'/mlna_{k}'
 					)
 				)
 
@@ -503,7 +503,7 @@ def make_mlna_k_variable(default, value, OHE, nominal_factor_colums, cwd, domain
 					domain= f'classic_mln_-_mlna_{case_k}', 
 					prefix=domain,
 					verbose=verbose,
-					cwd= cwd+f'/outputs/mlna_{k}'
+					cwd= cwd+f'/mlna_{k}'
 					)
 				)
 
@@ -516,7 +516,7 @@ def make_mlna_k_variable(default, value, OHE, nominal_factor_colums, cwd, domain
 				    modelDictName= modelD,
 				    plotTitle= "Classic features importance",
 				    prefix= domain, 
-				    cwd= cwd+f'/outputs/mlna_{k}',
+				    cwd= cwd+f'/mlna_{k}',
 				    graph_a= [column for i in layer_config for column in OHE[i]],
 				    save= True
 				)
@@ -527,7 +527,7 @@ def make_mlna_k_variable(default, value, OHE, nominal_factor_colums, cwd, domain
 				    modelDictName= modelD,
 				    plotTitle= f"Classic + mln features importance for_{case_k}",
 				    prefix= domain, 
-				    cwd= cwd+f'/outputs/mlna_{k}',
+				    cwd= cwd+f'/mlna_{k}',
 				    graph_a= [column for i in layer_config for column in OHE[i]],
 				    save= True
 				)
@@ -538,7 +538,7 @@ def make_mlna_k_variable(default, value, OHE, nominal_factor_colums, cwd, domain
 				    modelDictName= modelD,
 				    plotTitle= f"Classic - mln attributs features importance for_{case_k}",
 				    prefix= domain, 
-				    cwd= cwd+f'/outputs/mlna_{k}',
+				    cwd= cwd+f'/mlna_{k}',
 				    graph_a= [column for i in layer_config for column in OHE[i]],
 				    save= True
 				)
@@ -549,7 +549,7 @@ def make_mlna_k_variable(default, value, OHE, nominal_factor_colums, cwd, domain
 				    modelDictName= modelD,
 				    plotTitle= f"Classic + mln - mln attributs features importance for_{case_k}",
 				    prefix= domain, 
-				    cwd= cwd+f'/outputs/mlna_{k}',
+				    cwd= cwd+f'/mlna_{k}',
 				    graph_a= [column for i in layer_config for column in OHE[i]],
 				    save= True
 				)
@@ -560,7 +560,7 @@ def make_mlna_k_variable(default, value, OHE, nominal_factor_colums, cwd, domain
 			table = print_summary([default,*logic_i],modelD)
 			create_file(
 				content= table[1], 
-				cwd= cwd+f'/outputs/mlna_{k}', 
+				cwd= cwd+f'/mlna_{k}', 
 				prefix= domain, 
 				filename= f"mlna_for_{case_k}", 
 				extension=".html"
@@ -568,7 +568,7 @@ def make_mlna_k_variable(default, value, OHE, nominal_factor_colums, cwd, domain
 		table = print_summary([default,*logic],modelD)
 		create_file(
 			content= table[1], 
-			cwd= cwd+f'/outputs/mlna_{k}', 
+			cwd= cwd+f'/mlna_{k}', 
 			prefix= domain, 
 			filename= f"mlna_for_all_{k}_combination_categorial_data", 
 			extension=".html"
@@ -694,7 +694,7 @@ def mlnaPipeline(cwd, domain, dataset_link, target_variable, dataset_delimiter='
 		dataset=dataset, 
 		to_remove=to_remove, 
 		domain=domain, 
-		cwd=cwd, 
+		cwd=cwd+f"/outputs/{domain}/", 
 		target_variable=target_variable, 
 		verbose=verbose 
 		)
@@ -726,7 +726,7 @@ def mlnaPipeline(cwd, domain, dataset_link, target_variable, dataset_delimiter='
 		domain= 'classic', 
 		prefix=domain, 
 		verbose=verbose,
-		cwd= cwd+'/outputs'
+		cwd= cwd+f"/outputs/{domain}/"
 		)
 	
 	if 2 in levels: # if this stage is allowed
@@ -736,7 +736,7 @@ def mlnaPipeline(cwd, domain, dataset_link, target_variable, dataset_delimiter='
 			value=value, 
 			OHE=OHE, 
 			nominal_factor_colums=nominal_factor_colums, 
-			cwd=cwd, 
+			cwd=cwd+f"/outputs/{domain}/", 
 			domain=domain, 
 			fix_imbalance=fix_imbalance, 
 			target_variable=target_variable, 
@@ -754,7 +754,7 @@ def mlnaPipeline(cwd, domain, dataset_link, target_variable, dataset_delimiter='
 			value=value, 
 			OHE=OHE, 
 			nominal_factor_colums=nominal_factor_colums, 
-			cwd=cwd, 
+			cwd=cwd+f"/outputs/{domain}/", 
 			domain=domain, 
 			fix_imbalance=fix_imbalance, 
 			target_variable=target_variable, 
@@ -768,7 +768,7 @@ def mlnaPipeline(cwd, domain, dataset_link, target_variable, dataset_delimiter='
 		table = print_summary([default, *global_logic],modelD)
 		create_file(
 			content= table[1], 
-			cwd= cwd+'/outputs', 
+			cwd= cwd+f"/outputs/{domain}/", 
 			prefix= domain, 
 			filename= f"mlna_for_all_categorial_data", 
 			extension=".html"
@@ -804,7 +804,7 @@ def mlnaPipeline(cwd, domain, dataset_link, target_variable, dataset_delimiter='
 			value=value, 
 			OHE=OHE_2, 
 			nominal_factor_colums=list(set([*numeric_with_outliers_columns, *numeric_uniform_colums])-set([target_variable])), 
-			cwd=cwd, 
+			cwd=cwd+f"/outputs/{domain}/", 
 			domain=domain, 
 			fix_imbalance=fix_imbalance, 
 			target_variable=target_variable, 
@@ -822,7 +822,7 @@ def mlnaPipeline(cwd, domain, dataset_link, target_variable, dataset_delimiter='
 			value=value, 
 			OHE=OHE_2, 
 			nominal_factor_colums=list(set([*numeric_with_outliers_columns, *numeric_uniform_colums])-set([target_variable])), 
-			cwd=cwd, 
+			cwd=cwd+f"/outputs/{domain}/", 
 			domain=domain, 
 			fix_imbalance=fix_imbalance, 
 			target_variable=target_variable, 
@@ -837,7 +837,7 @@ def mlnaPipeline(cwd, domain, dataset_link, target_variable, dataset_delimiter='
 			value=value, 
 			OHE=[*OHE,*OHE_2], 
 			nominal_factor_colums=list(set([*nominal_factor_colums,*numeric_with_outliers_columns, *numeric_uniform_colums])-set([target_variable])), 
-			cwd=cwd, 
+			cwd=cwd+f"/outputs/{domain}/", 
 			domain=domain, 
 			fix_imbalance=fix_imbalance, 
 			target_variable=target_variable, 
@@ -851,10 +851,10 @@ def mlnaPipeline(cwd, domain, dataset_link, target_variable, dataset_delimiter='
 		table = print_summary([default, *global_logic],modelD)
 		create_file(
 			content= table[1], 
-			cwd= cwd+'/outputs', 
+			cwd= cwd+f"/outputs/{domain}/", 
 			prefix= domain, 
 			filename= f"mlna_for_all_data", 
 			extension=".html"
 			)
-
+	return True
 	

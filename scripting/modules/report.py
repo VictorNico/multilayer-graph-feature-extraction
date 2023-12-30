@@ -107,7 +107,7 @@ def model_desc():
     }
     return modelD
 
-def plot_features_importance_as_barh(data, getColor, modelDictName,plotTitle, prefix, cwd, graph_a=[], save=True):
+def plot_features_importance_as_barh(data, getColor, modelDictName,plotTitle, cwd, graph_a=[], save=True, prefix=None):
     for index in data.index.values.tolist():
         ok = data.drop([
                 'f1-score',
@@ -145,10 +145,10 @@ def plot_features_importance_as_barh(data, getColor, modelDictName,plotTitle, pr
         plt.subplots_adjust(left=0.3)
         
         if save == True:
-            create_domain(cwd+'/plots/'+prefix)
+            create_domain(cwd+'/plots/')
 
             timestr = time.strftime("%Y_%m_%d_%H_%M_%S")
-            filename1 = cwd+'/plots/'+prefix+'/'+('_'.join(plotTitle.split(' ')))+'_'+index+'_'+timestr+'.png'
+            filename1 = cwd+'/plots'+'/'+('_'.join(plotTitle.split(' ')))+'_'+index+'_'+timestr+'.png'
             # Adjust the layout to cover all content
             plt.tight_layout()
 
@@ -183,13 +183,13 @@ def print_summary(table_list, modelDict):
     htm = f'<html><head>{style}<title> Summary </title></head><body style="background-color: white;">{table_html}</body></html>'
     return (HTML(htm),htm)
 
-def create_file(content, cwd, prefix, filename, extension=".html"):
+def create_file(content, cwd, filename, extension=".html", prefix=None):
     """
     """
 
-    create_domain(cwd+'/reports/'+prefix)
+    create_domain(cwd+'/reports/')
     timestr = time.strftime("%Y_%m_%d_%H_%M_%S")
-    filename1 = cwd+'/reports/'+prefix+'/'+filename+timestr+extension
+    filename1 = cwd+'/reports'+'/'+filename+timestr+extension
     _file= open(filename1,"w")
     _file.write(content)
     _file.close()
