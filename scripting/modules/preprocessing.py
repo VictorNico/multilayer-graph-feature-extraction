@@ -42,6 +42,9 @@ def nominal_factor_encoding(data, variables_list):
     """
     dataframe = data.copy(deep=True)
     ohe = OneHotEncoder()
+    for col in variables_list:
+        print(f"{col} ---<>----- {dataframe[col].unique().tolist()}")
+        dataframe[col] = dataframe[col].apply(lambda x: x +'_'+ col.replace(' ', '_'))
     ohe.fit(dataframe[variables_list])
     merge_ohe_col = np.concatenate((ohe.categories_)) # list of all new dimension names
     ohe_data = pd.DataFrame(ohe.transform(dataframe[variables_list]).toarray(), columns=merge_ohe_col) # make the one hot encoding and save the result inside a temp source
@@ -194,7 +197,8 @@ def discretise_numeric_dimension(columns, dataframe, inplace=False, verbose=Fals
                 data[col].quantile(0.25), 
                 data[col].quantile(0.5), 
                 data[col].quantile(0.75),
-                data[col].quantile(0.85)
+                data[col].quantile(0.85),
+                np.float('inf')
                 ])))
 
             # discretize the column

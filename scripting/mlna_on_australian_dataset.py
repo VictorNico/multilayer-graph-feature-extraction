@@ -30,7 +30,7 @@ if __name__ == '__main__':
     mlnaPipeline(
         cwd= os.getcwd(),
         domain= 'AUSTRALIAN',
-        dataset_link= './datasets/private/1. UCI Repository/Australian/australian.data',
+        dataset_link= './datasets/private/1. UCI Repository/Australian/australian.csv',
         target_variable= 'A15',
         dataset_delimiter=',', 
         all_nominal=True, 

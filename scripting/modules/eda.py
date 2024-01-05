@@ -59,7 +59,19 @@ def impute_nan_values(dataframe, variables):
 		data= dataframe.copy(deep=True)
 		for (col, tho) in variables:
 			if tho <0.5:
-				data[col] = data[col].fillna(data[col].quantile(0.5))
+				# data[col] = data[col].fillna(data[col].quantile(0.5))
+				# Assuming 'col' is the column name you want to fill missing values for
+
+				# Check if the column data type is numeric
+				if pd.api.types.is_numeric_dtype(data[col]):
+				    # Replace missing values with the median value
+				    data[col] = data[col].fillna(data[col].median())
+				else:
+				    # Handle non-numeric column types differently, based on your specific requirements
+				    # For example, you can fill missing values with a specific value or perform a different transformation
+				    # data[col] = data[col].fillna('Unknown')  # Example: fill missing values with a string 'Unknown'
+				    data[col] = data[col].fillna(data[col].mode()[0])  # Example: fill missing values with the mode value
+
 			else:
 				data.drop([col],axis=1, inplace=True)
 	return data

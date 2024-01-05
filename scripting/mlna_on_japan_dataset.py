@@ -40,5 +40,6 @@ if __name__ == '__main__':
         levels=[2,3,4,5],
         to_remove= [], 
         encoding="utf-8",
-        index_col=None
+        index_col=None,
+        na_values= ['?',]
         )

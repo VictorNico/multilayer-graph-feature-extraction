@@ -31,7 +31,7 @@ if __name__ == '__main__':
         cwd= os.getcwd(),
         domain= 'GERMAN',
         dataset_link= './datasets/private/1. UCI Repository/German/german.csv',
-        target_variable= 'ENIMPAYEOUPAS',
+        target_variable= 'Class',
         dataset_delimiter=',', 
         all_nominal=True, 
         all_numeric=False, 

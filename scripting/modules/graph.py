@@ -277,7 +277,7 @@ def get_inter_node_label(graph):
     inters = [k for k in nodes if '-U-' in k]
     return inters
 
-def get_user_nodes_label(graph,borrower, layers):
+def get_user_nodes_label(graph,borrowers, layers):
     """Get borrower liked nodel labels
     Args:
       graph: a multilayer graph
@@ -286,15 +286,17 @@ def get_user_nodes_label(graph,borrower, layers):
     Returns:
       A list of all inter nodes inside the graph
     """
+    linked_table= []
     
-    edges = [(A,B) for i in range(layers) for (A,B) in graph.edges(['C'+str(i)+'-U-'+str(borrower)])]
-    linked = set()
-    for A, B in edges: # for each edge of the borower in the layer 
-        linked.add(A)
-        linked.add(B)
+    for borrower in borrowers:
+        edges = [(A,B) for i in range(layers) for (A,B) in graph.edges(['C'+str(i)+'-U-'+str(borrower)])]
+        linked = set()
+        for A, B in edges: # for each edge of the borower in the layer 
+            linked.add(A)
+            linked.add(B)
 
-    linked = list(linked) # convert to list of node label
-    return linked
+        linked_table.append(list(linked)) # convert to list of node label
+    return (linked_table, set(tuple(borr) for borr in linked_table))
 
 def compute_personlization(node_list):
     """Compute personalization

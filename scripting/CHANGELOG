@@ -9,7 +9,7 @@ Update:
 Fixed:
 	- modifier le fichier .gitignore du projet, pour empêcher les éléments lors tels que les jeux de données, les sorties des exécutions de passer en remote
 
-v1.1.0 - Sam, 30 Dec 2023 - mise à niveau du projet github: 
+v1.1.0 - Sam, 30 Dec 2023 - expériementation de type benchmark: 
 Added: 
 	- pretraiter les données benchmark pour pouvoir les lancer sur mon pipeline
 

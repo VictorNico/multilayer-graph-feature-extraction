@@ -25,7 +25,7 @@ from networkx import write_gml, write_graphml_lxml
 ##          Methods definition
 #################################################
 
-def load_data_set_from_url(path, sep='\t', encoding='utf-8',index_col=None):
+def load_data_set_from_url(path, na_values, sep='\t', encoding='utf-8',index_col=None):
     """Read dataset from multi format
     Args:
       path: path to dataset
@@ -52,7 +52,7 @@ def load_data_set_from_url(path, sep='\t', encoding='utf-8',index_col=None):
 
     }
 
-    dataset = (readers[extension](path, sep=sep, encoding='utf-8',index_col=index_col) if '.csv' in extension else readers[extension](path, index_col=index_col)) if readers[extension] else f"no reader define for the extension {extension}"
+    dataset = (readers[extension](path, sep=sep, encoding='utf-8',index_col=index_col, na_values=na_values) if '.csv' in extension else readers[extension](path, index_col=index_col, na_values=na_values)) if readers[extension] else f"no reader define for the extension {extension}"
 
     return dataset
 
@@ -65,10 +65,10 @@ def save_model(cwd, clf, prefix, clf_name):
     Returns:
       None
     """
-    create_domain(cwd+'/model_storage/'+prefix) # create the domaine folder
+    create_domain(cwd+'/model_storage/') # create the domaine folder
 
     timestr = time.strftime("%Y_%m_%d_%H_%M_%S")
-    filename = cwd+'/model_storage/'+prefix+'/'+clf_name+'_'+timestr+'.sav'
+    filename = cwd+'/model_storage'+'/'+clf_name+'_'+timestr+'.sav'
     joblib.dump(clf, filename)
 
     return filename
@@ -85,10 +85,10 @@ def save_graph(cwd, graph, name, rows_len, prefix, cols_len):
       None
     """
     
-    create_domain(cwd+'/graph_storage/'+prefix)
+    create_domain(cwd+'/graph_storage/')
 
     timestr = time.strftime("%Y_%m_%d_%H_%M_%S")
-    filename = cwd+'/graph_storage/'+prefix+'/'+name+'_'+str(rows_len)+'_'+str(cols_len)+'_'+timestr+'.gml.gz'
+    filename = cwd+'/graph_storage'+'/'+name+'_'+str(rows_len)+'_'+str(cols_len)+'_'+timestr+'.gml.gz'
     write_gml(graph, filename)
 
     return filename

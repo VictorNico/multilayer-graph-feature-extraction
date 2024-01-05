@@ -12,3 +12,11 @@ Once downloaded, extract and copy the contend inside `/path/to/datasets/private/
 
 
 
+[notebook experimentation of autralian](https://medium.com/@polanitzer/predict-credit-card-application-approval-with-python-using-econometric-analysis-book-by-william-h-9999351955b9)
+
+
+[analyse of german credit risk](https://online.stat.psu.edu/stat508/book/export/html/796)
+
+[datasets for credit risk modeling](https://www.listendata.com/2019/08/datasets-for-credit-risk-modeling.html)
+
+[polish scoring article](https://arxiv.org/pdf/1802.05326.pdf)
