@@ -18,3 +18,15 @@ Update:
 
 Fixed:
 	- modifier les methodes de stockage de tels sorte que chaque domaine de lancement ait son propre repertoire expérimentale
+
+v1.1.1 - Dim, 07 Jan 2024 - expériementation de type benchmark: 
+Added: 
+	- ajout de 4 point de lancement pour des jeu de données benchmark: thomas, kaggle aer, german, taiwan
+
+Update: 
+
+Fixed:
+	- le bug de division par zero a été resolu dans le processus de discrétisation
+	- le bug lié à la suppression de dimension inexistante à été corrigé dans la methode make_mlna_k_variable
+	- le calculus des descripteurs personnalisé par emprunteur à été revu dans les methodes make_mlna_1_variable et make_mlna_k_variable nous ne plus trop nécessité de stockage mémoire
+	- la faute de casting lié à la normalisation de variables numérique du à l'affectation d'un float64 vers une colonne de type int64.

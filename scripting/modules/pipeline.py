@@ -18,6 +18,10 @@
 			- test modularisation of pipeline stages
 		- 14/12/2023:
 			- apply all computation on discretize OHE dataset
+		- 07/01/2024:
+			- ajout d'un processus d'eda après toute étapes de prétraitement
+			- mise à jour du bloc lig503-509, 509:mlna.add(nominal_factor_colums[i])->mlna.add(column.split("__")[-1])
+			- separer distinctement les resultats des variables catégorielles, numeriques, combinée dans la méthode mlnaPipeline
 			
 """
 #################################################

@@ -4,6 +4,11 @@
     changes:
         - 15/11/2023:
             - add pipeline methods
+        - 07/01/2024:
+            - ajout d'une personnalisation des modalités de variables catégorielles lig47-49
+            - transformer les colonnes en int64 en float64 lig108, lig89
+            - optimisation de la borne maximal lors d'une normalisation avec outliers pour eviter les quantile 75 à valeur 0. lig113
+            - 
 """
 
 #################################################
