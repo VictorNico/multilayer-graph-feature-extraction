@@ -187,3 +187,14 @@ flowchart TD
     N --> End
 
 ```
+
+
+* experimentation status
+	* [x] JAPAN
+	* [x] AUSTRALIAN
+	* [x] AER
+	* [ ] AFB
+	* [x] GERMAN
+	* [x] THOMAS
+	* [ ] CREDIT RISK
+	* [ ] TAIWAN

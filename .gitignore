@@ -167,6 +167,7 @@
 # **/outputs/**/model_storage/
 # **/outputs/**/graph_storage/
 **/outputs*/
+**/analyser*/
 **/datasets/private/
 **/suivi/**/*.*
 **/kaggle_competition/

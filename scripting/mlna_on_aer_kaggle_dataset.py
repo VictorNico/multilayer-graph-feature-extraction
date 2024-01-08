@@ -1,8 +1,8 @@
 """
     Author: VICTOR DJIEMBOU
-    addedAt: 02/12/2023
+    addedAt: 07/01/2024
     changes:
-        - 02/12/2023:
+        - 07/01/2024:
             - add pipeline called
 """
 
@@ -29,16 +29,16 @@ if __name__ == '__main__':
     #print_hi('PyCharm')
     mlnaPipeline(
         cwd= os.getcwd(),
-        domain= 'AFB',
-        dataset_link= './datasets/New_datas_first.xlsx',
-        target_variable= 'ENIMPAYEOUPAS',
+        domain= 'AER',
+        dataset_link= './datasets/private/3. Kaggle/credit-card-econometrics/AER_credit_card_data.csv',
+        target_variable= 'card',
         dataset_delimiter=',', 
         all_nominal=True, 
         all_numeric=False, 
         verbose=True, 
         fix_imbalance=False, 
-        levels=[2,3,4,5,6],
-        to_remove= ['Type'], 
+        levels=[5,6],
+        to_remove= [], 
         encoding="utf-8",
         index_col=None
         )

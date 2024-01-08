@@ -44,7 +44,7 @@ def nominal_factor_encoding(data, variables_list):
     ohe = OneHotEncoder()
     for col in variables_list:
         print(f"{col} ---<>----- {dataframe[col].unique().tolist()}")
-        dataframe[col] = dataframe[col].apply(lambda x: x +'_'+ col.replace(' ', '_'))
+        dataframe[col] = dataframe[col].apply(lambda x: x +'__'+ col.replace(' ', '_'))
     ohe.fit(dataframe[variables_list])
     merge_ohe_col = np.concatenate((ohe.categories_)) # list of all new dimension names
     ohe_data = pd.DataFrame(ohe.transform(dataframe[variables_list]).toarray(), columns=merge_ohe_col) # make the one hot encoding and save the result inside a temp source
@@ -83,6 +83,7 @@ def numeric_uniform_standardization(data, variables_list):
     # 1) for each variable
     for var in variables_list:
         # get maximum value
+        dataframe[var].astype('float64',copy=False)
         maxi = dataframe[var].max()
         dataframe[var] = dataframe[var]/maxi
     return dataframe
@@ -101,8 +102,10 @@ def numeric_standardization_with_outliers(data, variables_list):
     # 1) for each variable
     for var in variables_list:
         # a) compute Q1 and Q3
+        dataframe[var].astype('float64', copy=False)
         Q1 = dataframe[var].quantile(0.25)
         Q3 = dataframe[var].quantile(0.75)
+        Q3 = dataframe[var].quantile(1) if Q3 == 0 else Q3
         # b) compute IQR
         IQR = Q3 - Q1
         # c) compute sup and inf
@@ -198,7 +201,7 @@ def discretise_numeric_dimension(columns, dataframe, inplace=False, verbose=Fals
                 data[col].quantile(0.5), 
                 data[col].quantile(0.75),
                 data[col].quantile(0.85),
-                np.float('inf')
+                np.float64('inf')
                 ])))
 
             # discretize the column

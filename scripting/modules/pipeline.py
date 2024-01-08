@@ -124,7 +124,7 @@ def make_preprocessing(dataset, to_remove, domain, cwd, target_variable, verbose
 		dataset, 
 		nominal_factor_colums
 		) if len(nominal_factor_colums) > 0 else (dataset, [])
-
+	DATA_OHE = make_eda(dataframe=DATA_OHE, verbose=verbose)
 	# label encoding of ordinal data
 	DATA_OHE_LB = ordinal_factor_encoding(
 		DATA_OHE, 
@@ -136,19 +136,22 @@ def make_preprocessing(dataset, to_remove, domain, cwd, target_variable, verbose
 		DATA_OHE_LB,
 		ordinal_factor_colums if not(target_variable in ordinal_factor_colums) else list(set(ordinal_factor_colums)-set([target_variable]))
 		) if len(ordinal_factor_colums) > 0 else DATA_OHE_LB
-
+	print(f"{get_na_columns(DATA_OHE_LB_LBU)}")
+	DATA_OHE_LB_LBU = make_eda(dataframe=DATA_OHE_LB_LBU, verbose=verbose)
 	# standard normalisation of numeric data to deeve it into interval 0,1
 	DATA_OHE_LB_LBU_STDU = numeric_uniform_standardization(
 		DATA_OHE_LB_LBU,
 		numeric_uniform_colums if not(target_variable in numeric_uniform_colums) else list(set(numeric_uniform_colums)-set([target_variable]))
 		) if len(numeric_uniform_colums) > 0 else DATA_OHE_LB_LBU
-
+	print(f"{get_na_columns(DATA_OHE_LB_LBU_STDU)}")
+	DATA_OHE_LB_LBU_STDU = make_eda(dataframe=DATA_OHE_LB_LBU_STDU, verbose=verbose)
 	# normalisation of numeric data with outliers to deeve it into interval 0,1
 	DATA_OHE_LB_LBU_STDU_STDWO = numeric_standardization_with_outliers(
 		DATA_OHE_LB_LBU_STDU,
 		numeric_with_outliers_columns if not(target_variable in numeric_with_outliers_columns) else list(set(numeric_with_outliers_columns)-set([target_variable]))
 		) if len(numeric_with_outliers_columns) > 0 else DATA_OHE_LB_LBU_STDU
-
+	print(f"{get_na_columns(DATA_OHE_LB_LBU_STDU_STDWO)}")
+	DATA_OHE_LB_LBU_STDU_STDWO = make_eda(dataframe=DATA_OHE_LB_LBU_STDU_STDWO, verbose=verbose)
 	# save the first one where just all factor are binarized
 	# _ALL_PRETRAETED_DATA['withAllFactorsVBinarized']= DATA_OHE_LB_LBU_STDU_STDWO.copy(deep=True)
 	print(f"{get_na_columns(DATA_OHE_LB_LBU_STDU_STDWO)}")
@@ -176,12 +179,15 @@ def make_preprocessing(dataset, to_remove, domain, cwd, target_variable, verbose
 		sep= ','
 		)
 	print(f"{get_na_columns(DATA_DISCRETIZE)}")
+	DATA_DISCRETIZE = make_eda(dataframe=DATA_DISCRETIZE, verbose=verbose)
 	# binarise nominals factors
 	DATA_DISCRETIZE_OHE_2, OHE_2 = nominal_factor_encoding(
 		DATA_DISCRETIZE, 
 		list(set([*numeric_with_outliers_columns, *numeric_uniform_colums])-set([target_variable]))
 		)  if len(list(set([*numeric_with_outliers_columns, *numeric_uniform_colums])-set([target_variable]))) > 0 else (DATA_DISCRETIZE, [])
-
+	print(f"{get_na_columns(DATA_DISCRETIZE_OHE_2)}")
+	DATA_DISCRETIZE_OHE_2 = make_eda(dataframe=DATA_DISCRETIZE_OHE_2, verbose=verbose)
+	
 	link_to_preprocessed_all_data = save_dataset(
 		cwd= cwd+'/mlna_preprocessing', 
 		dataframe= DATA_DISCRETIZE_OHE_2, 
@@ -256,18 +262,21 @@ def make_mlna_1_variable(default, value_graph, value_clfs, OHE, nominal_factor_c
 		extracts[f'MLN_bipart_intra_{nominal_factor_colums[i]}'] = get_max_borrower_pr(bipart_intra_pagerank)
 		extracts[f'MLN_bipart_inter_{nominal_factor_colums[i]}'] = get_max_borrower_pr(bipart_inter_pagerank)
 		extracts[f'MLN_bipart_combine_{nominal_factor_colums[i]}'] = get_max_borrower_pr(bipart_combine)
+		#extracts[f'MLN_bipart_ultra_{nominal_factor_colums[i]}'] = [get_max_borrower_pr(nx.pagerank(MLN,personalization=compute_personlization(get_user_nodes_label(MLN, [val], 1)[0][0]), alpha=0.85))[index] for index, val in enumerate(PERSONS)]
 		extracts[f'MLN_bipart_intra_max_{nominal_factor_colums[i]}'] = [get_max_modality_pagerank_score(index, MLN, 1, bipart_intra_pagerank) for index in PERSONS]
 		extracts[f'MLN_bipart_inter_max_{nominal_factor_colums[i]}'] = [get_max_modality_pagerank_score(index, MLN, 1, bipart_inter_pagerank) for index in PERSONS]
 		extracts[f'MLN_bipart_combine_max_{nominal_factor_colums[i]}'] = [get_max_modality_pagerank_score(index, MLN, 1, bipart_combine) for index in PERSONS]
+		#extracts[f'MLN_bipart_ultra_max_{nominal_factor_colums[i]}'] = [get_max_modality_pagerank_score(val, MLN, 1, nx.pagerank(MLN,personalization=compute_personlization(get_user_nodes_label(MLN, [val], 1)[0][0]), alpha=0.85)) for index, val in enumerate(PERSONS)]
 		# ultra personalisation of pagerank
-		(nodes_of_borrowers, nodes) = get_user_nodes_label(MLN, PERSONS, 1) # get all posible relate borrower's nodes
+		#(nodes_of_borrowers, nodes) = get_user_nodes_label(MLN, PERSONS, 1) # get all posible relate borrower's nodes
 		# get ultra personalized pagerank of distincts values of nodes
 		# build a dict base on values of nodes as key
-		plural_form = {"".join(list(k)): nx.pagerank(MLN,personalization=compute_personlization(list(k)), alpha=0.85) for k in nodes} 
-		
-		extracts[f'MLN_bipart_ultra_{nominal_factor_colums[i]}'] = [get_max_borrower_pr(plural_form["".join(nodes_of_borrowers[index])])[index] for index, val in enumerate(PERSONS)] 
-		extracts[f'MLN_bipart_ultra_max_{nominal_factor_colums[i]}'] = [get_max_modality_pagerank_score(val, MLN, 1,plural_form["".join(nodes_of_borrowers[index])]) for index, val in enumerate(PERSONS)]
-	
+		#print("edges of borrowers") if verbose else None
+		#plural_form = {"".join(list(k)): nx.pagerank(MLN,personalization=compute_personlization(list(k)), alpha=0.85) for k in nodes} 
+		#print("ultra PR") if verbose else None
+		#extracts[f'MLN_bipart_ultra_{nominal_factor_colums[i]}'] = [get_max_borrower_pr(plural_form["".join(nodes_of_borrowers[index])])[index] for index, val in enumerate(PERSONS)] 
+		#extracts[f'MLN_bipart_ultra_max_{nominal_factor_colums[i]}'] = [get_max_modality_pagerank_score(val, MLN, 1,plural_form["".join(nodes_of_borrowers[index])]) for index, val in enumerate(PERSONS)]
+		#print("descriptor compute") if verbose else None
 		# standardization
 		standard_extraction(extracts, extracts.keys())
 
@@ -460,21 +469,24 @@ def make_mlna_k_variable(default, value_graph, value_clfs, OHE, nominal_factor_c
 			extracts[f'MLN_bipart_intra_{case_k}'] = get_max_borrower_pr(bipart_intra_pagerank)
 			extracts[f'MLN_bipart_inter_{case_k}'] = get_max_borrower_pr(bipart_inter_pagerank)
 			extracts[f'MLN_bipart_combine_{case_k}'] = get_max_borrower_pr(bipart_combine)
+			#extracts[f'MLN_bipart_ultra_{case_k}'] = [get_max_borrower_pr(nx.pagerank(MLN,personalization=compute_personlization(get_user_nodes_label(MLN, [val], k)[0][0]), alpha=0.85))[index] for index, val in enumerate(PERSONS)]
 			extracts[f'MLN_bipart_intra_max_{case_k}'] = [get_max_modality_pagerank_score(index, MLN, k, bipart_intra_pagerank) for index in PERSONS]
 			extracts[f'MLN_bipart_inter_max_{case_k}'] = [get_max_modality_pagerank_score(index, MLN, k, bipart_inter_pagerank) for index in PERSONS]
 			extracts[f'MLN_bipart_combine_max_{case_k}'] = [get_max_modality_pagerank_score(index, MLN, k, bipart_combine) for index in PERSONS]
+			#extracts[f'MLN_bipart_ultra_max_{case_k}'] = [get_max_modality_pagerank_score(val, MLN, k, nx.pagerank(MLN,personalization=compute_personlization(get_user_nodes_label(MLN, [val], k)[0][0]), alpha=0.85)) for index, val in enumerate(PERSONS)]
 			# ultra personalisation of pagerank
-			(nodes_of_borrowers, nodes) = get_user_nodes_label(MLN, PERSONS, k) # get all posible relate borrower's nodes
+			#(nodes_of_borrowers, nodes) = get_user_nodes_label(MLN, PERSONS, k) # get all posible relate borrower's nodes
 			# get ultra personalized pagerank of distincts values of nodes
 			# build a dict base on values of nodes as key
-			plural_form = {"".join(list(b)): nx.pagerank(MLN,personalization=compute_personlization(list(b)), alpha=0.85) for b in nodes} 
+			#plural_form = {"".join(list(b)): nx.pagerank(MLN,personalization=compute_personlization(list(b)), alpha=0.85) for b in nodes} 
 			
-			extracts[f'MLN_bipart_ultra_{case_k}'] = [get_max_borrower_pr(plural_form["".join(nodes_of_borrowers[index])])[index] for index, val in enumerate(PERSONS)] 
-			extracts[f'MLN_bipart_ultra_max_{case_k}'] = [get_max_modality_pagerank_score(val, MLN, k,plural_form["".join(nodes_of_borrowers[index])]) for index, val in enumerate(PERSONS)]
+			#extracts[f'MLN_bipart_ultra_{case_k}'] = [get_max_borrower_pr(plural_form["".join(nodes_of_borrowers[index])])[index] for index, val in enumerate(PERSONS)] 
+			#extracts[f'MLN_bipart_ultra_max_{case_k}'] = [get_max_modality_pagerank_score(val, MLN, k,plural_form["".join(nodes_of_borrowers[index])]) for index, val in enumerate(PERSONS)]
 			
 			# standardization
 			standard_extraction(extracts, extracts.keys())
-
+			## visualization of result
+			modelD = model_desc()
 			# save descriptors
 			extract_df = pd.DataFrame(extracts)
 			link_to_preprocessed_all_data = save_dataset(
@@ -484,8 +496,25 @@ def make_mlna_k_variable(default, value_graph, value_clfs, OHE, nominal_factor_c
 				prefix= domain, 
 				sep= ','
 				)
-
-			
+			mlna = set()
+			col_list = value_clfs.columns.to_list()
+			for i in layer_config:
+				for column in OHE[i]:
+					if column in col_list:
+						mlna.add(column)
+					else:
+						mlna.add(column.split("__")[-1])
+			# classic
+			plot_features_importance_as_barh(
+				    data= default[1],
+				    getColor= custom_color,
+				    modelDictName= modelD,
+				    plotTitle= "Classic features importance",
+				    prefix= domain, 
+				    cwd= cwd+f'/mlna_{k}',
+				    graph_a= list(mlna),
+				    save= True
+				)
 			## default + MLN
 			# inject descriptors
 			VALUE_MLN = inject_features_extracted(value_clfs, extracts)
@@ -502,19 +531,24 @@ def make_mlna_k_variable(default, value_graph, value_clfs, OHE, nominal_factor_c
 					cwd= cwd+f'/mlna_{k}'
 					)
 				)
-
+			# classic + mln
+			plot_features_importance_as_barh(
+				    data= logic_i[0][1],
+				    getColor= custom_color,
+				    modelDictName= modelD,
+				    plotTitle= f"Classic + mln features importance for_{case_k}",
+				    prefix= domain, 
+				    cwd= cwd+f'/mlna_{k}',
+				    graph_a= list(mlna),
+				    save= True
+				)
+			
 			## default - MLNa
-			mlna = set()
-			is_full = list(set(value_clfs.columns.to_list()) - set([column for i in layer_config for column in OHE[i] ]))
+			
+			is_full = list(set(col_list) - set(list(mlna)))
+			print(f"{col_list} + {mlna} + {is_full}")
 			if len(is_full) > 1: #  check if operation is possible
-				print(typeof(mlna))
-				col_list = value_clfs.columns.to_list()
-				for i in layer_config:
-					for column in OHE[i]:
-						if column in col_list:
-							mlna.add(column)
-						else:
-							mlna.add(nominal_factor_colums[i])
+				#print(typeof(mlna))
 
 				VALUE_MINUS_MLNa = value_clfs.drop(list(mlna), axis=1)
 
@@ -530,7 +564,18 @@ def make_mlna_k_variable(default, value_graph, value_clfs, OHE, nominal_factor_c
 						cwd= cwd+f'/mlna_{k}'
 						)
 					)
-				print(f"{typeof(mlna)} {mmlna}")
+				# classic - mln attribut
+				plot_features_importance_as_barh(
+					    data= logic_i[-1][1],
+					    getColor= custom_color,
+					    modelDictName= modelD,
+					    plotTitle= f"Classic - mln attributs features importance for_{case_k}",
+					    prefix= domain, 
+					    cwd= cwd+f'/mlna_{k}',
+					    graph_a= list(mlna),
+					    save= True
+					)
+				#print(f"{typeof(mlna)} {mmlna}")
 
 			## default + MLN - MLNa
 			VALUE_MLN_MINUS_MLN = VALUE_MLN.drop(list(mlna), axis=1)
@@ -547,45 +592,9 @@ def make_mlna_k_variable(default, value_graph, value_clfs, OHE, nominal_factor_c
 					cwd= cwd+f'/mlna_{k}'
 					)
 				)
-
-			## visualization of result
-			modelD = model_desc()
-			# classic
-			plot_features_importance_as_barh(
-				    data= default[1],
-				    getColor= custom_color,
-				    modelDictName= modelD,
-				    plotTitle= "Classic features importance",
-				    prefix= domain, 
-				    cwd= cwd+f'/mlna_{k}',
-				    graph_a= list(mlna),
-				    save= True
-				)
-			# classic + mln
-			plot_features_importance_as_barh(
-				    data= logic_i[0][1],
-				    getColor= custom_color,
-				    modelDictName= modelD,
-				    plotTitle= f"Classic + mln features importance for_{case_k}",
-				    prefix= domain, 
-				    cwd= cwd+f'/mlna_{k}',
-				    graph_a= list(mlna),
-				    save= True
-				)
-			# classic - mln attribut
-			plot_features_importance_as_barh(
-				    data= logic_i[1][1],
-				    getColor= custom_color,
-				    modelDictName= modelD,
-				    plotTitle= f"Classic - mln attributs features importance for_{case_k}",
-				    prefix= domain, 
-				    cwd= cwd+f'/mlna_{k}',
-				    graph_a= list(mlna),
-				    save= True
-				)
 			# classic + mln - mln attribut
 			plot_features_importance_as_barh(
-				    data= logic_i[2][1],
+				    data= logic_i[-1][1],
 				    getColor= custom_color,
 				    modelDictName= modelD,
 				    plotTitle= f"Classic + mln - mln attributs features importance for_{case_k}",
@@ -594,6 +603,11 @@ def make_mlna_k_variable(default, value_graph, value_clfs, OHE, nominal_factor_c
 				    graph_a= list(mlna),
 				    save= True
 				)
+			
+			
+			
+			
+			
 
 			# print html report for analysis of variable i
 			# logic_i=[default,*logic_i]
@@ -750,8 +764,8 @@ def mlnaPipeline(cwd, domain, dataset_link, target_variable, dataset_delimiter='
 	# fetch each type of pretreated data to apply MLNA and ML
 	# for (key,value) in _ALL_PRETRAETED_DATA.items():
 	# 	if 'Factors' in key:
-	# value = DATA_DISCRETIZE_OHE_2.loc[1:20,]
-	# value = DATA_OHE_LB_LBU_STDU_STDWO
+	# value_1 = DATA_DISCRETIZE_OHE_2.sample(50)
+	# value_2 = DATA_OHE_LB_LBU_STDU_STDWO.sample(50)
 	# case where with triggers just categorials data to perform our MLNA
 	
 	# build divers logic of MLNA
@@ -780,7 +794,7 @@ def mlnaPipeline(cwd, domain, dataset_link, target_variable, dataset_delimiter='
 			value_clfs=DATA_OHE_LB_LBU_STDU_STDWO,
 			OHE=OHE, 
 			nominal_factor_colums=nominal_factor_colums, 
-			cwd=cwd+f"/outputs/{domain}/", 
+			cwd=cwd+f"/outputs/{domain}/qualitative", 
 			domain=domain, 
 			fix_imbalance=fix_imbalance, 
 			target_variable=target_variable, 
@@ -793,13 +807,13 @@ def mlnaPipeline(cwd, domain, dataset_link, target_variable, dataset_delimiter='
 
 	# 2) build an MLN on just k variable, 1 < k <= len of OHE
 	if (3 in levels)  and (len(OHE) > 0):
-		global_logic =[*global_logic,*make_mlna_k_variable(
+		global_logic =[*global_logic, *make_mlna_k_variable(
 			default=default, 
 			value_graph=DATA_DISCRETIZE_OHE_2, 
 			value_clfs=DATA_OHE_LB_LBU_STDU_STDWO,
 			OHE=OHE, 
 			nominal_factor_colums=nominal_factor_colums, 
-			cwd=cwd+f"/outputs/{domain}/", 
+			cwd=cwd+f"/outputs/{domain}/qualitative", 
 			domain=domain, 
 			fix_imbalance=fix_imbalance, 
 			target_variable=target_variable, 
@@ -813,7 +827,7 @@ def mlnaPipeline(cwd, domain, dataset_link, target_variable, dataset_delimiter='
 		table = print_summary([default, *global_logic],modelD)
 		create_file(
 			content= table[1], 
-			cwd= cwd+f"/outputs/{domain}/", 
+			cwd= cwd+f"/outputs/{domain}/qualitative", 
 			prefix= domain, 
 			filename= f"mlna_for_all_categorial_data", 
 			extension=".html"
@@ -826,6 +840,7 @@ def mlnaPipeline(cwd, domain, dataset_link, target_variable, dataset_delimiter='
 	# build divers logic of MLNA
 	# 1) build an MLN on just one variable
 	# global logic
+	global_logic = None
 	global_logic = []
 	# start with model building and importance analysis
 
@@ -844,13 +859,13 @@ def mlnaPipeline(cwd, domain, dataset_link, target_variable, dataset_delimiter='
 	
 	if (4 in levels)  and (len(OHE_2) > 0): # if this stage is allowed
 		
-		global_logic =[*make_mlna_1_variable(
+		global_logic =[*global_logic, *make_mlna_1_variable(
 			default=default, 
 			value_graph=DATA_DISCRETIZE_OHE_2, 
 			value_clfs=DATA_OHE_LB_LBU_STDU_STDWO, 
 			OHE=OHE_2, 
 			nominal_factor_colums=list(set([*numeric_with_outliers_columns, *numeric_uniform_colums])-set([target_variable])), 
-			cwd=cwd+f"/outputs/{domain}/", 
+			cwd=cwd+f"/outputs/{domain}/quantitative", 
 			domain=domain, 
 			fix_imbalance=fix_imbalance, 
 			target_variable=target_variable, 
@@ -863,13 +878,13 @@ def mlnaPipeline(cwd, domain, dataset_link, target_variable, dataset_delimiter='
 
 	# 2) build an MLN on just k variable, 1 < k <= len of OHE
 	if (5 in levels) and (len(OHE_2) > 0):
-		global_logic =[*global_logic,*make_mlna_k_variable(
+		global_logic =[*global_logic, *make_mlna_k_variable(
 			default=default, 
 			value_graph=DATA_DISCRETIZE_OHE_2, 
 			value_clfs=DATA_OHE_LB_LBU_STDU_STDWO, 
 			OHE=OHE_2, 
 			nominal_factor_colums=list(set([*numeric_with_outliers_columns, *numeric_uniform_colums])-set([target_variable])), 
-			cwd=cwd+f"/outputs/{domain}/", 
+			cwd=cwd+f"/outputs/{domain}/quantitative", 
 			domain=domain, 
 			fix_imbalance=fix_imbalance, 
 			target_variable=target_variable, 
@@ -879,13 +894,25 @@ def mlnaPipeline(cwd, domain, dataset_link, target_variable, dataset_delimiter='
 			clfs=clfs
 			)
 		]
-		global_logic =[*global_logic,*make_mlna_k_variable(
+		table = print_summary([default, *global_logic],modelD)
+		create_file(
+			content= table[1], 
+			cwd= cwd+f"/outputs/{domain}/quantitative", 
+			prefix= domain, 
+			filename= f"mlna_for_all_data_quantitative", 
+			extension=".html"
+			)
+
+	if (6 in levels) and (len(OHE_2) > 0 and len(OHE) > 0):
+		global_logic = None
+		global_logic = []
+		global_logic =[*global_logic, *make_mlna_k_variable(
 			default=default, 
 			value_graph=DATA_DISCRETIZE_OHE_2, 
 			value_clfs=DATA_OHE_LB_LBU_STDU_STDWO,
 			OHE=[*OHE,*OHE_2], 
 			nominal_factor_colums=list(set([*nominal_factor_colums,*numeric_with_outliers_columns, *numeric_uniform_colums])-set([target_variable])), 
-			cwd=cwd+f"/outputs/{domain}/", 
+			cwd=cwd+f"/outputs/{domain}/mixed", 
 			domain=domain, 
 			fix_imbalance=fix_imbalance, 
 			target_variable=target_variable, 
@@ -899,9 +926,9 @@ def mlnaPipeline(cwd, domain, dataset_link, target_variable, dataset_delimiter='
 		table = print_summary([default, *global_logic],modelD)
 		create_file(
 			content= table[1], 
-			cwd= cwd+f"/outputs/{domain}/", 
+			cwd= cwd+f"/outputs/{domain}/mixed", 
 			prefix= domain, 
-			filename= f"mlna_for_all_data", 
+			filename= f"mlna_for_all_mixed", 
 			extension=".html"
 			)
 	return True
