@@ -31,6 +31,7 @@ from IPython.core.display import HTML
 import imgkit
 from modules.file import create_domain
 import pandas as pd
+from memory_profiler import profile
 # from markdown2pdf import convert
 # styling
 # %matplotlib inline
@@ -48,9 +49,11 @@ mpl.rcParams['figure.facecolor'] = '#00000000'
 #################################################
 
 #Acceps a list of IpyTable objects and returns a table which contains each IpyTable in a cell
+# @profile
 def multi_table(table_list):
         return HTML('<table><tr style="background-color:#2020d1; color: #FFFFFF;">' +  ''.join(['<td>' + table._repr_html_() + '</td>' for table in table_list]) +'</tr></table>')
 
+# @profile
 def plot_graph():
         # show
         colors = nx.get_edge_attributes(CRP_G_1,'color').values()
@@ -66,7 +69,7 @@ def plot_graph():
         plt.savefig(filename1,dpi=700) #.png,.pdf will also support here
         plt.show()
 
-
+# @profile
 def custom_color(dataframe, graph_a=[]):
     cols= dataframe.columns.tolist()
     colors= []
@@ -107,6 +110,7 @@ def model_desc():
     }
     return modelD
 
+# @profile
 def plot_features_importance_as_barh(data, getColor, modelDictName,plotTitle, cwd, graph_a=[], save=True, prefix=None):
     for index in data.index.values.tolist():
         ok = data.drop([
@@ -157,6 +161,7 @@ def plot_features_importance_as_barh(data, getColor, modelDictName,plotTitle, cw
             
         #plt.show()
 
+# @profile
 def print_summary(table_list, modelDict):
     baseline = table_list[0][1].index.values.tolist()
     head = '<tr><td></td><td></td><td>Accuracy</td>'+'<td>Precision</td><td>Recall</td><td>F1-score</td></tr>'
@@ -183,6 +188,7 @@ def print_summary(table_list, modelDict):
     htm = f'<html><head>{style}<title> Summary </title></head><body style="background-color: white;">{table_html}</body></html>'
     return (HTML(htm),htm)
 
+# @profile
 def create_file(content, cwd, filename, extension=".html", prefix=None):
     """
     """

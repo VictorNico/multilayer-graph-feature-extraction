@@ -37,6 +37,7 @@ from modules.file import save_model, save_dataset
 #import lightgbm as lgb
 #from lightgbm import LGBMRegressor
 #from bayes_opt import BayesianOptimization
+from memory_profiler import profile
 
 ###### End
 
@@ -44,7 +45,7 @@ from modules.file import save_model, save_dataset
 #################################################
 ##          Methods definition
 #################################################
-
+# @profile
 def test_train(dataframe, target, test_size=0.2, random_state=12):
     """Split train test data labels
     Args:
@@ -76,6 +77,7 @@ def test_train(dataframe, target, test_size=0.2, random_state=12):
 
     return x_train, x_test, y_train, y_test
 
+# @profile
 def init_models():
     """Load the dict of model to use to perform analyse
     Args:
@@ -116,6 +118,7 @@ def init_models():
 
     return clfs
 
+# @profile
 def init_training_store(dataframe):
     """Initialize training information storage dataframe
     Args:
@@ -136,6 +139,7 @@ def init_training_store(dataframe):
     ])
     return pd.DataFrame(columns=cols)
 
+# @profile
 def get_xgb_imp(xgb):
     """Get XGBOOST feature score in prediction before training
     Args:
@@ -150,6 +154,7 @@ def get_xgb_imp(xgb):
     total = sum(imp_vals.values())
     return {k:v/total for k,v in imp_vals.items()}
 
+# @profile
 def save_shap(clf, name, x_test):
     explainer = shap.Explainer(clf.predict, x_test)
     shap_values = explainer(x_test)
@@ -161,6 +166,7 @@ def save_shap(clf, name, x_test):
     shap.plots.bar(shap_values,show=False)
     plt.savefig(filename1,dpi=700) #.png,.pdf will also support here
 
+# @profile
 def train_classifier(name, clf,X_train,y_train,X_test,y_test, store, domain, prefix, cwd):
     """Train a classifier on a dataframe
     Args:
@@ -255,6 +261,7 @@ def train_classifier(name, clf,X_train,y_train,X_test,y_test, store, domain, pre
 
     return store
 
+# @profile
 def train(clfs,x_train,y_train,x_test,y_test, store, domain, prefix, cwd):
     """Train our baseline classifiers
     Args:

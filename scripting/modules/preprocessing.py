@@ -28,6 +28,7 @@ from imblearn.under_sampling import RandomUnderSampler
 from imblearn.pipeline import Pipeline
 from imblearn.over_sampling import RandomOverSampler
 import collections
+from memory_profiler import profile
 
 ###### End
 
@@ -35,7 +36,7 @@ import collections
 #################################################
 ##          Methods definition
 #################################################
-
+# @profile
 def nominal_factor_encoding(data, variables_list):
     """Apply One Hot Encoding (OHE) on ordinal factor dimension
     Args:
@@ -57,6 +58,7 @@ def nominal_factor_encoding(data, variables_list):
     dataframe = dataframe.drop(variables_list, axis=1) # remove all nominal unencoded dimensions
     return (dataframe, ohe.categories_)
 
+# @profile
 def ordinal_factor_encoding(data, variables_list):
     """Apply LabelEncoding on ordinal factor dimension
     Args:
@@ -74,6 +76,7 @@ def ordinal_factor_encoding(data, variables_list):
         dataframe[var] = label_encoder.fit_transform(dataframe[var])
     return dataframe
 
+# @profile
 def numeric_uniform_standardization(data, variables_list):
     """Use max division standardize dimension
     Args:
@@ -93,6 +96,7 @@ def numeric_uniform_standardization(data, variables_list):
         dataframe[var] = dataframe[var]/maxi
     return dataframe
 
+# @profile
 def numeric_standardization_with_outliers(data, variables_list):
     """Use IQR to standardize dimension with extrem values
     Args:
@@ -128,6 +132,7 @@ def numeric_standardization_with_outliers(data, variables_list):
                 dataframe.loc[line, var] = dataframe.loc[line, var]/sup
     return dataframe
 
+# @profile
 def numeric_vector_is_nominal(series):
     """Use Value count to know if a column identify as numeric one has a nominal logic
     Args:
@@ -151,6 +156,7 @@ def numeric_vector_is_nominal(series):
 
     return suit_serie_nominale
 
+# @profile
 def is_numeric_vector_with_outlier(column):
     """Use IDR to detect outliers
     Args:
@@ -179,6 +185,7 @@ def is_numeric_vector_with_outlier(column):
     valeurs_aberrantes = sum(data < borne_inf) + sum(data > borne_sup)
     return valeurs_aberrantes > 0
 
+# @profile
 def discretise_numeric_dimension(columns, dataframe, inplace=False, verbose=False):
     """Discretise numerical dimension with quantile boundary
     Args:
@@ -230,6 +237,7 @@ def discretise_numeric_dimension(columns, dataframe, inplace=False, verbose=Fals
     if not inplace:
         return data
 
+# @profile
 def get_numeric_vector_with_outlier(dataframe):
     """Get numerical columns with outliers
     Args:
@@ -244,6 +252,7 @@ def get_numeric_vector_with_outlier(dataframe):
             outliers_columns.append(column)
     return outliers_columns
 
+# @profile
 def get_categorial_columns(dataframe):
     """Use select_dtypes to detect categorial columns
     Args:
@@ -257,6 +266,7 @@ def get_categorial_columns(dataframe):
         nominal_columns = dataframe.select_dtypes(include=['object'])
     return nominal_columns.columns.tolist()
 
+# @profile
 def get_numerical_columns(dataframe):
     """Use select_dtypes to detect numeric columns
     Args:
@@ -270,6 +280,7 @@ def get_numerical_columns(dataframe):
         numerical_columns = dataframe.select_dtypes(include=['int64', 'float64'])
     return numerical_columns.columns.tolist()
 
+# @profile
 def get_combinations(data, k):
     """Use combinations to denerate the list of layer to be build later
     Args:
@@ -298,6 +309,7 @@ def get_combinations(data, k):
     
     return combinations_list
 
+# @profile
 def is_ordinal(column):
     """Detect if a column has ordinal object values
     Args:
@@ -309,6 +321,7 @@ def is_ordinal(column):
     sorted_values = sorted(unique_values)
     return list(unique_values) == sorted_values or list(unique_values) == sorted_values[::-1]
 
+# @profile
 def get_ordinal_columns(dataframe):
     """Get the list of Ordinal dimension in dataframe
     Args:
@@ -322,6 +335,7 @@ def get_ordinal_columns(dataframe):
             ordinal_columns.append(column)
     return ordinal_columns
 
+# @profile
 def get_SMOTHE_dataset(X, y, random_state=42, sampling_strategy='auto'):
     """Compute a SMOTHED dataset 
     Args:

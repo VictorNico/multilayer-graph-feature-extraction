@@ -23,6 +23,7 @@ from sklearn.preprocessing import OneHotEncoder
 from sklearn.preprocessing import LabelEncoder
 import collections
 from itertools import combinations
+from memory_profiler import profile
 
 ###### End
 
@@ -30,7 +31,7 @@ from itertools import combinations
 #################################################
 ##          Methods definition
 #################################################
-
+# @profile
 def matrix_2d_test(matrix):
     """Check if Matrix is 2D
     Args:
@@ -52,6 +53,7 @@ def matrix_2d_test(matrix):
             
     return flag
 
+# @profile
 def generate_entity_nodes_list(data):
     """Generate entity nodes list
     Args:
@@ -79,6 +81,7 @@ def generate_entity_nodes_list(data):
     
     return NODE_LIST
 
+# @profile
 def build_mlg(data, features):
     """Build a multi-layer graph
     Args:
@@ -147,6 +150,7 @@ def build_mlg(data, features):
     # return the graph
     return CRP_G
 
+# @profile
 def find_indices(list_to_check, item_to_find):
     """Find indices
     Args:
@@ -159,6 +163,7 @@ def find_indices(list_to_check, item_to_find):
     
     return [idx for idx, value in enumerate(list_to_check) if value == item_to_find]
 
+# @profile
 def build_modalities_graph(X,Y,n):
     """Build a modalities graph
     Args:
@@ -251,6 +256,7 @@ def build_modalities_graph(X,Y,n):
     # return the graph
     return CRP_G, data
 
+# @profile
 def get_intra_node_label(graph):
     """Get intra nodel labels
     Args:
@@ -264,6 +270,7 @@ def get_intra_node_label(graph):
     intras = [k for k in nodes if '-M-' in k]
     return intras
 
+# @profile
 def get_inter_node_label(graph):
     """Get inter nodel labels
     Args:
@@ -277,6 +284,7 @@ def get_inter_node_label(graph):
     inters = [k for k in nodes if '-U-' in k]
     return inters
 
+# @profile
 def get_user_nodes_label(graph,borrowers, layers):
     """Get borrower liked nodel labels
     Args:
@@ -298,6 +306,7 @@ def get_user_nodes_label(graph,borrowers, layers):
         linked_table.append(list(linked)) # convert to list of node label
     return (linked_table, set(tuple(borr) for borr in linked_table))
 
+# @profile
 def compute_personlization(node_list):
     """Compute personalization
     Args:
@@ -311,7 +320,7 @@ def compute_personlization(node_list):
     a = [ personlized.update({ k : 1/len(node_list) }) for k in node_list ]
     return personlized
 
-
+# @profile
 def get_number_of_borrowers_with_same_n_layer_value(borrower, graph, layer_nber=0):
     """Get number of borrower with same value in first layer
     Args:
@@ -336,6 +345,7 @@ def get_number_of_borrowers_with_same_n_layer_value(borrower, graph, layer_nber=
     #print(edges)
     return [edges,len(edges) - 1]
 
+# @profile
 def get_max_borrower_pr(pr):
     """Get max modality of borrower in the pagerank output
     Args:
@@ -351,6 +361,7 @@ def get_max_borrower_pr(pr):
             borrower[int(key.split("-U-")[1])] = max(val, borrower[int(key.split("-U-")[1])]) if int(key.split("-U-")[1]) in borrower else val
     return [val for key, val in collections.OrderedDict(sorted(borrower.items())).items()]
 
+# @profile
 def get_number_of_borrowers_with_same_custom_layer_value(borrower, graph, custom_layer=[0,1]):
     """Get number of borrower with same value in first and second layer
     Args:
@@ -379,6 +390,7 @@ def get_number_of_borrowers_with_same_custom_layer_value(borrower, graph, custom
         len(intersections) - 1 # compute the len 
     ]
 
+# @profile
 def get_max_modality_pagerank_score(borrower, graph, k, pr):
     """Get max modality of borrower in the pagerank output belong to specify layer
     Args:
@@ -399,6 +411,7 @@ def get_max_modality_pagerank_score(borrower, graph, k, pr):
             #break
     return maxi #return the max
 
+# @profile
 def get_persons(dataframe):
     """Get index dimension of dataframe
     Args:
@@ -411,6 +424,7 @@ def get_persons(dataframe):
     index_users = dataframe.index.values.tolist() # get all index present in the dataset as list
     return index_users # return it
 
+# @profile
 def standard_extraction(extracts, feats):
     """Standardize the features extracted
     Args:
@@ -424,6 +438,7 @@ def standard_extraction(extracts, feats):
     for key in feats:
         extracts[key] = [el/max(extracts[key]) for el in extracts[key]]
 
+# @profile
 def inject_features_extracted(data,features):
     """inject features extracted in dataframe
     Args:
