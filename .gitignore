@@ -167,6 +167,7 @@
 # **/outputs/**/model_storage/
 # **/outputs/**/graph_storage/
 **/outputs*/
+**/server*/
 **/analyser*/
 **/datasets/private/
 **/suivi/**/*.*
