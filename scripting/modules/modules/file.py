@@ -25,7 +25,7 @@ from networkx import write_gml, write_graphml_lxml
 ##          Methods definition
 #################################################
 
-def load_data_set_from_url(path, na_values, sep='\t', encoding='utf-8',index_col=None, verbose=False):
+def load_data_set_from_url(path, na_values, sep='\t', encoding='utf-8',index_col=None):
     """Read dataset from multi format
     Args:
       path: path to dataset
@@ -42,7 +42,7 @@ def load_data_set_from_url(path, na_values, sep='\t', encoding='utf-8',index_col
     if extension == None:
         extension = '.csv'
 
-    print(f"file ext know as {extension}") if verbose else None
+    print(f"file ext know as {extension}")
 
     readers = {
         ".csv": pd.read_csv,

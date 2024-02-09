@@ -37,7 +37,7 @@ if __name__ == '__main__':
         all_numeric=False, 
         verbose=True, 
         fix_imbalance=False, 
-        levels=[2,3,4,5,6],
+        levels=[2,3],
         to_remove= ['Type'], 
         encoding="utf-8",
         index_col=None
