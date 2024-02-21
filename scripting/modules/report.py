@@ -202,14 +202,223 @@ def create_file(content, cwd, filename, extension=".html", prefix=None):
 
     return filename1
 
-# def generate_report(inputname, outname):
-#     """Generate a pdf base on markdown file
+def metrics_analyzer(cols=None, outputs_path=None, cwd=None, data_folder=None, classic_metrics=None, models_name=None):
+    """ build relevance results about the datasset
+    
+    Args:
+        - cols: list of qualitative variable in the dataset
+        - outputs_path: the path where the experimental results are located
+        - 
+    
+    Returns:
+        A dedicated folder with those relevante reports and charts
+    
+    """
+    outputs = {}
+    
+    if cols != None or classic_metrics != None: # check if cols and classics metrics are filled
+        ## analyse of k layer
+        head_lambda = lambda x: f'<tr><td rowspan="2" colspan="3">{f}<td><td colspan="4">Classic</td><td colspan="4">Classic - Att</td><td colspan="4">Classic + MLN</td><td colspan="4">Classic + MLN - Att</td></tr><tr class="metrics">'+
+                        '<td>Accuracy</td><td>Precision</td><td>Recall</td><td>F1-score</td>' * 4 +
+                        '</tr>'
+        head = {
+            'xgb': head_lambda('xgb'),
+            'dtc': head_lambda('dtc'),
+            'lrc': head_lambda('lrc'),
+            'rfc': head_lambda('rfc')
+        }
+        body = {
+            'xgb': '',
+            'dtc': '',
+            'lrc': '',
+            'rfc': ''
+        }
+        style = '<style>table, th, td {border: 1px solid black;border-collapse: collapse;} .wrap-text {word-wrap: break-word;}'+
+            ' .wrap-text {overflow-wrap: break-word;} .limited-column {width: 100px;} .dashed-border {border: 1px dashed black;}.dotted-border {border: 1px dotted black;}'+
+            '</style>'
+        
+        caption_content_lambda = lambda x: ''.join(['<span><strong>{key}</strong>: {value}</span><br>' for key, value in {
+            '{x}': models_name[x],
+            'MLN': 'MultiLayer Network',
+            'MLN k Layer(s)': 'MLN with k layer(s)',
+            'Att': 'Attributs or modalities of variable(s) used to build MLN',
+            'Desc': 'Descriptors extracted from MLN',
+            'Classic': f'Learning from classic dataset of {data_folder}',
+            'Classic - Att': f'Learning from classic dataset of {data_folder} where Att had been removed',
+            'Classic + Desc': f'Learning from classic dataset of {data_folder} where Desc had been added',
+            'Classic + Desc - Att': f'Learning from classic dataset of {data_folder} where Desc had been added and Att removed'
+            }.items()])
 
-#     Args:
-#         inputname: path to input file
-#         outname: path to the output
+        for k in list(set([1, 2, len(cols)])):
+            #for logic in ['global', 'personalized']:
+            #outputs[logic] = {}
+            ### get all combination of col
+            body_l = {
+                'xgb': '',
+                'dtc': '',
+                'lrc': '',
+                'lrc': ''
+            }
+            LayerLines = f'<tr><td rowspan="{len(get_combinations(range(len(cols)),k)) * 2}" >MLN {k} layer(s)</td>'
+            
+            for layer_config in get_combinations(range(len(cols)),k): # create subsets of k index of OHE and fetch it
+                col_targeted= [f'{cols[i]}' for i in layer_config]
+                case_k= '±'.join(col_targeted) if len(layer_config)>1 else col_targeted[0]
+                #if sum(
+                #        [
+                #            re.sub(r'[^\w\s]', '', unidecode(partern)) in re.sub(r'[^\w\s]', '', unidecode('cb_person_default_on_file±loan_intent'))
+                #            for partern in case_k.split("±")
+                #            ]
+                #        ) == k: # check mission context
+                #    continue
+                print(case_k)
+                
+                VarLines = f'<tr><td rowspan="2" >{case_k}</td>'
+                
+                ### get files for distincts logic
+                match= lambda x: (
+                    sum(
+                        [
+                            re.sub(r'[^\w\s]', '', unidecode(partern)) in re.sub(r'[^\w\s]', '', unidecode(x))
+                            for partern in case_k.split("±")
+                            ]
+                        ) == k if k > 1 else re.sub(r'[^\w\s]', '', unidecode(case_k)) in re.sub(r'[^\w\s]', '', unidecode(x))
+                    )
+                files = {
+                    'global':{
+                        'classic': classic_metrics,
+                        'classic_-_mlna':[
+                            load_data_set_from_url(path=file,sep='\t', encoding='utf-8',index_col=0, na_values=None) 
+                            for file in get_filenames(
+                                root_dir=f'{outputs_path}/qualitative/mlna_{k}/data_selection_storage', 
+                                func=lambda x: ((MLN_C_F(x)) and (match(x))), 
+                                verbose=False
+                                )
+                            ][-1],
+                        'classic_mln':[
+                            load_data_set_from_url(path=file,sep='\t', encoding='utf-8',index_col=0, na_values=None) 
+                            for file in get_filenames(
+                                root_dir=f'{outputs_path}/qualitative/mlna_{k}/global/data_selection_storage', 
+                                func=lambda x: ((MLN_F(x)) and (match(x))), 
+                                verbose=False
+                                )
+                            ][-1],
+                        'classic_mln_-_mlna':[
+                            load_data_set_from_url(path=file,sep='\t', encoding='utf-8',index_col=0, na_values=None) 
+                            for file in get_filenames(
+                                root_dir=f'{outputs_path}/qualitative/mlna_{k}/global/data_selection_storage', 
+                                func=lambda x: ((MLN__F(x)) and (match(x))), 
+                                verbose=False
+                                )
+                            ][-1]
+                    },
+                    "personalized":{
+                        'classic': classic_metrics,
+                        'classic_-_mlna':[
+                            load_data_set_from_url(path=file,sep='\t', encoding='utf-8',index_col=0, na_values=None) 
+                            for file in get_filenames(
+                                root_dir=f'{outputs_path}/qualitative/mlna_{k}/data_selection_storage', 
+                                func=lambda x: ((MLN_C_F(x)) and (match(x))), 
+                                verbose=False
+                                )
+                            ][-1],
+                        'classic_mln':[
+                            load_data_set_from_url(path=file,sep='\t', encoding='utf-8',index_col=0, na_values=None) 
+                            for file in get_filenames(
+                                root_dir=f'{outputs_path}/qualitative/mlna_{k}/personalized/data_selection_storage', 
+                                func=lambda x: ((MLN_F(x)) and (match(x))), 
+                                verbose=False
+                                )
+                            ][-1],
+                        'classic_mln_-_mlna':[
+                            load_data_set_from_url(path=file,sep='\t', encoding='utf-8',index_col=0, na_values=None) 
+                            for file in get_filenames(
+                                root_dir=f'{outputs_path}/qualitative/mlna_{k}/personalized/data_selection_storage', 
+                                func=lambda x: ((MLN__F(x)) and (match(x))), 
+                                verbose=False
+                                )
+                            ][-1]
+                    }
+                }
+                # print(files)
+                #outputs[logic] = files
+                ### transform and normalize
+                models_list = files['personalized']['classic'].index.values.tolist()
+                print(models_list)
+                metrics = ["accuracy","precision","recall","f1-score"]
+                
+                for model in models_list:
+                    max_g = {metric:
+                        max([round(files['global'][key].loc[model,metric],4) for key in files['global'].keys()]) for metric in metrics
+                        }
+                    max_p = {metric:
+                        max([round(files['personalized'][key].loc[model,metric],4) for key in files['personalized'].keys()]) for metric in metrics
+                        }
+                    data = {
+                        'global':'<td>Global</td>',
+                        'personalized':'<tr><td>Global</td>'
+                    }
+                    for key in files['global'].keys():
+                        data['global']+= ''.join([ 
+                            f"<td style={'color:blue; font-size: 40px; font-weight: bold;' * round(files['global'][key].loc[model,metric],4) == max_g[metric]}>{round(files['global'][key].loc[model,metric],4)}</td>" 
+                            for metric in metrics
+                            ])
+                        data['personalized']+= ''.join([ 
+                            f"<td style={'color:blue; font-size: 40px; font-weight: bold;' * round(files['personalized'][key].loc[model,metric],4) == max_p[metric]}>{round(files['personalized'][key].loc[model,metric],4)}</td>" 
+                            for metric in metrics
+                            ])
+                    data['global']+= '</tr>'
+                    data['personalized']+= '</tr>'
+                    body_l[model] += (LayerLines + VarLines + data['global'] + data['personalized'])  if len(body_f[model]) == 0 else (VarLines + data['global'] + data['personalized'])
+            
+            for model in models_name.keys():
+                caption = f'<caption><h2>Legend</h2>{caption_content_lambda(model)}</caption>'
+                table_html = f'<table style="border: 2px solid black; width: 100% !important; background-color: #FFFFFF; color:#000000;">{caption}{head}{body}</table>'
+                htm = f'<html><head>{style}<title> Summary </title></head><body style="background-color: white;">{table_html}</body></html>'
 
-#     Returns:
-#         None
-#     """
-#     convert(filename, outname)
+                create_domain(cwd+'/reports/')
+                timestr = time.strftime("%Y_%m_%d_%H_%M_%S")
+                filename1 = cwd+'/reports'+'/'+filename+timestr+extension
+                _file= open(filename1,"w")
+                _file.write(content)
+                _file.close()        
+                
+
+
+                ### generate figures
+                nrow = 2
+                ncol = 4
+                
+                fig, axs = plt.subplots(nrows=nrow, ncols=ncol, figsize=(20, 15))
+                count=0
+                for r in range(ncol): 
+                    # Barplot i
+                    models[models_list[count]].plot(kind='bar', x='Metrics', y=files['global'].keys(), ax=axs[0,r])
+                    axs[0,r].set_title(f'{models_name[models_list[count]]}')
+                    axs[0,r].legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+                    
+                    models_1[models_list[count]].plot(kind='bar', x='Metrics', y=files['personalized'].keys(), ax=axs[1,r])
+                    axs[1,r].set_title(f'{models_name[models_list[count]]}')
+                    axs[1,r].legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+                    
+                    axs[0,r].legend().set_visible(False)
+                    axs[1,r].legend().set_visible(False)
+                    if r == ncol-1:
+                        axs[1,r].legend().set_visible(True)
+                    count+=1
+                axs[0,0].set_ylabel('global')
+                axs[1,0].set_ylabel('personalized')
+                if True:
+                    create_domain(f'{cwd}/analyser/{data_folder}/plots/mlna_{k}/mixed')
+
+                    timestr = time.strftime("%Y_%m_%d_%H_%M_%S")
+                    filename1 = f'{cwd}/analyser/{data_folder}/plots/mlna_{k}/mixed/_metrics_comparaison_for_{case_k}'+'_'+timestr+'.png'
+                    # Adjust the layout to cover all content
+                    plt.tight_layout()
+
+                    plt.savefig(filename1,dpi=150) #.png,.pdf will also support here
+                    plt.close() # close the plot windows
+                ### generate reports
+    return outputs
+
+
