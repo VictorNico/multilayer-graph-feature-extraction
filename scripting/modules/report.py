@@ -101,12 +101,12 @@ def get_color():
 
 def model_desc():
     modelD = {
-    #'sv' :'SVM',
-    'xgb':'XGBOOST',
-    'dtc':'DECISION TREE',
+    # 'svc' :'SVM',
     'lrc':'LOGISTIC REGRESSION',
+    'dtc':'DECISION TREE',
     'rfc':'RANDOM FOREST',
-    #'knn':knc
+    'xgb':'XGBOOST',
+    #'knn':'knc'
     }
     return modelD
 

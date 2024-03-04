@@ -27,7 +27,7 @@ from sklearn.model_selection import GridSearchCV, StratifiedKFold
 from sklearn.metrics import precision_score,accuracy_score,f1_score, recall_score
 from modules.file import save_model, save_dataset
 #from sklearn.linear_model import LinearRegression
-#from sklearn.svm import SVC
+from sklearn.svm import SVC
 #from sklearn.naive_bayes import MultinomialNB
 #from sklearn.ensemble import AdaBoostClassifier
 #from sklearn.ensemble import BaggingClassifier
@@ -95,11 +95,11 @@ def init_models():
     rfc = RandomForestClassifier()
     xgb = XGBClassifier(booster = 'gbtree', use_label_encoder=False)
 
-    # svc = SVC(
-    #     kernel = 'linear'
-    #     #,cache_size = 7100
-    #     #, verbose = True
-    # )
+    svc = SVC(
+        kernel = 'linear'
+        #,cache_size = 7100
+        #, verbose = True
+    )
     #mnb = MultinomialNB()
     #abc = AdaBoostClassifier()
     #bc = BaggingClassifier()
@@ -112,7 +112,7 @@ def init_models():
     'dtc':dtc,
     'lrc':lrc,
     'rfc':rfc,
-    #'sv' :svc,
+    'sv' :svc,
     #'knn':knc
     }
 
