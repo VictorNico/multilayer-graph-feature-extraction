@@ -101,7 +101,7 @@ def get_color():
 
 def model_desc():
     modelD = {
-    # 'svc' :'SVM',
+    'sv' :'SVM',
     'lrc':'LOGISTIC REGRESSION',
     'dtc':'DECISION TREE',
     'rfc':'RANDOM FOREST',
@@ -201,4 +201,5 @@ def create_file(content, cwd, filename, extension=".html", prefix=None):
     _file.close()
 
     return filename1
+
 
