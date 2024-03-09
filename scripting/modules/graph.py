@@ -317,7 +317,8 @@ def compute_personlization(node_list):
     """
     
     personlized = dict()
-    a = [ personlized.update({ k : 1/len(node_list) }) for k in node_list ]
+    #a = [ personlized.update({ k : 1/len(node_list) }) for k in node_list ]
+    a = [ personlized.update({ k : 1 }) for k in node_list ]
     return personlized
 
 # @profile
