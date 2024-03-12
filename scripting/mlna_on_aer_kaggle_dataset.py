@@ -42,3 +42,6 @@ if __name__ == '__main__':
         encoding="utf-8",
         index_col=None
         )
+    contenu = f'END OF 111 AT {time.strftime("%Y_%m_%d_%H_%M_%S")} \n'
+    with open("process.dtvni", "a") as fichier:
+        fichier.write(contenu)
