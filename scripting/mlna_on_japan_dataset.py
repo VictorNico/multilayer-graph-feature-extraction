@@ -43,6 +43,6 @@ if __name__ == '__main__':
         index_col=None,
         na_values= ['?',]
         )
-    contenu = f'END OF 555 AT {time.strftime("%Y_%m_%d_%H_%M_%S")} \n'
+    contenu = f'END OF 5555555 AT {time.strftime("%Y_%m_%d_%H_%M_%S")} \n'
     with open("process.dtvni", "a") as fichier:
         fichier.write(contenu)

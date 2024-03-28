@@ -307,7 +307,7 @@ def get_user_nodes_label(graph,borrowers, layers):
     return (linked_table, set(tuple(borr) for borr in linked_table))
 
 # @profile
-def compute_personlization(node_list):
+def compute_personlization(node_list, graph):
     """Compute personalization
     Args:
       node_list: nodes list
@@ -318,7 +318,7 @@ def compute_personlization(node_list):
     
     personlized = dict()
     #a = [ personlized.update({ k : 1/len(node_list) }) for k in node_list ]
-    a = [ personlized.update({ k : 1 }) for k in node_list ]
+    a = [ personlized.update({ k : 1/len(node_list) if k in node_list else 0}) for k in graph.nodes() ]
     return personlized
 
 # @profile
@@ -332,7 +332,7 @@ def get_number_of_borrowers_with_same_n_layer_value(borrower, graph, layer_nber=
     Returns:
       A list of list of borrower and their length
     """
-    
+     
     edge = [
           B # return the modaliy
           for (A,B) in graph.edges(['C'+str(layer_nber)+'-U-' + str(borrower)]) # for each nodes link to my borower's
