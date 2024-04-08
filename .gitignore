@@ -184,7 +184,7 @@
 # Fichiers générés lors de la compilation LaTeX
 **/*.aux
 **/*.log
-**/*.synctex.gz
+**/*.synctex.*
 **/*.fdb_latexmk
 **/*.fls
 **/*.out
