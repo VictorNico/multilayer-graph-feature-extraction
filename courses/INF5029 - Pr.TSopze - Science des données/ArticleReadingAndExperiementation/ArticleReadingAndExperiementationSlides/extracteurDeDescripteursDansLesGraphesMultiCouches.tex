@@ -1,0 +1,302 @@
+\documentclass[11pt]{beamer}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{translator}
+\usepackage[french]{babel}
+\usetheme{madrid}
+\usepackage{fontspec}
+\usepackage{color}
+\usepackage{xcolor}
+\setsansfont{Times New Roman}
+\usepackage{graphics}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{booktabs}
+\usepackage{subfigure}
+\usepackage{multicol}
+\usepackage{fancyhdr}
+\usepackage{lipsum}
+\usepackage{tikz}
+\usepackage{wallpaper}
+\usepackage{wrapfig}
+\usepackage{multicol}
+\usetikzlibrary{positioning}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{acronym}
+
+\begin{document}
+	\author[A. \& D. \& T.]{18T2410 AKAMBA MANI CRESCENCE CATHERINE\inst{1}\\ 17T2051 DJIEMBOU TIENTCHEU VICTOR NICO\inst{1} \\ 19M2364 TEYOU GHOMFO MARTIAL\inst{1} }
+	\title[ML-Based TCP in CI]{Scalable and Accurate Test Case Prioritization in Continuous Integration Contexts}
+	\subtitle{Ahmadreza Saboor Yaraghi et al, 2022}
+	\titlegraphic{\includegraphics[scale=0.2]{assets/logo}}
+	\institute[UYI]{\inst{1} \textit{Université de Yaoundé I,\\ INF5029}}
+	%\date{}
+	%\subject{}
+	%\setbeamercovered{transparent}
+	\setbeamertemplate{navigation symbols}{}
+	\setbeamertemplate{itemize }{circle}
+	\newcommand\Background{
+            \begin{tikzpicture}[remember picture,overlay]
+			\node[inner sep=0pt,outer sep=0pt,opacity=1]
+			at (5.7,-4)
+			{\includegraphics[scale=0.23]{assets/999}};
+		\end{tikzpicture}
+        }
+	%\setbeamertemplate{background canvas}{\includegraphics[scale=0.19]{999}}
+	\setbeamercolor{frametitle}{bg=gray}
+	%\AtBeginSection[]{
+  	%	\begin{frame}
+    	%		\frametitle{Outline}
+   	%		 \tableofcontents[currentsection]
+  	%	\end{frame}
+	%}
+	
+	% Définition des acronymes
+\acrodef{IA}{Intelligence Artificielle}
+\acrodef{IC}{Integration Continue}
+\acrodef{SUT}{Software Under the Test}
+\acrodef{AA}{Apprentissage Automatique}
+\acrodef{ML}{Machine Learning}
+\acrodef{ANN}{Artificial Neural Network}
+\acrodef{RNN}{Recurrent Neural Network}
+\acrodef{LSTM}{Long Short-Term Memory}
+\acrodef{DT}{Decision Tree}
+\acrodef{LR}{Logistic Regression}
+\acrodef{XGB}{eXtreme Gradient Boosting}
+\acrodef{SVM}{Support Vector Machine}
+\acrodef{RF}{Random Forest}
+\acrodef{LGBM}{Light Gradient boosting algorithm}
+	
+\begin{frame}[plain]
+	\Background
+	\maketitle
+\end{frame}
+
+\begin{frame}
+	\Background
+	\tableofcontents
+\end{frame}
+
+
+% keywords
+\section{Définition de termes clés}
+\begin{frame}
+	\frametitle{\textsc{Définition de termes clés}}
+	\begin{itemize}
+		\item L'\ac{AA}
+		\item Software Testing (test logiciel)
+		\item Test Case Prioritization (hiérarchisation des cas de test)
+		\item La Test Case Selection (sélection des cas de test)
+		\item Continuous Integration (intégration continue)
+		\item Un Build
+	\end{itemize}
+
+\end{frame}
+
+% contexte
+\section{Contexte}
+\begin{frame}
+	\frametitle{\textsc{Contexte}}
+	\begin{figure}[H]
+  	\centering
+ 	\includegraphics[width=\textwidth]{assets/cicd8}
+  	\caption{Image d'un cycle de vie logiciel}
+  	\label{fig:cicd}
+	\end{figure}
+	
+\end{frame}
+
+
+%problématique
+\section{Problématique}
+\begin{frame}
+	\frametitle{\textsc{Problématique}}
+	\begin{block}{Difficultés du domaine}
+	\begin{itemize}
+        \item Nature dynamique de l'environnement d'intégration continue
+		\item Détection rapide des erreurs
+		\item Temps d'exécution des tests
+        \item Gestion des dépendances
+	\end{itemize}
+
+	\end{block}
+\end{frame}
+
+%problème
+\section{Problème}
+\begin{frame}
+	\frametitle{\textsc{Problème}}
+	\begin{block}{Problème que traite l'article}
+	Comment optimiser la prioritisation des cas de tests dans un processus d'\ac{IC} en utilisant des techniques basées sur l'apprentissage automatique (AA)?
+	\end{block}
+\end{frame}
+
+%limites des méthodes existantes
+\section{Limites des méthodes existantes}
+\begin{frame}
+	\frametitle{\textsc{Limites des méthodes existantes}}
+	\begin{alertblock}{Heuristiques basées sur la couverture}
+    \begin{itemize}
+		\item Techniques d'analyse dynamique coûteuses en temps
+		\item Dépendance à la qualité des cas de test
+		\item Ne garantit pas la détection de tous les problèmes 
+	\end{itemize}
+	\end{alertblock}
+	
+	\begin{alertblock}{Heuristiques basées sur l'historique d'exécution des cas de test}
+	\begin{itemize}
+		\item Biais temporel
+		\item Manque de flexibilité
+		\item Dépendance aux données historiques
+	\end{itemize}
+	\end{alertblock}
+	
+	\begin{alertblock}{TCP basées sur l'apprentissage automatique}
+	\begin{itemize}
+		\item Faible nombre de caractéristiques
+		\item Faible quantité de sujet
+		\item Faible temps d'exécution des test de régression
+	\end{itemize}
+
+	\end{alertblock}
+	
+\end{frame}
+
+%Solution proposée (méthodologie)
+\section{Solution proposée (méthodologie)}
+\begin{frame}
+	\frametitle{\textsc{Solution proposée (méthodologie)}}
+	\begin{figure}[H]
+  	\centering
+ 	\includegraphics[width=0.6\textwidth]{assets/MLBasedTCPInCI}
+  	\caption{Modèle TCP basé sur le \ac{ML} dans un contexte CI}
+  	\label{fig:dataM}
+	\end{figure}
+	
+\end{frame}
+\begin{frame}
+	\frametitle{\textsc{Solution proposée (méthodologie)}}
+	\begin{figure}[H]
+  	\centering
+ 	\includegraphics[width=0.7\textwidth]{assets/dataModel}
+  	\caption{Modèle de données}
+  	\label{fig:dataM}
+	\end{figure}
+	
+\end{frame}
+\begin{frame}
+	\frametitle{\textsc{Solution proposée (méthodologie)}}
+	\begin{figure}[H]
+  	\centering
+ 	\includegraphics[width=0.6\textwidth]{assets/featuresModel}
+  	\caption{Modèle de caractéristiques}
+  	\label{fig:featuresM}
+	\end{figure}
+	
+\end{frame}
+
+%Avantages de la solution proposée
+\section{Avantages de la solution proposée}
+\begin{frame}
+	\frametitle{\textsc{Avantages de la solution proposée}}
+	\begin{itemize}
+		\item Réduction du temps et conservation de la précision de la classification en utilisant le modèle \ac{XGB}
+		\item La construction des graphes de dépendances permettent d'évaluer l'impact des cas de test 
+		\item La modélisation des caractéristiques des données du contexte des \ac{IC} permet d'extraire les informations plus large dont les variation sont plus susceptibles de faciliter la détecter des défauts.
+		\begin{itemize}
+			\item Caractéristiques du code source des cas de test (TES)
+			\item Caractéristiques des enregistrements de l'exécution des cas de test (REC)
+			\item Caractéristiques de la couverture des cas de test (COV).
+		\end{itemize}
+        \item Large de données représentatives avec 25 sujets étudiés et 25 000 builds
+	\end{itemize}
+
+	
+\end{frame}
+
+%Limites de la solution proposée
+\section{Limites de la solution proposée}
+\begin{frame}
+	\frametitle{\textsc{Limites de la solution proposée}}
+	\begin{itemize}
+		\item Surestimation des cas de test (mesure fait sur les fichiers)
+		\item Doublons dans les enregistrements d'exécutions
+		\item Source de données diverses
+        \item Possibilité de défaut dans les outils (Understand) et les ensembles de données (sujets)
+	\end{itemize}
+	
+\end{frame}
+
+%Résultats expérimentaux
+\section{Résultats expérimentaux}
+\begin{frame}
+	\frametitle{\textsc{Résultats expérimentaux}}
+	\begin{figure}[H]
+  	\centering
+ 	\includegraphics[width=\textwidth]{assets/sujets}
+  	\caption{Liste des sujets prise en compte}
+  	\label{fig:sujet}
+	\end{figure}
+	
+\end{frame}
+
+
+\begin{frame}
+	\frametitle{\textsc{Résultats expérimentaux}}
+	\begin{figure}[H]
+  	\centering
+ 	\includegraphics[width=\textwidth]{assets/avgexeTCB}
+  	\caption{Temps moyen de prétraitement (P), de mesure (M) et de collecte totale (T) des données (en secondes) pour tous les groupes de caractéristiques chez tous les sujets. Pour chaque colonne, la valeur maximale est indiquée en gras.}
+  	\label{fig:prep}
+	\end{figure}
+	
+\end{frame}
+\begin{frame}
+	\frametitle{\textsc{Résultats expérimentaux}}
+	\begin{figure}[H]
+  	\centering
+ 	\includegraphics[width=\textwidth]{assets/sujets}
+  	\caption{Durée moyenne d'exécution de tous les cas de test par version (durée moyenne des tests) comparée à la durée moyenne de collecte des données pour tous les groupes de fonctionnalités par version (durée moyenne de collecte des données) pour tous les sujets. Les durées sont exprimées en minutes et la valeur maximale de chaque colonne est indiquée en gras.}
+  	\label{fig:testing}
+	\end{figure}
+	
+\end{frame}
+%Résultats expérimentaux
+\section{Résultats expérimentaux}
+\begin{frame}
+	\frametitle{\textsc{Résultats expérimentaux}}
+	\begin{figure}[H]
+  	\centering
+ 	\includegraphics[width=\textwidth]{assets/results}
+  	\caption{Comparaison du modèle \ac{XGB} de l'article au modèle BERT}
+  	\label{fig:sujet}
+	\end{figure}
+	
+\end{frame}
+
+\begin{frame}[plain]
+	\Background
+	\begin{center}
+		{\Huge \textbf{Merci de votre attention}}\\
+		\vspace{9pt}
+		Catherine AKAMBA $^{1}$ \\
+		Martial TEYOU $^{1}$ \\
+		Victor DJIEMBOU $^{1}$ \\
+		\vspace{9pt}
+		$^{1}$ \textit{Université de Yaoundé I,\\ Faculté des Sciences,\\ Département d'Informatique,\\ Étudiant Master SD}
+	\end{center}
+	
+\end{frame}
+
+\begin{frame}
+\tiny
+\Background
+\frametitle{\textsc{Reférences}}
+\bibliographystyle{IEEEtran}
+\bibliography{sample}
+%\nocite{*}
+\end{frame}
+
+\end{document}

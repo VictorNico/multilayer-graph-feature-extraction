@@ -42,7 +42,7 @@
 \usepackage{geometry}
 \geometry{hmargin=2cm,vmargin=2cm}
 
-
+\usepackage[bottom]{footmisc}
 %\usepackage[color=True, allcoloring=blue]{hyperref}
 
 %\usepackage{times}
@@ -142,7 +142,7 @@ La plupart des travaux sur la prédiction du risque de crédit considèrent uniq
 
 Dans cette section du projet, il est question de modéliser les données d'une base de prêts bancaires par des graphes dont la définition des nœuds et des arcs est suffisamment pertinente pour que les nouveaux descripteurs extraits de ces graphes contribuent fortement à la décision des modèles de classification supervisée pour la prédiction du risque de crédit. L'approche adoptée débute par la construction d'un graphe à partir des données bancaires, se poursuit par l'application des algorithmes de calcul des descripteurs sur des graphes, et se termine par l'ajout des nouveaux descripteurs aux données d'entrée des algorithmes de prédiction du risque de crédit. Plus spécifiquement, nous étudions en profondeur l'extraction des descripteurs du graphe multicouches MLN (\textit{MultiLayer Network}) pour la prédiction du risque de crédit \cite{oskarsdottir2021multilayer}. 
 
-La suite du document est structurée comme suitNous allons pour ce faire déjà présenter dans la section~\ref{sec:generality} des généralités sur les graphes et les descripteurs extraits des graphes. Ensuite, nous présenterons dans la section~\ref{sec:mlna} la modélisation en graphes multicouches et les descripteurs extraites de ces graphes. Enfin, nous présenterons quelques expérimentations réalisées et les résultats obtenus à la section~\ref{sec:exp} et nous achèverons par une conclusion sur le travail fournis et quelques perspectives dans la section~\ref{sec:con}.
+Le reste du document est structuré comme suit : nous débutons par la section~\ref{sec:generality} pour la présentation des généralités sur les graphes et les descripteurs extraits des graphes. Ensuite, nous présentons dans la section~\ref{sec:mlna} la modélisation par des graphes multicouches et les descripteurs extraites de ces graphes. Enfin, nous présentons quelques expérimentations réalisées et les résultats obtenus à la section~\ref{sec:exp} et nous terminnons par une conclusion sur le travail fournis et quelques perspectives dans la section~\ref{sec:con}.
 % Généralité sur les descripteurs
 \section{Descripteurs extraits des graphes}
 \label{sec:generality}
@@ -151,13 +151,17 @@ La suite du document est structurée comme suitNous allons pour ce faire déjà 
 %Un graphe $G$ est une paire d'ensemble $G = (V,E)$. $V$ est l'ensemble de noeuds et le nombre de noeuds $n = \lvert V \rvert$ désigne l'ordre du graphe. L'ensemble $E$ contient les arêtes du graphes. Dans un graphe non-orienté, chaque arête est une pair non ordonnée $\{v,w\}$. Dans un graphe orienté, les pairs sont ordonnées. Les noeuds $v$ et $w$ sont appelés terminaux et le nombre d'arêtes $m = \lvert E \rvert$ représente la taille du graphe. Dans un graphe pondéré, $W: E \to R$ est une fonction qui permet d'assigner un point à chaque noeud du graphe. La densité d'un graphe $G = (V,E)$. $V$ est le ratio entre le nombre d'arêtes dans le graphe et le nombre d'arêtes maximal possible, $\delta(G) = \frac{m}{n}$ tel que pour $n\in [0,1]$ alors $\delta(G) = 0$. Ainsi une graphe de densité 1 sera appelé graphe complet. Un graphe biparti est celui la où l'ensemble de noeuds $V$ peut être décomposé en deux groupe $A$ et $B$ tel que $\{v,w\} \in E$ si ($v \in A$ et $w \in B$) ou ($v \in B$ et $w \in A$).
 Un graphe $G = \{V,E\}$ est une structure de données qui permet de modéliser les relations entre des entités. La modélisation d’un graphe repose sur deux notions, celle de nœuds $V$ et celle d’arcs $E$. La notion de nœud est associée aux entités qui sont en relation et celle d’arc est associée à la nature de la relation d’une entité (nœud) avec une autre.
 
-Après la construction d’un graphe, il est possible d’extraire des variétés de descripteurs liées soit aux nœuds et donc aux entités, soit à la relation entre les nœuds, et même à la topologie du graphe.
+Après la construction d’un graphe, il est possible d’extraire des variétés de descripteurs liées soit aux nœuds, soit à la relation entre les nœuds, et même à la topologie du graphe.
+
 \begin{itemize}
-	\item \textbf{Descripteurs d’un nœud :} on peut citer les mesures de centralité qui estiment à quel point le nœud est incontournable dans la navigation dans le graphe. C’est le cas par exemple du PageRank\cite{pastor2015epidemic} où initialement on attribue le même poids à chaque nœud, puis chaque nœud diffuse son poids à tous ses voisins directs proportionnellement aux poids des relations avec ses voisins. Le processus est répété jusqu'à ce que les poids des nœuds ne changent plus, ou alors jusqu'à ce qu’un nombre maximum d’étapes de diffusion soit atteint. Les nœuds aux poids les plus grands, sont les plus importants.
-	\item \textbf{Descripteurs d’une relation entre deux nœuds :} on peut parler des mesures qui décrivent la relation entre deux nœuds à partir du nombre et de la longueur des plus courts chemins entre ces nœuds.
-	\item \textbf{Descripteurs de la topologie du graphe :} il est possible d’extraire des communautés dans un graphe (sous-ensemble de nœuds densément connectés entre eux et faiblement connectés au reste du graphe).
+    \item \textbf{Descripteurs d’un nœud :} on peut citer les mesures de centralité qui estiment à quel point le nœud est incontournable dans la navigation dans le graphe. C’est le cas par exemple du PageRank\cite{pastor2015epidemic} où initialement on attribue le même poids à chaque nœud, puis chaque nœud diffuse son poids à tous ses voisins directs proportionnellement aux poids des relations avec ses voisins. Le processus est répété jusqu'à ce que les poids des nœuds ne changent plus, ou alors jusqu'à ce qu’un nombre maximum d’étapes de diffusion soit atteint. Les nœuds aux poids les plus grands, sont les plus importants.
+	
+    \item \textbf{Descripteurs d’une relation entre deux nœuds :} on peut parler des mesures qui décrivent la relation entre deux nœuds à partir du nombre et de la longueur des plus courts chemins entre ces nœuds.
+	
+    \item \textbf{Descripteurs de la topologie du graphe :} il est possible d’extraire des communautés dans un graphe (sous-ensemble de nœuds densément connectés entre eux et faiblement connectés au reste du graphe).
 \end{itemize}
-Le procédé qui consiste à construire un graphe et à calculer des descripteurs, permet d’apporter de nouvelles informations pour enrichir la description des entités considérées en entrée d’un problème abordé
+
+Le procédé qui consiste à construire un graphe et à calculer des descripteurs, permet d’apporter de nouvelles informations pour enrichir la description des entités considérées.
 
 %Les noeuds les plus important ou influant dans un graphes ne sont pas toujours ceux qui ont une forte connexion (les hubs) mais plutôt ceux qui ont une stratégiquement positionnés dans le réseau\cite{vega2019multi,pastor2015epidemic}. Alors certains mesures dans l'analyse de graphe se propose de proposer un ordre d'importance entre les noeuds sur la base de leur influence\cite{pastor2015epidemic}. 
 
@@ -167,89 +171,84 @@ Le procédé qui consiste à construire un graphe et à calculer des descripteur
 
 %La centralité de vecteur propre (Eigenvector centrality) attribue une importance aux noeuds en fonction de l'importance des noeuds auxquels ils sont connectés. Les noeuds qui sont liés à d'autres noeuds importants ont une centralité plus élevée. Le PageRank évalue l'importance des pages web dans un graphe du web. Il attribue une importance aux nœuds en fonction du nombre et de l'importance des liens entrants.
 
-\subsection{Modélisation existant pour extraire les descripteurs des graphes}
-De nombreux modélisation jusqu'ici ont déjà été pensé pour modéliser des graphes avec des base de prêt afin d'extraire des descripteurs pertinents. 
+\subsection{Travaux existants sur l'extraction des descripteurs des graphes}
+Dans la littérature sur la prédiction du risque de crédit, quelques travaux procèdent à des modélisations des données de prêts par des graphes. A l'issu de la construction du graphe, des opérations y sont appliquées pour extraire de nouveaux descripteurs qui peuvent être pertinents.
 
-S. Mario\cite{mario2021graph} pour capturer les relations financières entre entités intervenantes (emprunteurs, instituts financiers) dans le contexte d’une inter-coopération des institutions financières et des emprunteur va modéliser un graphes orienté représentant une micro-structure du réseau où chaque noeud représente un emprunteur ou une institution financier et les arêtes, le lien financier existant entre les noeuds. Il va extraire des mesures telles que la taille des k plus proche voisin, le dégrée d'un noeud, la distance de plus court chemin, le grade d'un noeud, le sous graphe maximal de distance minimale afin d’améliorer l’évaluation du risque de crédit avec des modèles explicables comme \ac{SVM} et \ac{LR}.
+Mario et al. \cite{mario2021graph} capturent les relations financières entre entités intervenantes (emprunteurs, instituts financiers) dans le contexte d’une inter-coopération des institutions financières et des emprunteurs pour modéliser un graphe orienté représentant une micro-structure du réseau où chaque noeud représente un emprunteur ou une institution financière, et les arêtes, le lien financier existant entre les noeuds. Les auteurs vont extraire des mesures telles que le dégrée d'un noeud, les longueurs des plus courts chemins, le sous graphe maximal de distance minimale afin d’améliorer la prédiction du risque de crédit avec des modèles comme SVM -\textit{\ac{SVM}} et la Régression Logistique -\textit{\ac{LR}}.
 
-Xiujuan Xu et Al.\cite{xu2009credit} vont construire un graphe biparti pour représenter les informations d'historique de prêts d'institut bancaire. Ici chaque noeud matérialise soit un emprunteur soit une modalité caractéristique et une arrête entre un noeud emprunteur et un noeud modalité signifie que l'emprunteur est décrite par cette modalité. Pour prendre en compte les relations complexe entre les emprunteurs, ils vont utiliser trois algorithmes d'analyse de liens basés sur le prétraitement de \ac{SVM}: \ac{HARA}, \ac{HubAvgRA}, \ac{ATkRA}. 
+Xu et al. \cite{xu2009credit} construisent un graphe biparti pour représenter les informations d'historique des prêts dans les institutions bancaires. Ici chaque noeud matérialise soit un emprunteur soit une modalité des attributs, et une arrête entre un noeud emprunteur et un noeud modalité signifie que l'emprunteur est décrit par cette modalité. Pour prendre en compte les relations complexe entre les emprunteurs, ils vont utiliser trois algorithmes d'analyse de liens basés sur \ac{HARA}, \ac{HubAvgRA}, \ac{ATkRA} pour extraire des descripteurs qui sont positionnés en entrée de l'apprentissage du modèle SVM.
 
-Ses deux approches font bien d'utiliser des techniques d'analyse de graphes pour capturer des descripteurs pertinents pouvant améliorer la prédiction du risque de crédit par des algorithmes d'apprentissage automatique, toutefois, elles ne considèrent pas que la relation entre emprunteurs peut être fortement influencée par un sous ensemble de caractéristiques ou niveaux. Hors hypothétiquement, si je suis en relation avec un individu c'est forcement au moins à cause d'un niveau de caractérisation en commun.
+Giudici et al. \cite{giudici2020network} procèdent à la construction des graphes complets dans lesquels un noeud est un prêt ou un emprunteur, et les liens ou arêtes entre les noeuds sont pondérés par des valeurs qui correspondent à la similarité entre les deux noeuds associés. Une fois le graphe complet construit, plusieurs algorithmes d'extraction des caractéristiques sur des graphes sont appliqués (mesures de centralité des noeuds), et les résultats obtenus sont positionnés en entrée du processus d'apprentissage des modèles de prédiction comme nouveaux descripteurs.  
+
+Les graphes bipartis et les graphes complets ne sont pas les seuls types de graphes qui peuvent être exploités pour la modélisation des données bancaires. Ainsi, explorer d'autres modélisation en graphe dans le but d'extraire des attributs pertinents reste une voie intéressante pour les futurs travaux sur les descripteurs extraits des graphes. Une des pistes envisagée récemment est celle de la modélisation des données bancaires par des graphes multicouches afin de mieux capturer les relations entre emprunteurs, et entre emprunteur et leurs caractéristiques.
+
+%Ses deux approches font bien d'utiliser des techniques d'analyse de graphes pour capturer des descripteurs pertinents pouvant améliorer la prédiction du risque de crédit par des algorithmes d'apprentissage automatique, toutefois, elles ne considèrent pas que la relation entre emprunteurs peut être fortement influencée par un sous ensemble de caractéristiques ou niveaux. Hors hypothétiquement, si je suis en relation avec un individu c'est forcement au moins à cause d'un niveau de caractérisation en commun.
 
 % Descripteurs extraits des graphes multicouches
 \section{Descripteurs extraits des graphes multicouches}
 \label{sec:mlna}
+La lecture de l’article « Multilayer network analysis for improved credit risk prediction » de Mar{\'i}a {\'O}skarsd{\'o}ttir et Cristi{\'a}n Bravo \cite{oskarsdottir2021multilayer}, est le point d’entrée pour l’usage des descripteurs issus de la modélisation par un graphe multicouches, avec pour objectif d'enrichir les données d’apprentissage des modèles classiques de prédiction du risque de crédit.
 
-La lecture de l’article « Multilayer network analysis for improved credit risk prediction » de Mar{\'i}a {\'O}skarsd{\'o}ttir et Cristi{\'a}n Bravo\cite{oskarsdottir2021multilayer}, a été le point d’entrée pour l’usage des descripteurs issus de la modélisation en graphe, pour enrichir les données d’apprentissage des modèles classiques de prédiction du risque de crédit.
+En effet, les auteurs utilisent la modélisation par des graphes multicouches (multilayer network) où un emprunteur a autant de nœuds qu’il y a de dimensions qui le caractérisent, et dans chaque dimension, il est relié à des attributs qui le définissent suivant cette dimension. Ainsi, plus les emprunteurs sont similaires, plus ils sont proches dans chacune des dimensions du graphe multicouches. Une dimension peut par exemple être la localisation géographique ou encore le type d’activité exercé comme c'est le cas dans les travaux de {\'O}skarsd{\'o}ttir et al. \cite{oskarsdottir2021multilayer}.
 
-En effet, les auteurs utilisent la modélisation par des graphes multicouches (multilayer network) où un emprunteur a autant de nœuds qu’il y a de dimensions qui le caractérisent, et dans chaque dimension, il est relié à des attributs qui le définissent suivant cette dimension. Ainsi, plus les emprunteurs sont similaires, plus ils sont proches dans le graphe multicouche. Une dimension peut par exemple être la localisation géographique ou encore le type d’activité exercé.
-
-Les auteurs s’appuient sur l’idée selon laquelle, les prêts des emprunteurs qui ont un grand nombre de caractéristiques en commun (suivant l’ensemble des dimensions) doivent avoir de grandes probabilités d’être de la même classe.
+L'une des hypothèses sur laquelle les auteurs s’appuient, est celle selon laquelle, les emprunteurs qui ont un grand nombre de caractéristiques en commun (dans les différentes dimensions) ont une grandes probabilités d’avoir des prêts de la même classe (PAYE ou IMPAYE).
 
 Ainsi, il se pose les difficultés suivantes :
 \begin{itemize}
-	\item Comment établir les relations entre les emprunteurs ?
-	\item Comment déduire des caractéristiques à exploiter à partir de la nouvelle représentation ?
-	\item Comment prédire la classe d’un prêt ?
+\item Comment établir les relations entre les emprunteurs ?
+\item Comment déduire des caractéristiques à exploiter à partir de la nouvelle représentation ?
+\item Comment prédire la classe d’un prêt ?
 \end{itemize}
 
 \subsection{Processus de construction du graphe}
-Pour établir les relations entre les emprunteurs, les auteurs construisent un graphe multicouche.
+Pour établir les relations entre les emprunteurs, les auteurs proposent de construire un graphe multicouches, et pour ce faire, on fixe les dimensions considérées et les attributs associés à chacune de ces dimensions. Dans le cas des travaux de {\'O}skarsd{\'o}ttir et al. \cite{oskarsdottir2021multilayer} il est question de prêts agricoles et seules deux dimensions sont choisies : la localisation géographique et les produits vendus par les agriculteurs. Les attributs de la dimension localisation géographique peuvent être le district, l’arrondissement etc, et concernant la dimension produit, les attributs peuvent être les différents produits répertoriés.
 
-Pour construire un tel graphe, on fixe les dimensions considérées et les attributs associés à chacune de ces dimensions.
-
-Dans le cas de l’article qui s’attarde sur les prêts agricoles, les deux dimensions choisies sont : la localisation géographique et les produits vendus par les agriculteurs.
-
-Les attributs de la dimension localisation géographique peuvent être le district, l’arrondissement etc, et concernant la dimension produit, les attributs peuvent être les différents produits répertoriés.
-
-Dans le graphe multicouche :
+La construction du graphe multicouches obéit aux règles suivantes :
 \begin{itemize}
-	\item chaque emprunteur a autant de nœuds qu’il y a de couches considérées
-	\item les nœuds de chaque emprunteur sont tous reliés les uns aux autres
-	\item chaque attribut d’une dimension a un nœud associé
-	\item si un emprunteur est décrit par un attribut dans une dimension donnée, alors le nœud emprunteur de cette dimension est relié au nœud attribut associé
-	\item la navigation d’une couche à une autre se fait en passant par les nœuds emprunteurs des différentes couches
+	\item Chaque emprunteur a autant de nœuds qu’il y a de couches considérées
+	\item Les nœuds de chaque emprunteur sont tous reliés les uns aux autres
+	\item Chaque attribut d’une dimension a un nœud associé
+	\item Si un emprunteur est décrit par un attribut dans une dimension donnée, alors le nœud emprunteur de cette dimension est relié au nœud attribut associé
+	\item La navigation d’une couche à une autre se fait en passant par les nœuds emprunteurs des différentes couches
 \end{itemize}
 
-\subsection{Extraction des nouveaux descripteurs du graphe multicouche}
-Lorsque le graphe multicouche est construit, les nouveaux descripteurs du prêt sont calculés suite à des applications du PageRank Personnalisé sur le graphe résultat.
+Dans l’article, les auteurs considèrent deux dimensions pour décrire les emprunteurs dans le graphe multicouches, à savoir la localité et les produits vendus par ces derniers. Considérons un cas où nous avons 4 emprunteurs (des fermiers), 2 localités et 3 produits agricoles vendus par les fermiers. Dans ce cas, nous avons 3 couches (Emprunteur, Localité et Produit), et nous avons 9 nœuds (4 nœuds emprunteurs + 2 nœuds localités + 3 nœuds produits), et donc la matrice carrée qui permet de représenter le graphe multicouches est de taille (9 x 3) x (9 x 3).
 
-Les auteurs proposent 03 façons différentes de calculer les nouveaux descripteurs :
+\newpage
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.7\textwidth]{assets/mln}
+  \captionsetup{labelformat=figure}
+  \caption{A gauche on a un exemple de graphe multicouches à deux couches, et à droite on a la représentation de ce graphe sous forme de matrice. Ce graphe contient 9 emprunteurs (nœuds noirs), 3 nœuds de la dimension localité des emprunteurs (nœuds marron) et 3 nœuds de la dimension produits (vert, rouge, jaune). Les relations inter- couches sont matérialisées par des traits interrompus et existent uniquement entre les nœuds emprunteurs qui représentent le même emprunteur dans les différentes couches. Les relations intra-couche sont matérialisées par les autres types de trait (trait marron dans la dimension localité et les autres couleurs dans la dimension produit).}
+  \label{fig:mln}
+\end{figure}
+%\begin{figure}
+%  \centering
+%  \includegraphics[width=0.9\textwidth]{assets/mln_1}
+%  \captionsetup{labelformat=figure}
+%  \caption{Représente le même graphe multicouches précédent, mais avec des détails supplémentaires
+%sur le procédé de construction du graphe et de la matrice associée. Un emprunteur (fermier) est relié à sa localité et aux produits agricoles qu’il commercialise.}
+%  \label{fig:mln1}
+%\end{figure}
+
+\subsection{Extraction des nouveaux descripteurs du graphe multicouches}
+Lorsque le graphe multicouches est construit, les nouveaux descripteurs du prêt sont calculés suite à des applications du PageRank Personnalisé sur le graphe résultat. Ceci est possible car un graphe multicouches M, ayant N nœuds, et L couches, correspond à une représentation de dimension N x N x L x L, ce qui peut être résumé en une matrice carrée (N x L) x (N x L) sur laquelle ont peut appliquer le PageRank. Ainsi, les auteurs proposent 03 façons différentes de calculer les nouveaux descripteurs :
+
 \begin{itemize}
     \item \textbf{Intra-influence :} le PageRank Personnalisé est initialisé de manière à favoriser les relations intra-couche dans le processus de diffusion.
     \item \textbf{Inter-influence :} le PageRank Personnalisé est initialisé de manière à favoriser les relations inter-couche dans le processus de diffusion.
     \item \textbf{Influence-combinée :} le PageRank Personnalisé ne favorise pas un type de relation.
 \end{itemize}
 
-Un graphe multicouche M, ayant N nœuds, et L couches, correspond à une représentation de dimension N x N x L x L, ceci peut être résumé en une matrice carrée (N x L) x (N x L).
-
-Dans l’article, les auteurs considèrent deux dimensions pour décrire les emprunteurs dans le graphe multicouche, à savoir la localité et les produits vendus par ces derniers.
-
-Considérons un cas où nous avons 4 emprunteurs (des fermiers), 2 localités (localité des fermiers) et 3 produits (produits agricoles vendus par les fermiers). Dans ce cas de figure, nous avons 3 couches (Emprunteur, Localité et Produit), et nous avons 9 nœuds (4 nœuds emprunteurs + 2 nœuds localités + 3 nœuds produits), et donc la matrice carrée qui permet de représenter le graphe multicouche est de taille (9 x 3) x (9 x 3)
-\begin{figure}[ht	]
+\begin{figure}[!h]
   \centering
-  \includegraphics[width=0.7\textwidth]{assets/mln}
+  \includegraphics[width=0.9\textwidth]{assets/global}
   \captionsetup{labelformat=figure}
-  \caption{A gauche on a un exemple de graphe multicouche à deux couches, et à droite on a la représentation de ce graphe sous forme de matrice. Ce graphe contient 9 emprunteurs (nœuds noirs), 3 nœuds de la dimension localité des emprunteurs (nœuds marron) et 3 nœuds de la dimension produits (vert, rouge, jaune). Les relations inter- couches sont matérialisées par des traits interrompus et existent uniquement entre les nœuds emprunteurs qui représentent le même emprunteur dans les différentes couches. Les relations intra-couche sont matérialisées par les autres types de trait (trait marron dans la dimension localité et les autres couleurs dans la dimension produit).}
-  \label{fig:mln}
-\end{figure}
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=0.7\textwidth]{assets/mln_1}
-  \captionsetup{labelformat=figure}
-  \caption{Représente le même graphe multicouche précédent, mais avec des détails supplémentaires
-sur le procédé de construction du graphe et de la matrice associée. Un emprunteur (fermier) est relié à sa localité et aux produits agricoles qu’il commercialise.}
-  \label{fig:mln1}
-\end{figure}
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=0.7\textwidth]{assets/global}
-  \captionsetup{labelformat=figure}
-  \caption{Les trois scénarios considérés par les auteurs pour calculer les nouveaux descripteurs des prêts par l’application du PageRank Personnalisé sur le graphe multicouche.}
+  \caption{Les trois scénarios considérés par les auteurs pour calculer les nouveaux descripteurs des prêts par l’application du PageRank Personnalisé sur le graphe multicouches.}
   \label{fig:mln1}
 \end{figure}
 
-Notons que d’autres descripteurs sont considérés dans le graphe multicouche, à l’exemple de :
+Notons que d’autres descripteurs sont considérés dans le graphe multicouches :
 \begin{itemize}
 	\item Nombre de nœuds emprunteurs qui vendent les mêmes produits que l’emprunteur cible
 	\item Nombre de nœuds emprunteurs défaillants qui vendent les mêmes produits que l’emprunteur cible
@@ -259,37 +258,54 @@ Notons que d’autres descripteurs sont considérés dans le graphe multicouche,
 	\item Nombre d’emprunteurs défaillants de la même localité que l’emprunteur cible et qui vendent les mêmes produits que lui
 \end{itemize}
 
-
 \subsection{Prédiction du risque de crédit avec les nouveaux descripteurs}
 Pour procéder à la prédiction du risque de crédit avec les modèles classiques d’apprentissage automatique, les descripteurs présents dans le jeu de données, et les nouveaux descripteurs extraits des graphes, sont utilisés comme données d’apprentissage des modèles classiques choisis (Régression logistique et XGBoost) pour la prédiction des risques de crédit.
 
-Une fois que ces modèles sont construits, ces derniers sont utilisés pour prédire les classes des prêts du jeu de test. Dans l’article, les comparaisons des performances des modèles avant et après l’insertion des nouveaux descripteurs, montrent que les nouveaux descripteurs améliorent la qualité des prédictions.
+Une fois que ces modèles sont construits, ces derniers sont utilisés pour prédire les classes des prêts du jeu de test. Dans l’article, les comparaisons des performances des modèles avant et après l’insertion des nouveaux descripteurs, montrent que les nouveaux descripteurs améliorent la qualité des prédictions. Par ailleurs, les analyses sur l’explicabilité de ces modèles ont montré que les nouveaux descripteurs étaient parmi ceux qui contribuent le plus à la prise de décision des modèles de Régression logistique et XGBoost.
 
-Par ailleurs, les analyses sur l’explicabilité de ces modèles ont montré que les nouveaux descripteurs étaient parmi ceux qui contribuent le plus à la prise de décision des modèles de Régression logistique et XGBoost.
-
-\subsection{Limites et perspectives au travail sur le graphe multicouche}
-Mar{\'i}a {\'O}skarsd{\'o}ttir et Cristi{\'a}n Bravo\cite{oskarsdottir2021multilayer} dans leur article ont proposé une modélisation des données des prêts en graphe multicouche. Cette approche a pour fort de s'apparenter à la réalité de la vie mais suscite encore des critiques qui définissent en réalité des limites á leur modélisation.
+\subsection{Limites et perspectives au travail sur le graphe multicouches}
+{\'O}skarsd{\'o}ttir et al. \cite{oskarsdottir2021multilayer} proposent une modélisation des données des prêts en graphe multicouches. Cette approche a pour fort de s'apparenter à la réalité de la vie mais suscite encore des critiques qui définissent en réalité des limites á leur modélisation.
 \begin{itemize}
-	\item Tous les attributs ne sont pas considérés dans le graphe multicouche.
-	\item Le choix des attributs catégorielles à considéré comme couche du graphe multicouche est fait de façon arbitraire. Il serait intéressant de proposer un protocole qui permet de faire des choix pertinents.
-	\item Les applications du PageRank Personnalisé sur le graphe multicouche ne sont pas suffisamment personnalisées, car le niveau de personnalisation reste à l’échelle intra et inter collectif (pour tous les nœuds concernés). Cependant, on pourrait avoir 03 applications différentes du PageRank Personnalisé pour chacun des prêts. Dans cette optique, seuls les nœuds qui sont liés au prêt courant peuvent recevoir le valeur 1.
+	\item Tous les attributs ne sont pas considérés dans le graphe multicouches.
+	\item Le choix des attributs catégoriels à considérer comme couche du graphe multicouches est fait de façon arbitraire. Il serait intéressant de proposer un protocole pour ce choix.
+	\item Les applications du PageRank Personnalisé sur le graphe multicouches sont globales à tout le graphe, et donc tous les noeuds sont traités pareil quelque soit le prêt pour lequel on veut faire une prédiction. Et pourtant, il serait intéressant d'avoir une personnalisation du PageRank qui favorise les noeuds qui sont liés ou qui sont proches de l'emprunteur dans le graphe multicouches. Par contre, on peut avoir des applications du PageRank personnalisé pour chacun des prêts ou emprunteur. 
 \end{itemize}
 
-
-Ses critiques nous permettent d'émettre ses possible extensions:
+\paragraph{Extensions possibles :} Ses critiques permettent d'émettre les extensions possibles suivantes :
  \begin{itemize}
-	\item Exploiter un graphe qui prend en compte tous les attributs descriptifs des prêts. On peut par exemple avoir un nœud pour chacune des modalités possibles de chaque attribut. Ensuite, relier tous les nœuds du même prêt ou alors incrémenter les poids des arcs qui relient tous les nœuds des modalités d’un prêt. Ensuite, appliquer le PageRank Personnalisé par chaque prêt, sur le graphe résultat, afin de ressortir avec de nouveaux descripteurs du prêt à l’exemple de l’estimer la classe de ce prêt par le PageRank.
-	\item Proposer un protocole qui permet de choisir efficacement les attributs catégoriels à considérer dans le graphe multicouche.
-	\item Personnaliser davantage les exécutions du PageRank Personnalisé de manière à affecter la valeur 1, uniquement aux nœuds associés au prêt courant pour lequel on calcul les valeurs des descripteurs.
-    \item Faire ce travail sur plusieurs jeux de données
+    %\item Exploiter un graphe qui prend en compte tous les attributs descriptifs des prêts. On peut par exemple avoir un nœud pour chacune des modalités possibles de chaque attribut. Ensuite, relier tous les nœuds du même prêt ou alors incrémenter les poids des arcs qui relient tous les nœuds des modalités d’un prêt. Ensuite, appliquer le PageRank Personnalisé par chaque prêt, sur le graphe résultat, afin de ressortir avec de nouveaux descripteurs du prêt à l’exemple de l’estimer la classe de ce prêt par le PageRank.
+    \item Proposer un graphe multicouches avec autant de couches que d'attributs catégoriels.
+    \item Intégrer les attributs quantitatifs comme des couches du graphe multicouches.
+    \item Proposer un protocole qui permet de choisir efficacement les attributs catégoriels à considérer dans le graphe multicouches.
+    \item Personnaliser l'exécution du PageRank pour chaque prêt ou emprunteur au lieu d'une exécution pour tous les prêts et emprunteurs à la fois.
+    \item Travailler avec plusieurs jeux de données.
+    \item Intégrer la classe du prêt comme une couche du graphe multicouches.
 \end{itemize}
 
 
 % Expérimentations et résultats
 \section{Expérimentation et résultats}
 \label{sec:exp}
-\subsection{Application des descripteurs du graphe multicouche sur le jeu de données AFB (Afriland First Bank)}
-Pour expérimenter les concepts appris, il est nécessaire de choisir des attributs qualitatifs qui vont représenter les dimensions (couches) du graphe multicouche. Nous avons donc recensé les attributs catégoriels du jeu de données AFB de Afriland First Bank.
+\subsection{Données}
+Les détails des données manipulées lors de cette expérimentation sont données par le tableau suivant:
+
+\begin{table}[H]
+    \centering
+    \resizebox{\textwidth}{!}{
+    \begin{tabular}{cccccc}
+         & Nb exemples & Nb attributs numériques & Nb attributs catégoriels & Nb payés & Nb impayés\\
+        AFB\footnote{Données provenant d'un particulier.} & 28952 & 08 & 04 & 21769 & 7183 \\
+        AER\footnote{\url{https://www.kaggle.com/dansbecker/aer-credit-card-data}} & 1319 & 08 & 02 & 1023 & 296 \\
+        CREDIT RISK\footnote{} & 32581 & 07 & 03 & 25473 & 7108 \\
+        GERMAN\footnote{\url{http://archive.ics.uci.edu/dataset/144/statlog+german+credit+data}} & 1000 & 07 & 13 & 700 & 300\\
+        JAPAN\footnote{\url{http://archive.ics.uci.edu/dataset/28/japanese+credit+screening}} & 690 & 06 & 09 & 307 & 383 \\
+    \end{tabular}
+    }
+    \caption{Description des données {\tiny \url{https://github.com/JLZml/Credit-Scoring-Data-Sets}}}
+    \label{tab:my_label}
+\end{table}
+\subsection{Application des descripteurs du graphe multicouches sur le jeu de données AFB (Afriland First Bank)}
+Pour expérimenter les concepts appris, il est nécessaire de choisir des attributs qualitatifs qui vont représenter les dimensions (couches) du graphe multicouches. Nous avons donc recensé les attributs catégoriels du jeu de données AFB de Afriland First Bank.
 
 Lorsqu'on ignore la classe des prêts, les attributs catégoriels de ce jeu de données sont :
 \begin{itemize}
@@ -299,16 +315,16 @@ Lorsqu'on ignore la classe des prêts, les attributs catégoriels de ce jeu de d
 	\item \textbf{Statut matrimonial : }statut matrimonial de l’emprunteur (Célibataire, Marié, Divorcé)
 \end{itemize}
 
-Après avoir recensé les attributs catégoriels, nous avons choisi d'implémenter trois graphes multicouches à deux couches. Le premier graphe multicouche nommé ici \textbf{MLN1} est construit à partir des attributs \textbf{Fonction \& Civilité}, le second graphe \textbf{MLN2} est construit à partir des attributs \textbf{Fonction \& Statut-Matrimonial} et enfin, le troisième graphe \textbf{MLN3} est construit à partir des attributs \textbf{Fonction \& Motif}.
+Après avoir recensé les attributs catégoriels, nous avons choisi d'implémenter trois graphes multicouches à deux couches. Le premier graphe multicouches nommé ici \textbf{MLN1} est construit à partir des attributs \textbf{Fonction \& Civilité}, le second graphe \textbf{MLN2} est construit à partir des attributs \textbf{Fonction \& Statut-Matrimonial} et enfin, le troisième graphe \textbf{MLN3} est construit à partir des attributs \textbf{Fonction \& Motif}.
 
 Les attributs extraits des ces différents graphes multicouches sont énumérés comme suit pour une paire d'attribut (Att1, Att2):
 %\begin{itemize}
 %\subsubsection{Attributs du MLN1 - Fonction \& Civilité}
 	%\item \textbf{Attributs du MLN1 - Fonction \& Civilité}
 	\begin{itemize}
-		\item \textbf{MLN\_Att1\_degré :} le nombre d'emprunteur avec la même valeur d'Att
-		\item \textbf{MLN\_Att2\_degré :} le nombre d'emprunteur avec la même valeur d'Att
-		\item \textbf{MLN\_Att1\_et\_Att2\_degré :} le nombre d'emprunteur avec la même valeur Att1 et Att2
+		\item \textbf{MLN\_Att1\_degré :} le nombre d'emprunteurs avec la même valeur d'Att
+		\item \textbf{MLN\_Att2\_degré :} le nombre d'emprunteurs avec la même valeur d'Att
+		\item \textbf{MLN\_Att1\_et\_Att2\_degré :} le nombre d'emprunteurs qui ont des valeurs égales pour chacun des attributs Att1 et Att2 
 		\item \textbf{MLN\_bipart\_intra\_Att1\_Att2 :} le score PageRank maximal entre le noeud de l'emprunt de couche Att1 et Att2 lorsque seul les noeuds intra (modalités Att1 et Att2) sont inclus dans le vecteur de personnalisation du PageRank
 		\item \textbf{MLN\_bipart\_inter\_Att1\_Att2 :} le score PageRank maximal entre le noeud de l'emprunt de couche Att1 et Att2 lorsque seul les noeuds inter (emprunt ou emprunteur) sont inclus dans le vecteur de personnalisation du PageRank
 		\item \textbf{MLN\_bipart\_combine\_Att1\_Att2 :} le score PageRank maximal entre le noeud de l'emprunt de couche Att1 et Att2 
@@ -321,35 +337,27 @@ Les attributs extraits des ces différents graphes multicouches sont énumérés
 	\end{itemize}
 
 \subsubsection{Mise en œuvre : intégration des attributs extraits des graphes multicouches dans le processus de prédiction du risque de crédit}
-Nous avons considéré cinq modèles classiques de l’apprentissage automatique pour la prédiction du risque de crédit : \ac{DT}, \ac{RF}, \ac{LR}, \ac{XGB} et \ac{SVM}.
-
-Pour chacun des graphes multicouches considérés (MLN1, MLN2, et MLN3), chaque modèle de prédiction est appliqué 04 fois. Chacune des applications du modèle diffère de l’autre par l’ensemble d’attributs descripteurs considérés :
+Nous avons considéré cinq modèles classiques de l’apprentissage automatique pour la prédiction du risque de crédit : \ac{DT}, \ac{RF}, \ac{LR}, \ac{XGB} et \ac{SVM}. Pour chacun des graphes multicouches considérés (MLN1, MLN2, et MLN3), chaque modèle de prédiction est appliqué 04 fois. Chacune des applications du modèle diffère de l’autre par l’ensemble d’attributs descripteurs considérés :
 \begin{itemize}
 	\item \textbf{Classic} : les attributs considérés sont tous ceux fournis avec le jeu de données
 	\item \textbf{Classic + MLN} : on considère tous les attributs du jeu de données et on ajoute les
 autres attributs extraits du graphe multicouches \ac{MLN}
 	\item \textbf{Classic – Att} : on considère une partie des attributs fournis avec le jeu de données. Ceux qui sont liés aux dimensions du graphe multicouches \ac{MLN} sont ignorés. Par exemple, pour le cas MLN1, les attributs relatifs à Fonction et à Civilités seront complètement écartés de la phase d’apprentissage
-	\item \textbf{Classic + MLN - Att} : on écarte les attributs relatifs aux dimensions du graphe multicouche MLN, et on intègre les attributs extraits du graphe multicouche \ac{MLN}
+	\item \textbf{Classic + MLN - Att} : on écarte les attributs relatifs aux dimensions du graphe multicouches MLN, et on intègre les attributs extraits du graphe multicouches \ac{MLN}
 \end{itemize}
 
 Nous pouvons ainsi évaluer l’impact des attributs choisis dans le graphe multicouches associés à leur représentation standard fourni dans le jeu de données \textbf{(Classic + MLN)}, sans leur représentation standard \textbf{(Classic + MLN - Att)}, et enfin évaluer l’impact de leur absence des données d’apprentissage des modèles \textbf{(Classic – Att)}.
 
-Le tableau ci-dessous présente l’ensemble des résultats obtenus pour les cinq différents modèles de prédiction SVM, XGBoost, Arbre de décision, Régression Logistique et Forêt Aléatoire, avec les trois graphes multicouches considérés (MLN1, MLN2, MLN3) et suivant les métriques Exactitude, Précision, Rappel et F1-score
+Le tableau \ref{fig:afbR} ci-dessous présente l’ensemble des résultats obtenus pour les cinq différents modèles de prédiction SVM, XGBoost, Arbre de décision, Régression Logistique et Forêt Aléatoire, avec les trois graphes multicouches considérés (MLN1, MLN2, MLN3) et suivant les métriques Exactitude, Précision, Rappel et F1-score
 
-
-\begin{figure}[H]
+\begin{table}[!h]
   \centering
   \includegraphics[width=\textwidth]{assets/tableau_graph_page10}
-  \stepcounter{tableau}
-  \captionsetup{labelformat=tableau}
-  \caption{Récapitulatif des résultats avec les différents graphes multicouches}
+  \caption{Résultats avec les différents graphes multicouches. Dans ce tableau, AMLNi correspond à Att et donc aux attributs considérés pour construire le graphe multicouches.}
   \label{fig:afbR}
-\end{figure}
+\end{table}
 
-
-Lorsqu’on s’attarde sur le classement des modèles de prédiction, le modèle de prédiction associé à la meilleure performance est la Forêt Aléatoire (Random Forest), suivi d’Arbre de décision et de \ac{XGB}. La Régression Logistique et SVM ferme ce classement.
-
-En s’intéressant aux meilleures performances obtenues avec les attributs extraits des graphes multicouches, on constate que le graphe multicouche MLN1 est le meilleur pour le modèles XGBoost, le graphe MLN2 est meilleur pour SVM et Arbre de décision et enfin le graphe MLN3 est le meilleur pour Régression Logistique et Forêt Aléatoire.
+Lorsqu’on s’attarde sur le classement des modèles de prédiction, le modèle de prédiction associé à la meilleure performance est la Forêt Aléatoire (Random Forest), suivi d’Arbre de décision et de \ac{XGB}. La Régression Logistique et SVM ferme ce classement. En s’intéressant aux meilleures performances obtenues avec les attributs extraits des graphes multicouches, on constate que le graphe multicouches MLN1 est le meilleur pour le modèles XGBoost, le graphe MLN2 est meilleur pour SVM et Arbre de décision et enfin le graphe MLN3 est le meilleur pour Régression Logistique et Forêt Aléatoire.
 
 Si on considère uniquement les cas de figure où chaque modèle est associé au graphe multicouches qui lui correspond le mieux, on fait les remarques suivantes :
 \begin{itemize}
@@ -362,9 +370,9 @@ Si on considère uniquement les cas de figure où chaque modèle est associé au
 
 D’après les résultats obtenus, la considération des attributs extraits des graphes multicouches (Classic + MLNi et Classic – AMLNi + MLNi) permet l’amélioration des performances des modèles Arbre de décision, XGBoost, Random Forest et Régression Logistique. L’unique modèle pour lequel il n’y a pas d’amélioration mais un statuquo c’est le modèle SVM.
 
-\textbf{Evaluation de la contribution des attributs pour les modèles de prédiction}
-
+\paragraph{Évaluation de la contribution des attributs pour les modèles de prédiction :}
 Suite à l’appréciation des résultats des modèles de prédiction, nous nous sommes intéressés aux contributions des différents attributs pour l’obtention des résultats considérés, notamment pour les cas de figure associés aux meilleurs graphes multicouches. Les graphiques des cinq pages suivantes illustrent ces informations (une page par modèle de prédiction).
+
 Sur chaque graphique, plus une barre est longue et orientée vers la droite, plus l’attribut associé à cette barre contribue positivement aux décisions du modèle de prédiction. Par contre plus une barre est étirée vers la gauche, plus l’attribut contribue négativement aux décisions du modèle de prédiction.
 Sur les graphiques, les barres peuvent avoir trois couleurs possibles :
 \begin{itemize}
@@ -373,67 +381,48 @@ Sur les graphiques, les barres peuvent avoir trois couleurs possibles :
 \item \textbf{Les barres vertes}: correspondent aux nouveaux descripteurs issus du graphe multicouches correspondant.
 \end{itemize}
 
-En observant les graphiques des résultats des combinaisons de type Classic + MLNi,
-on constate que pour les modèles de prédiction 
-\begin{itemize}
-\item Forêt Aléatoire (MLN\_bipart\_intra\_Motif\_max)
-\item XGboost (MLN\_Fonction\_et\_Civilité\_Degrée)
-\item et Arbre de Décision (MLN\_bipart\_intra\_Fonction\_Sit\_Matrim)
-\end{itemize}
-les descripteurs issus du graphe multicouches sont mieux classés que les attributs associés sous leur formes classique
+En observant les graphiques des résultats des combinaisons de type Classic + MLNi, on constate que pour les modèles de prédiction Forêt Aléatoire (MLN\_bipart\_intra\_Motif\_max), XGboost (MLN\_Fonction\_et\_Civilité\_Degrée) et Arbre de Décision (MLN\_bipart\_intra\_\\ Fonction\_Sit\_Matrim), les descripteurs issus du graphe multicouches sont mieux classés que les attributs associés dans leur forme classique provenant du jeu de données. Par contre, la tendance est inversée pour les cas de SVM et la Régression Logistique où les descripteurs classiques sont mieux classés que ceux extraits des graphes multicouches.
 
-provenant du jeu de données. Par contre, la tendance est inversée pour les cas de SVM et la Régression Logistique où les descripteurs classiques sont mieux classés que ceux extraits des graphes multicouche.
 Ce constat renforce la pertinence des descripteurs extraits des graphes multicouches, car ces derniers contribuent beaucoup plus pour les modèles de prédiction associés aux plus grandes performances. Ce qui est davantage renforcé par le cas de la Forêt Aléatoire qui est le modèle le plus performant de tous, et dont l’attribut MLN\_bipart\_intra\_Motif\_max extrait des graphes multicouches est celui qui contribue le plus aux prises de décisions.
+
 \newpage
-\begin{itemize}
-	\item Cas du modèle SVM – meilleur graphe multicouche MLN2
-	
-	\begin{figure}[H]
+
+\begin{figure}[H]
   \centering
-  \includegraphics[width=\textwidth]{assets/sv_afb_shapley.png}
+  \includegraphics[width=1.06\textwidth]{assets/sv_afb_shapley.png}
+  \caption{SVM – meilleur graphe multicouches MLN2}
 \end{figure}
 
-
-	\item Cas du modèle XGBoost – meilleur graphe multicouche MLN1
-	
-	\begin{figure}[H]
+\begin{figure}[H]
   \centering
-  \includegraphics[width=\textwidth]{assets/xgb_afb_shapley.png}
+  \includegraphics[width=1.06\textwidth]{assets/xgb_afb_shapley.png}
+  \caption{XGBoost – meilleur graphe multicouches MLN1}
 \end{figure}
 
-
-	\item Cas du modèle Arbre de Décision (Decision Tree) – meilleur graphe multicouche MLN2
-	
-	\begin{figure}[H]
+\begin{figure}[H]
   \centering
-  \includegraphics[width=\textwidth]{assets/dtc_afb_shapley.png}
+  \includegraphics[width=1.06\textwidth]{assets/dtc_afb_shapley.png}
+  \caption{Arbre de Décision (Decision Tree) – meilleur graphe multicouches MLN2}
 \end{figure}
 
-
-	\item Cas du modèle Régression Logistique – meilleur graphe multicouche MLN3
-	
-	\begin{figure}[H]
+\begin{figure}[H]
   \centering
-  \includegraphics[width=\textwidth]{assets/lrc_afb_shapley.png}
+  \includegraphics[width=1.06\textwidth]{assets/lrc_afb_shapley.png}
+  \caption{Régression Logistique – meilleur graphe multicouches MLN3}
 \end{figure}
 
-
-	\item Cas du modèle Forêt Aléatoire (Random Forest) – meilleur graphe multicouche MLN3
-	
-	\begin{figure}[H]
+\begin{figure}[H]
   \centering
-  \includegraphics[width=\textwidth]{assets/rfc_afb_shapley.png}
+  \includegraphics[width=1.06\textwidth]{assets/rfc_afb_shapley.png}
+  \caption{Forêt Aléatoire (Random Forest) – meilleur graphe multicouches MLN3}
 \end{figure}
-\end{itemize}
 
-
-%\end{itemize}
 
 \subsection{Application du PageRank personnalisé pour chaque prêt}
 \label{sec:pp}
 Nous proposons dans cette expérimentation qu'un score de PageRank soit calculé pour chaque emprunts de tel sorte que pour un emprunt précis, l'exécution du PageRank permettant d'extraire ce score n'aille comme unique noeuds possible de démarrage initiale ceux associés à cet emprunt. Nous espérons par cette ultra personnalisation de l'extraction d'influence dans le réseau formé proposer des descripteurs pertinentes dans l'evaluation du risque de crédit. 
 
-L'équation de calcul itératif du PageRank personnalisé à un seul emprunteur est donnée par:
+L'équation de calcul du PageRank personnalisé à un seul emprunteur est donnée par:
 
 	\begin{align}
     		PR_{i+1}^U &= (1-\alpha) \times d + \alpha \times PR_{i}^U \times H, \\
@@ -455,95 +444,27 @@ L'équation de calcul itératif du PageRank personnalisé à un seul emprunteur 
 		& U \text{ est l'emprunteur courant}.
 	\end{align*}
 
+Le tableau \ref{fig:gpaerup} ci-dessous présentent les comparaisons sur cinq jeux de données (AER, AFB, CREDIT RISK, GERMAN, JAPAN), de l'impact de l'usage des descripteurs issus des graphes multicouches lorsque le PageRank est appliqué de manière globale pour tous les noeuds et lorsque qu'il est appliqué de manière personnalisée pour chaque prêt. 
 
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=\textwidth]{assets/AER_G_vs_P_up}
-  \stepcounter{tableau}
-   \captionsetup{labelformat=tableau}
-  \caption{Pourcentage (\%) de gain PageRank avec personnalisation global versus PageRank avec personnalisation à un seul emprunteur pour le jeu de données AER de Kaggle}
-  \label{fig:gpaerup}
-\end{figure}
+Suivant la métrique $Accuracy$, l'intégration des descripteurs issus du graphe multicouches lorsque le PageRank est appliqué de manière globale permet de faire mieux que le cas classique (uniquement avec les descripteurs du jeu de données) dans 18 cas sur 50 (36\%), et le PageRank personnalisé par prêt dans 22 cas sur 50 (44\%). Concernant les autres métriques, on a respectivement 14/50 (28\%) et 25/50 (50\%) suivant la métrique $Précision$, et enfin 15/50 (30\%) et 23/50 (46\%) suivant les métriques $Rappel$ et $F1-score$ pour le PageRank global pour tous les noeuds et le PageRank personnalisé par prêt.
 
+Ces résultats montrent que l'usage des descripteurs extraits du graphe multicouches permet d'améliorer les performances des modèles classiques de prédiction du risque de crédit au moins dans 28\% des cas si on utilise le PageRank globale pour tous les noeuds et dans au moins 44\% des cas si on utilise le PageRank personnalisé par prêt. Ceci confirme l'intérêt de procéder à la personnalisation du PageRank par prêt.
 
+Les pourcentages d'amélioration des techniques classiques de prédiction du risque de crédit par l'usage des descripteurs extraits des graphes multicouches peuvent atteindre jusqu'à 0.3\% dans le jeu de données $AFB$ de Afriland First Bank, 1\% dans le jeu de données $CREDIT\ RISK$, 4\% dans le jeu de données $AER$, 6.5\% dans le jeu de données $JAPAN$ et enfin 23.4\% dans le jeu de données $GERMAN$.
 
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=\textwidth]{assets/AFB_G_vs_P_up}
-  \stepcounter{tableau}
-   \captionsetup{labelformat=tableau}
-  \caption{Pourcentage (\%) de gain PageRank avec personnalisation global versus PageRank avec personnalisation à un seul emprunteur pour le jeu de données AFB}
-  \label{fig:gpafbup}
-\end{figure}
-
-
-
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=\textwidth]{assets/CREDITR_G_vs_P_up}
-  \stepcounter{tableau}
-   \captionsetup{labelformat=tableau}
-  \caption{Pourcentage (\%) de gain PageRank avec personnalisation global versus PageRank avec personnalisation à un seul emprunteur pour le jeu de données CREDIT RISK}
-  \label{fig:gpcreditrup}
-\end{figure}
-
-
-
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=\textwidth]{assets/GERMAN_G_vs_P_up}
-   \captionsetup{labelformat=tableau}
-  \caption{Pourcentage (\%) de gain PageRank avec personnalisation global versus PageRank avec personnalisation à un seul emprunteur pour le jeu de données GERMAN}
-  \label{fig:gpgermanup}
-\end{figure}
-
-
-
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=\textwidth]{assets/JAPAN_G_vs_P_up}
-  \stepcounter{tableau}
-   \captionsetup{labelformat=tableau}
-  \caption{Pourcentage (\%) de gain PageRank avec personnalisation global versus PageRank avec personnalisation à un seul emprunteur pour le jeu de données JAPAN}
-  \label{fig:gpjapanup}
-\end{figure}
-
-Nous remarquons que dans les résultats ci-haut que bien qu'il y ai une sorte d'équivalence entre la personnalisation globale et celle à un seul emprunteur, bien de fois, la version personnalisation à un seul emprunteur l'emporte sur globale et nous battons ainsi le meilleur modèle issu de ces jeux de données. De plus, nous pouvons aussi visualiser les résultats d'analyse d'importance des attributs dans la décision suivant selon les modèles:
 \newpage
-\begin{itemize}
-\item \ac{SVM}
-
-\begin{figure}[H]
+\thispagestyle{empty}
+\begin{table}[H]
   \centering
-  \includegraphics[width=\textwidth]{assets/sv_shapley.png}
-\end{figure}
-\item \ac{LR}
+  \includegraphics[width=1.03\textwidth]{assets/PageRank_G_vs_P}
+  \caption{Comparaison des pourcentage d'amélioration de la performance du cas classique (Classic) par les graphes multicouches en utilisant le PageRank global pour tous les noeuds (G) et le PageRank personnalisé pour chaque prêt (P), dans les 05 jeux de données considérés.}
+  \label{fig:gpaerup}
+\end{table}
 
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=\textwidth]{assets/lrc_shapley.png}
-\end{figure}
-\item \ac{DT}
+\newpage
+Après analyse du tableau général des résultats obtenus pour évaluer l'apport de l'intégration des descripteurs extraits des graphes multicouches, nous nous intéressons à la contribution de ces nouveaux descripteurs dans les processus de décision des techniques classiques de prédiction du risque de crédit bancaire. Pour ce faire, nous construisons les diagrammes SHAP des valeurs de Shapley de tous les descripteurs positionnés en entrée des modèles de prédiction. 
 
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=\textwidth]{assets/dtc_shapley.png}
-\end{figure}
-\item \ac{RF}
-
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=\textwidth]{assets/rfc_shapley.png}
-\end{figure}
-\item \ac{XGB}
-
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=\textwidth]{assets/xgb_shapley.png}
-\end{figure}
-\end{itemize}
-
-Observations:
+Les figures \ref{fig:shap1}, \ref{fig:shap2}, \ref{fig:shap3}, \ref{fig:shap4} et \ref{fig:shap5} présentent les diagrammes SHAP des Top-20 des valeurs de shapley des descripteurs des modèles de prédiction de type \textbf{Classic + MLN} respectivement basé sur $SVM$, \textit{Régression Logistique}, \textit{Arbre de Décision}, \textit{Fôret d'Arbres de Décision} et $XGBoost$. L'analyse de ces figures permet de faire les remarques et observations suivantes :
 
 \begin{itemize}
 	\item AER : Nous remarquons de part ses graphiques dans le contexte du jeu de données AER, les descripteurs issues des graphes ont une tendance à ne pas forte expliquer autant les décision de possibilité défaut de prêt ou de solvabilité. De plus la meilleur explication est obtenu à partir du modèle \ac{SVM}
@@ -553,13 +474,49 @@ Observations:
 	\item JAPAN : Les attributs des graphes de façon généraliste permettent d'expliquer les sorties pour ce jeu de données. Et une fois de plus, PageRank personnalisé à un seul emprunt surpasse la version à personnalisation globale de l'article.
 \end{itemize}
 
+\newpage
+\begin{figure}[H]
+  \label{fig:shap1}
+  \centering
+  \includegraphics[width=1.06\textwidth]{assets/sv_shapley.png}
+  \caption{Diagramme SHAP de l'importance des attributs pour le modèle SVM}
+\end{figure}
+
+\begin{figure}[H]
+  \label{fig:shap2}
+  \centering
+  \includegraphics[width=1.06\textwidth]{assets/lrc_shapley.png}
+  \caption{Diagramme SHAP de l'importance des attributs pour la Régression Logistique}
+\end{figure}
+
+\begin{figure}[H]
+  \label{fig:shap3}
+  \centering
+  \includegraphics[width=1.06\textwidth]{assets/dtc_shapley.png}
+  \caption{Diagramme SHAP de l'importance des attributs pour l'Arbre de Décision}
+\end{figure}
+
+\begin{figure}[H]
+  \label{fig:shap4}
+  \centering
+  \includegraphics[width=1.06\textwidth]{assets/rfc_shapley.png}
+  \caption{Diagramme SHAP de l'importance des attributs pour la Fôret Aléatoire}
+\end{figure}
+
+\begin{figure}[H]
+  \label{fig:shap5}
+  \centering
+  \includegraphics[width=1.06\textwidth]{assets/xgb_shapley.png}
+  \caption{Diagramme SHAP de l'importance des attributs pour XGBoost}
+\end{figure}
+
 En somme, nous remarquons de part ses graphiques que les descripteurs issus des graphes en moyenne pour chaque jeu de données se trouve dans le top 10. Cependant nous devons mettre une emphase sur les descripteurs ultra personnalisé qui eux en générale se trouve dans le top 5 pour chaque modèle d'apprentissage que se soit en faveur de la classe positive ou négative. Ceci dis que pourrait apporter le choix d'une meilleur configuration du \ac{MLN} en terme de pertinence de descripteurs extraits et de métriques de classification?
 
 \subsection{Choix du nombre de couche}
 \label{sec:cc}
-Pour expérimenter l'impact du nombreux de couches sur la qualité des descripteurs choisis, nous avons construire un graphe multicouche à 1 seule couche ou un seul attribut catégorielle (\ac{MLN} 1) et un autre graphe multicouche avec autant de couche qu'il y'a d'attributs de type dans l'ensemble de données (\ac{MLN} All).
+Pour expérimenter l'impact du nombreux de couches sur la qualité des descripteurs choisis, nous avons construire un graphe multicouches à 1 seule couche ou un seul attribut catégorielle (\ac{MLN} 1) et un autre graphe multicouches avec autant de couche qu'il y'a d'attributs de type dans l'ensemble de données (\ac{MLN} All).
 \subsubsection{\ac{MLN} 1}
-Comme mise en hypothèse, il peut s'avérer que les relations entre les emprunts soient essentiellement porter sur un seul niveau, caractéristique ou couche. Alors, pour verifier cela, nous avons modélisé nos données sous forme de graphes multicouche biparti à une seule couche. 
+Comme mise en hypothèse, il peut s'avérer que les relations entre les emprunts soient essentiellement porter sur un seul niveau, caractéristique ou couche. Alors, pour verifier cela, nous avons modélisé nos données sous forme de graphes multicouches biparti à une seule couche. 
 
 Pour chaque attribut catégoriel du jeu de données, nous construisons ces graphes et extrayons les informations suivante où \textbf{case\_k} représente le nom de l'attribut qui sert à construire le \ac{MLN} 1:
 \begin{itemize}
@@ -578,53 +535,43 @@ Pour chaque attribut catégoriel du jeu de données, nous construisons ces graph
 Nous expérimentons dans cette partie, l'impact d'une modélisation des emprunts avec autant de couches qu'il en a de données catégorielles sur l'évaluation du risque de crédit financier. Chaque couche dans cette modélisation met en relation chaque emprunt à sa modalité de la caractéristique de la couche et les différente couche communiquent entre elles par le biais des noeuds matérialisant l'emprunt. Comme dans \ac{MLN} 1, nous avons extraire les même descripteurs.
 \subsubsection{Résultats}
 
-\begin{figure}[H]
+\begin{table}[H]
   \centering
   \includegraphics[width=\textwidth]{assets/AER_MLN_UP}
-  \stepcounter{tableau}
-   \captionsetup{labelformat=tableau}
   \caption{Gain d'impacte des modélisations pour le jeu de données AER de Kaggle}
   \label{fig:gimae}
-\end{figure}
+\end{table}
 
 
-\begin{figure}[H]
+\begin{table}[H]
   \centering
   \includegraphics[width=\textwidth]{assets/AFB_MLN_UP}
-  \stepcounter{tableau}
-   \captionsetup{labelformat=tableau}
   \caption{Gain d'impacte des modélisations pour le jeu de données AFB}
   \label{fig:gimaf}
-\end{figure}
+\end{table}
 
 
-\begin{figure}[H]
+\begin{table}[H]
   \centering
   \includegraphics[width=\textwidth]{assets/CREDITR_MLN_UP}
-  \stepcounter{tableau}
-   \captionsetup{labelformat=tableau}
   \caption{Gain d'impacte des modélisations pour le jeu de données CREDIT RISK DATASET}
   \label{fig:gimc}
-\end{figure}
+\end{table}
 
 
-\begin{figure}[H]
+\begin{table}[H]
   \centering
   \includegraphics[width=\textwidth]{assets/GERMAN_MLN_UP}
-  \stepcounter{tableau}
-   \captionsetup{labelformat=tableau}
   \caption{Gain d'impacte des modélisations pour le jeu de données GERMAN}
   \label{fig:gimg}
-\end{figure}
+\end{table}
 
-\begin{figure}[H]
+\begin{table}[H]
   \centering
   \includegraphics[width=\textwidth]{assets/JAPAN_MLN_UP}
-  \stepcounter{tableau}
-   \captionsetup{labelformat=tableau}
   \caption{Gain d'impacte des modélisations pour le jeu de données JAPAN}
   \label{fig:gimj}
-\end{figure}
+\end{table}
 
 Les figure ci-contre nous montre que dans certains cas, la modélisation à 1 couche peut permettre d'extraire des motifs du graphe qui améliores les métriques de classification. Cependant il apparait clairement que le fait de modéliser une relation des emprunts sur la base de toutes les attributs catégoriels possible n'est pas vraiment une solution car n'améliore pas vraiment les modèles classiques. Il serait donc judicieux de pouvoir identifier quel sont les attributs catégoriels qui garantissent d'apporter de meilleurs résultats
 
@@ -669,14 +616,12 @@ Le choix optimal des attributs devant servir à modéliser nos données de prêt
 %  \label{fig:cj}
 %\end{figure}
 
-\begin{figure}[H]
+\begin{table}[H]
   \centering
   \includegraphics[width=\textwidth]{assets/ALL_C}
-  \stepcounter{tableau}
-   \captionsetup{labelformat=tableau}
   \caption{Correlation entre l'impact d'attributs en \ac{MLN} 1 et celui de des couples en \ac{MLN} 2  pour tous les jeux de données}
   \label{fig:ca}
-\end{figure}
+\end{table}
 
 Nous remarquons suivant la figure~\ref{fig:ca}, nous remarquons que les couples formés d'attributs ayant un bon impact en \ac{MLN} 1 (Good \ac{MLN} 1, Good \ac{MLN} 1) ont tendances à améliorer les modèles classiques en \ac{MLN} 2.
 
@@ -699,11 +644,11 @@ Premièrement le modèle \ac{XGB} est le modèle qui généralise au mieux l'ens
 \label{sec:con}
 Au terme de cette rédaction, il était question pour nous de présenter les différentes expérimentation réalisées au cours de ses derniers mois et leur résultats. Il en ressort que l'idée de personnalisation à un seul emprunteur apparaît comme un intuition valide mais l'apport n'est pas très éloigné de la version global proposé par les auteurs de l'article de base mais s'adapte mieux sur tout jeu de données. La modélisation à une couche nous aura permis de comprendre que si nous voulons construire des \ac{MLN} $k_{>=2}$, il serait judicieux de prendre ceux là donc la version \ac{MLN} 1 améliore les modèles classiques.
 
-Lors de ces expérimentation, Nous avons remarqué la non importance de plusieurs attributs des jeux de données dans les modèles, l'absence d'information de classe dans le graphe multicouche biparti construit, la minorité d'attributs extraits des graphes. Pour cela nous pensons au perspectives suivantes:
+Lors de ces expérimentation, Nous avons remarqué la non importance de plusieurs attributs des jeux de données dans les modèles, l'absence d'information de classe dans le graphe multicouches biparti construit, la minorité d'attributs extraits des graphes. Pour cela nous pensons au perspectives suivantes:
 \begin{enumerate}
 \item définir un processus de présélection des attributs avant entrainement
-\item intégrer les classes dans la modélisation du graphe multicouche
-\item exploitation différente du graphe multicouche sans avoir recourt au PageRank.
+\item intégrer les classes dans la modélisation du graphe multicouches
+\item exploitation différente du graphe multicouches sans avoir recourt au PageRank.
 \end{enumerate}
 
 
