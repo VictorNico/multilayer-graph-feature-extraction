@@ -285,7 +285,7 @@ def get_inter_node_label(graph):
     return inters
 
 # @profile
-def get_user_nodes_label(graph,borrowers, layers):
+def get_combine_perso_nodes_label(graph,borrowers, layers):
     """Get borrower liked nodel labels
     Args:
       graph: a multilayer graph
@@ -302,6 +302,50 @@ def get_user_nodes_label(graph,borrowers, layers):
         for A, B in edges: # for each edge of the borower in the layer 
             linked.add(A)
             linked.add(B)
+
+        linked_table.append(list(linked)) # convert to list of node label
+    return (linked_table, set(tuple(borr) for borr in linked_table))
+
+# @profile
+def get_intra_perso_nodes_label(graph,borrowers, layers):
+    """Get borrower liked nodel labels
+    Args:
+      graph: a multilayer graph
+      layers: the number of layers
+
+    Returns:
+      A list of all inter nodes inside the graph
+    """
+    linked_table= []
+    
+    for borrower in borrowers:
+        edges = [(A,B) for i in range(layers) for (A,B) in graph.edges(['C'+str(i)+'-U-'+str(borrower)])]
+        linked = set()
+        for A, B in edges: # for each edge of the borower in the layer 
+            linked.add(A) if '-M-' in k else None
+            linked.add(B) if '-M-' in k else None
+
+        linked_table.append(list(linked)) # convert to list of node label
+    return (linked_table, set(tuple(borr) for borr in linked_table))
+
+# @profile
+def get_inter_perso_nodes_label(graph,borrowers, layers):
+    """Get borrower liked nodel labels
+    Args:
+      graph: a multilayer graph
+      layers: the number of layers
+
+    Returns:
+      A list of all inter nodes inside the graph
+    """
+    linked_table= []
+    
+    for borrower in borrowers:
+        edges = [(A,B) for i in range(layers) for (A,B) in graph.edges(['C'+str(i)+'-U-'+str(borrower)])]
+        linked = set()
+        for A, B in edges: # for each edge of the borower in the layer 
+            linked.add(A) if '-U-' in k else None
+            linked.add(B) if '-U-' in k else None
 
         linked_table.append(list(linked)) # convert to list of node label
     return (linked_table, set(tuple(borr) for borr in linked_table))

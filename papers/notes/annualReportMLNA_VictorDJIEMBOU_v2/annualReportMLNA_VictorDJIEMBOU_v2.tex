@@ -292,13 +292,13 @@ Les détails des données manipulées lors de cette expérimentation sont donné
 \begin{table}[H]
     \centering
     \resizebox{\textwidth}{!}{
-    \begin{tabular}{cccccc}
-         & Nb exemples & Nb attributs numériques & Nb attributs catégoriels & Nb payés & Nb impayés\\
-        AFB\footnote{Données provenant d'un particulier.} & 28952 & 08 & 04 & 21769 & 7183 \\
-        AER\footnote{\url{https://www.kaggle.com/dansbecker/aer-credit-card-data}} & 1319 & 08 & 02 & 1023 & 296 \\
-        CREDIT RISK\footnote{} & 32581 & 07 & 03 & 25473 & 7108 \\
-        GERMAN\footnote{\url{http://archive.ics.uci.edu/dataset/144/statlog+german+credit+data}} & 1000 & 07 & 13 & 700 & 300\\
-        JAPAN\footnote{\url{http://archive.ics.uci.edu/dataset/28/japanese+credit+screening}} & 690 & 06 & 09 & 307 & 383 \\
+    \begin{tabular}{|c|c|c|c|c|c|c|}
+         & Nb exemples & Nb attributs (Att) & Att numériques & Att catégoriels & Nb payés & Nb impayés\\
+        AFB & 28952 & & 08 & 04 & 21769 & 7183 \\
+        AER & 1319 & & 08 & 02 & 1023 & 296 \\
+        CREDIT RISK & 32581 & & 07 & 03 & 25473 & 7108 \\
+        GERMAN & 1000 & & 07 & 13 & 700 & 300\\
+        JAPAN & 690 & & 06 & 09 & 307 & 383 \\
     \end{tabular}
     }
     \caption{Description des données {\tiny \url{https://github.com/JLZml/Credit-Scoring-Data-Sets}}}
@@ -494,13 +494,13 @@ Les figures \ref{fig:shap1}, \ref{fig:shap2}, \ref{fig:shap3}, \ref{fig:shap4} e
   \centering
   \includegraphics[width=1.06\textwidth]{assets/dtc_shapley.png}
   \caption{Diagramme SHAP de l'importance des attributs pour l'Arbre de Décision}
-\end{figure}
+\end{figure} 
 
 \begin{figure}[H]
-  \label{fig:shap4}
   \centering
   \includegraphics[width=1.06\textwidth]{assets/rfc_shapley.png}
   \caption{Diagramme SHAP de l'importance des attributs pour la Fôret Aléatoire}
+  \label{fig:shap4}
 \end{figure}
 
 \begin{figure}[H]

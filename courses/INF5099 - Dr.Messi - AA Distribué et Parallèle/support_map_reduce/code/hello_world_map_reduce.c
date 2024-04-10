@@ -5,7 +5,15 @@
 #include <stdio.h>
 #include <string.h>
 
-
+/*** function used to split a line of string
+ * Params:
+ * 		str - vector of characters - input string line
+ * 		car - character - the separator partern
+ * 		reslt - vector of string - sub string resultat of split base on car character pattern
+ * Return:
+ * 		j_retourn - integer - the number of sub string found after split
+ * 
+ */
 int str_split(char* str, char* car, char*reslt[])
 {
 	char *str1, *token;
@@ -13,27 +21,30 @@ int str_split(char* str, char* car, char*reslt[])
         int j, j_retour;
 
 	for (j = 1, str1 = str; ; j++, str1 = NULL) {
-               token = strtok_r(str1, car, &saveptr1);
-               if (token == NULL)
-                   break;
-		reslt[j-1] = token;
-		j_retour = j;
-        }
+		// strtok_r  function in C is used to tokenize a string into smaller tokens, based on a set of delimiter characters.
+		// char *strtok_r(char *str, const char *delim, char **saveptr);
+       token = strtok_r(str1, car, &saveptr1);
+       if (token == NULL) // if not token extract with the delimiter break and end the loop
+           break;
+		reslt[j-1] = token; // else save the current substring before the delimiter
+		j_retour = j; // the number of substring found
+    }
 
 	return j_retour;
 }
 
 void *map(void *arg)
 {
-
+	
 	int i, vector_length, j; 
 	long begin, end;
 	long thread_id;
 	thread_id = (long)arg;
 	char** tab_local = (char**)malloc(sizeof(char*));
 
-	vector_length = nb_lines;//length of the vector of sentences
+	vector_length = nb_lines; //length of the vector of sentences
 
+	// block paralisation logic to bound the thread's load
 	begin = thread_id*(vector_length/NB_THREADS);
 
 	if(thread_id == (NB_THREADS - 1))
@@ -44,6 +55,10 @@ void *map(void *arg)
 	char* resl_split[200];	
 	int split_resl_length = 0, length_tab_local = 0, prev;
 
+	// fetch on lines in the file
+	// for each line split within " " pattern
+	// reajust the table of substring found to integrate the new substring starting on the previous end
+	// and then add the news substring to the vector of substrings
 	for (i= begin; i<end ; i++)
 	{
 		split_resl_length = str_split(tab_lines[i]," ",resl_split);
@@ -53,7 +68,7 @@ void *map(void *arg)
 		tab_local = realloc(tab_local, length_tab_local*sizeof(char*));
 		for(j=0;j<split_resl_length;j++)
 		{
-		//	printf("Thread %d prev=%d j = %d prev+j=%d\n", thread_id, prev, j, prev+j);
+			//printf("Thread %d prev=%d j = %d prev+j=%d\n", thread_id, prev, j, prev+j);
 			tab_local[prev+j] = malloc(sizeof(char)*strlen(resl_split[j]));
 			strcpy(tab_local[prev+j], resl_split[j]);
 		}
@@ -61,6 +76,8 @@ void *map(void *arg)
 	}
 	//printf("Thread %ld debut = %ld fin = %ld\n", indice, debut, fin);
 
+	// save the local vector in the global one 
+	// for that lock variable access before to limit colision
 	pthread_mutex_lock (&mutex_variable);
 		prev = nb_words;
 		nb_words = nb_words + length_tab_local;
@@ -91,6 +108,7 @@ void *reduce(void *arg)
 	else
 	   end =  begin + (vector_length/NB_THREADS);
 
+	// count the number of occurence of subword in the vector of substring
 	for (i= begin; i<end; i++)
 	{
 		tab_occ_words[i] = count_word_occurence(tab_d_words[i], tab_words, nb_words);
@@ -99,6 +117,15 @@ void *reduce(void *arg)
 	pthread_exit((void*) 0);
 }
 
+/** count occurence of a word
+ * Params:
+ * 		word - vector of characters - the word to count
+ * 		tab_words - vector of string - vector of all words
+ * 		nb_words - integer - the number of words in the tab_words
+ * Return:
+ * 		result - integer - the number of occurence
+ * 
+ */
 int count_word_occurence(char*word, char**tab_words, int nb_words)
 {
 	int i = 0, result = 0;
@@ -113,6 +140,7 @@ int count_word_occurence(char*word, char**tab_words, int nb_words)
 	return result;
 }
 
+// open a file and read lines content's and count
 int count_lines(char * file_name){
   FILE * fichier = fopen(file_name, "r");
   char ligne [TAILLE];
