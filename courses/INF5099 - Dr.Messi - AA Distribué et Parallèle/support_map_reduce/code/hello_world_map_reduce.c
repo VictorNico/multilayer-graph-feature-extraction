@@ -216,32 +216,35 @@ void quicksort_string(char** tab_string, int first, int last){
    char* temp;
 
    if(first<last){
-      pivot=first;
-      i=first;
-      j=last;
+		pivot=first;
+		i=first;
+		j=last;
 
-      while(i<j){
-         while((strcmp(tab_string[i], tab_string[pivot])<=0) && (i<last))
-            i++;
-         while(strcmp(tab_string[j], tab_string[pivot])>0)
-            j--;
-         if(i<j){
-	    temp = (char*)malloc(sizeof(char)*strlen(tab_string[i]));
-               strcpy(temp, tab_string[i]);
-               strcpy(tab_string[i], tab_string[j]);
-               strcpy(tab_string[j], temp);
+		while(i<j){
+			// find the next word i which is lexicographically greater than pivot word
+			while((strcmp(tab_string[i], tab_string[pivot])<=0) && (i<last))
+				i++;
+			// find the next word j which is lexicographically less than pivot word
+			while(strcmp(tab_string[j], tab_string[pivot])>0)
+				j--;
+			
+			if(i<j){
+				temp = (char*)malloc(sizeof(char)*strlen(tab_string[i]));
+				strcpy(temp, tab_string[i]);
+				strcpy(tab_string[i], tab_string[j]);
+				strcpy(tab_string[j], temp);
+				free(temp);
+			}
+		}
+
+	    temp = (char*)malloc(sizeof(char)*strlen(tab_string[pivot]));
+		strcpy(temp, tab_string[pivot]);
+		strcpy(tab_string[pivot], tab_string[j]);
+		strcpy(tab_string[j], temp);
 	    free(temp);
-         }
-      }
 
-    temp = (char*)malloc(sizeof(char)*strlen(tab_string[pivot]));
-        strcpy(temp, tab_string[pivot]);
-        strcpy(tab_string[pivot], tab_string[j]);
-        strcpy(tab_string[j], temp);
-    free(temp);
-
-      quicksort_string(tab_string, first,j-1);
-      quicksort_string(tab_string, j+1,last);
+		quicksort_string(tab_string, first,j-1);
+		quicksort_string(tab_string, j+1,last);
 
    }
 }

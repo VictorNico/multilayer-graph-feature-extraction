@@ -235,7 +235,7 @@ def make_preprocessing(dataset, to_remove, domain, cwd, target_variable, verbose
 		]
 
 # @profile
-def make_mlna_1_variable(default, value_graph, value_clfs, OHE, nominal_factor_colums, cwd, domain, fix_imbalance, target_variable, custom_color, modelD, verbose, clfs):
+def make_mlna_1_variable(default, value_graph, value_clfs, OHE, nominal_factor_colums, cwd, domain, fix_imbalance, target_variable, custom_color, modelD, verbose, clfs, alpha):
 	"""
 	"""
 	## visualization of result
@@ -262,20 +262,20 @@ def make_mlna_1_variable(default, value_graph, value_clfs, OHE, nominal_factor_c
 			)
 
 		# Binome page rank
-		bipart_combine = nx.pagerank(MLN, alpha=0.85)
+		bipart_combine = nx.pagerank(MLN, alpha=alpha)
 
 		# get intra page rank
 		bipart_intra_pagerank = nx.pagerank(
 			MLN,
 			personalization=compute_personlization(get_intra_node_label(MLN),MLN), 
-			alpha=0.85
+			alpha=alpha
 			)
 
 		# get inter page rank
 		bipart_inter_pagerank = nx.pagerank(
 			MLN,
 			personalization=compute_personlization(get_inter_node_label(MLN),MLN), 
-			alpha=0.85
+			alpha=alpha
 			)
 
 		# extract centrality degree from MLN
@@ -289,21 +289,21 @@ def make_mlna_1_variable(default, value_graph, value_clfs, OHE, nominal_factor_c
 		extracts_g[f'MLN_bipart_intra_{nominal_factor_colums[i]}'] = get_max_borrower_pr(bipart_intra_pagerank)
 		extracts_g[f'MLN_bipart_inter_{nominal_factor_colums[i]}'] = get_max_borrower_pr(bipart_inter_pagerank)
 		extracts_g[f'MLN_bipart_combine_{nominal_factor_colums[i]}'] = get_max_borrower_pr(bipart_combine)
-		extracts_p[f'MLN_bipart_combine_perso_{nominal_factor_colums[i]}'] = [get_max_borrower_pr(nx.pagerank(MLN,personalization=compute_personlization(get_combine_perso_nodes_label(MLN, [val], 1)[0][0],MLN), alpha=0.85))[index] for index, val in enumerate(PERSONS)]
-		extracts_p[f'MLN_bipart_inter_perso_{nominal_factor_colums[i]}'] = [get_max_borrower_pr(nx.pagerank(MLN,personalization=compute_personlization(get_inter_perso_nodes_label(MLN, [val], 1)[0][0],MLN), alpha=0.85))[index] for index, val in enumerate(PERSONS)]
-		extracts_p[f'MLN_bipart_intra_perso_{nominal_factor_colums[i]}'] = [get_max_borrower_pr(nx.pagerank(MLN,personalization=compute_personlization(get_intra_perso_nodes_label(MLN, [val], 1)[0][0],MLN), alpha=0.85))[index] for index, val in enumerate(PERSONS)]
+		extracts_p[f'MLN_bipart_combine_perso_{nominal_factor_colums[i]}'] = [get_max_borrower_pr(nx.pagerank(MLN,personalization=compute_personlization(get_combine_perso_nodes_label(MLN, [val], 1)[0][0],MLN), alpha=alpha))[index] for index, val in enumerate(PERSONS)]
+		extracts_p[f'MLN_bipart_inter_perso_{nominal_factor_colums[i]}'] = [get_max_borrower_pr(nx.pagerank(MLN,personalization=compute_personlization(get_inter_perso_nodes_label(MLN, [val], 1)[0][0],MLN), alpha=alpha))[index] for index, val in enumerate(PERSONS)]
+		extracts_p[f'MLN_bipart_intra_perso_{nominal_factor_colums[i]}'] = [get_max_borrower_pr(nx.pagerank(MLN,personalization=compute_personlization(get_intra_perso_nodes_label(MLN, [val], 1)[0][0],MLN), alpha=alpha))[index] for index, val in enumerate(PERSONS)]
 		extracts_g[f'MLN_bipart_intra_max_{nominal_factor_colums[i]}'] = [get_max_modality_pagerank_score(index, MLN, 1, bipart_intra_pagerank) for index in PERSONS]
 		extracts_g[f'MLN_bipart_inter_max_{nominal_factor_colums[i]}'] = [get_max_modality_pagerank_score(index, MLN, 1, bipart_inter_pagerank) for index in PERSONS]
 		extracts_g[f'MLN_bipart_combine_max_{nominal_factor_colums[i]}'] = [get_max_modality_pagerank_score(index, MLN, 1, bipart_combine) for index in PERSONS]
-		extracts_p[f'MLN_bipart_combine_perso_max_{nominal_factor_colums[i]}'] = [get_max_modality_pagerank_score(val, MLN, 1, nx.pagerank(MLN,personalization=compute_personlization(get_combine_perso_nodes_label(MLN, [val], 1)[0][0],MLN), alpha=0.85)) for index, val in enumerate(PERSONS)]
-		extracts_p[f'MLN_bipart_inter_perso_max_{nominal_factor_colums[i]}'] = [get_max_modality_pagerank_score(val, MLN, 1, nx.pagerank(MLN,personalization=compute_personlization(get_inter_perso_nodes_label(MLN, [val], 1)[0][0],MLN), alpha=0.85)) for index, val in enumerate(PERSONS)]
-		extracts_p[f'MLN_bipart_intra_perso_max_{nominal_factor_colums[i]}'] = [get_max_modality_pagerank_score(val, MLN, 1, nx.pagerank(MLN,personalization=compute_personlization(get_intra_perso_nodes_label(MLN, [val], 1)[0][0],MLN), alpha=0.85)) for index, val in enumerate(PERSONS)]
+		extracts_p[f'MLN_bipart_combine_perso_max_{nominal_factor_colums[i]}'] = [get_max_modality_pagerank_score(val, MLN, 1, nx.pagerank(MLN,personalization=compute_personlization(get_combine_perso_nodes_label(MLN, [val], 1)[0][0],MLN), alpha=alpha)) for index, val in enumerate(PERSONS)]
+		extracts_p[f'MLN_bipart_inter_perso_max_{nominal_factor_colums[i]}'] = [get_max_modality_pagerank_score(val, MLN, 1, nx.pagerank(MLN,personalization=compute_personlization(get_inter_perso_nodes_label(MLN, [val], 1)[0][0],MLN), alpha=alpha)) for index, val in enumerate(PERSONS)]
+		extracts_p[f'MLN_bipart_intra_perso_max_{nominal_factor_colums[i]}'] = [get_max_modality_pagerank_score(val, MLN, 1, nx.pagerank(MLN,personalization=compute_personlization(get_intra_perso_nodes_label(MLN, [val], 1)[0][0],MLN), alpha=alpha)) for index, val in enumerate(PERSONS)]
 		# ultra personalisation of pagerank
 		#(nodes_of_borrowers, nodes) = get_user_nodes_label(MLN, PERSONS, 1) # get all posible relate borrower's nodes
 		# get ultra personalized pagerank of distincts values of nodes
 		# build a dict base on values of nodes as key
 		#print("edges of borrowers") if verbose else None
-		#plural_form = {"".join(list(k)): nx.pagerank(MLN,personalization=compute_personlization(list(k)), alpha=0.85) for k in nodes} 
+		#plural_form = {"".join(list(k)): nx.pagerank(MLN,personalization=compute_personlization(list(k)), alpha=alpha) for k in nodes} 
 		#print("ultra PR") if verbose else None
 		#extracts_p[f'MLN_bipart_ultra_{nominal_factor_colums[i]}'] = [get_max_borrower_pr(plural_form["".join(nodes_of_borrowers[index])])[index] for index, val in enumerate(PERSONS)] 
 		#extracts_p[f'MLN_bipart_ultra_max_{nominal_factor_colums[i]}'] = [get_max_modality_pagerank_score(val, MLN, 1,plural_form["".join(nodes_of_borrowers[index])]) for index, val in enumerate(PERSONS)]
@@ -558,7 +558,7 @@ def make_mlna_1_variable(default, value_graph, value_clfs, OHE, nominal_factor_c
 	# return logic
 
 # @profile
-def make_mlna_k_variable(default, value_graph, value_clfs, OHE, nominal_factor_colums, cwd, domain, fix_imbalance, target_variable, custom_color, modelD, verbose, clfs):
+def make_mlna_k_variable(default, value_graph, value_clfs, OHE, nominal_factor_colums, cwd, domain, fix_imbalance, target_variable, custom_color, modelD, verbose, clfs, alpha):
 	"""
 	"""
 
@@ -593,13 +593,13 @@ def make_mlna_k_variable(default, value_graph, value_clfs, OHE, nominal_factor_c
 				)
 
 			# Binome page rank
-			bipart_combine = nx.pagerank(MLN, alpha=0.85)
+			bipart_combine = nx.pagerank(MLN, alpha=alpha)
 
 			# get intra page rank
 			bipart_intra_pagerank = nx.pagerank(
 				MLN,
 				personalization=compute_personlization(get_intra_node_label(MLN),MLN), 
-				alpha=0.85
+				alpha=alpha
 				)
 
 
@@ -607,7 +607,7 @@ def make_mlna_k_variable(default, value_graph, value_clfs, OHE, nominal_factor_c
 			bipart_inter_pagerank = nx.pagerank(
 				MLN,
 				personalization=compute_personlization(get_inter_node_label(MLN),MLN), 
-				alpha=0.85
+				alpha=alpha
 				)
 
 			# extract centrality degree from MLN
@@ -621,20 +621,20 @@ def make_mlna_k_variable(default, value_graph, value_clfs, OHE, nominal_factor_c
 			extracts_g[f'MLN_bipart_intra_{case_k}'] = get_max_borrower_pr(bipart_intra_pagerank)
 			extracts_g[f'MLN_bipart_inter_{case_k}'] = get_max_borrower_pr(bipart_inter_pagerank)
 			extracts_g[f'MLN_bipart_combine_{case_k}'] = get_max_borrower_pr(bipart_combine)
-			extracts_p[f'MLN_bipart_combine_perso_{case_k}'] = [get_max_borrower_pr(nx.pagerank(MLN,personalization=compute_personlization(get_combine_perso_nodes_label(MLN, [val], k)[0][0],MLN), alpha=0.85))[index] for index, val in enumerate(PERSONS)]
-			extracts_p[f'MLN_bipart_inter_perso_{case_k}'] = [get_max_borrower_pr(nx.pagerank(MLN,personalization=compute_personlization(get_inter_perso_nodes_label(MLN, [val], k)[0][0],MLN), alpha=0.85))[index] for index, val in enumerate(PERSONS)]
-			extracts_p[f'MLN_bipart_intra_perso_{case_k}'] = [get_max_borrower_pr(nx.pagerank(MLN,personalization=compute_personlization(get_intra_perso_nodes_label(MLN, [val], k)[0][0],MLN), alpha=0.85))[index] for index, val in enumerate(PERSONS)]
+			extracts_p[f'MLN_bipart_combine_perso_{case_k}'] = [get_max_borrower_pr(nx.pagerank(MLN,personalization=compute_personlization(get_combine_perso_nodes_label(MLN, [val], k)[0][0],MLN), alpha=alpha))[index] for index, val in enumerate(PERSONS)]
+			extracts_p[f'MLN_bipart_inter_perso_{case_k}'] = [get_max_borrower_pr(nx.pagerank(MLN,personalization=compute_personlization(get_inter_perso_nodes_label(MLN, [val], k)[0][0],MLN), alpha=alpha))[index] for index, val in enumerate(PERSONS)]
+			extracts_p[f'MLN_bipart_intra_perso_{case_k}'] = [get_max_borrower_pr(nx.pagerank(MLN,personalization=compute_personlization(get_intra_perso_nodes_label(MLN, [val], k)[0][0],MLN), alpha=alpha))[index] for index, val in enumerate(PERSONS)]
 			extracts_g[f'MLN_bipart_intra_max_{case_k}'] = [get_max_modality_pagerank_score(index, MLN, k, bipart_intra_pagerank) for index in PERSONS]
 			extracts_g[f'MLN_bipart_inter_max_{case_k}'] = [get_max_modality_pagerank_score(index, MLN, k, bipart_inter_pagerank) for index in PERSONS]
 			extracts_g[f'MLN_bipart_combine_max_{case_k}'] = [get_max_modality_pagerank_score(index, MLN, k, bipart_combine) for index in PERSONS]
-			extracts_p[f'MLN_bipart_combine_perso_max_{case_k}'] = [get_max_modality_pagerank_score(val, MLN, k, nx.pagerank(MLN,personalization=compute_personlization(get_combine_perso_nodes_label(MLN, [val], k)[0][0],MLN), alpha=0.85)) for index, val in enumerate(PERSONS)]
-			extracts_p[f'MLN_bipart_inter_perso_max_{case_k}'] = [get_max_modality_pagerank_score(val, MLN, k, nx.pagerank(MLN,personalization=compute_personlization(get_inter_perso_nodes_label(MLN, [val], k)[0][0],MLN), alpha=0.85)) for index, val in enumerate(PERSONS)]
-			extracts_p[f'MLN_bipart_intra_perso_max_{case_k}'] = [get_max_modality_pagerank_score(val, MLN, k, nx.pagerank(MLN,personalization=compute_personlization(get_intra_perso_nodes_label(MLN, [val], k)[0][0],MLN), alpha=0.85)) for index, val in enumerate(PERSONS)]
+			extracts_p[f'MLN_bipart_combine_perso_max_{case_k}'] = [get_max_modality_pagerank_score(val, MLN, k, nx.pagerank(MLN,personalization=compute_personlization(get_combine_perso_nodes_label(MLN, [val], k)[0][0],MLN), alpha=alpha)) for index, val in enumerate(PERSONS)]
+			extracts_p[f'MLN_bipart_inter_perso_max_{case_k}'] = [get_max_modality_pagerank_score(val, MLN, k, nx.pagerank(MLN,personalization=compute_personlization(get_inter_perso_nodes_label(MLN, [val], k)[0][0],MLN), alpha=alpha)) for index, val in enumerate(PERSONS)]
+			extracts_p[f'MLN_bipart_intra_perso_max_{case_k}'] = [get_max_modality_pagerank_score(val, MLN, k, nx.pagerank(MLN,personalization=compute_personlization(get_intra_perso_nodes_label(MLN, [val], k)[0][0],MLN), alpha=alpha)) for index, val in enumerate(PERSONS)]
 			# ultra personalisation of pagerank
 			#(nodes_of_borrowers, nodes) = get_user_nodes_label(MLN, PERSONS, k) # get all posible relate borrower's nodes
 			# get ultra personalized pagerank of distincts values of nodes
 			# build a dict base on values of nodes as key
-			#plural_form = {"".join(list(b)): nx.pagerank(MLN,personalization=compute_personlization(list(b)), alpha=0.85) for b in nodes} 
+			#plural_form = {"".join(list(b)): nx.pagerank(MLN,personalization=compute_personlization(list(b)), alpha=alpha) for b in nodes} 
 			
 			#extracts_p[f'MLN_bipart_ultra_{case_k}'] = [get_max_borrower_pr(plural_form["".join(nodes_of_borrowers[index])])[index] for index, val in enumerate(PERSONS)] 
 			#extracts_p[f'MLN_bipart_ultra_max_{case_k}'] = [get_max_modality_pagerank_score(val, MLN, k,plural_form["".join(nodes_of_borrowers[index])]) for index, val in enumerate(PERSONS)]
@@ -970,7 +970,7 @@ def make_builder(fix_imbalance, DATA_OVER, target_variable, clfs, cwd, prefix, v
 	return (domain, store)
 
 # @profile
-def mlnaPipeline(cwd, domain, dataset_link, target_variable, dataset_delimiter=',', all_nominal=True, all_numeric=False, verbose=True, fix_imbalance=True, levels=None, to_remove=None, encoding="utf-8",index_col=None, na_values=None):
+def mlnaPipeline(cwd, domain, dataset_link, target_variable, dataset_delimiter=',', all_nominal=True, all_numeric=False, verbose=True, fix_imbalance=True, levels=None, to_remove=None, encoding="utf-8",index_col=None, na_values=None, alpha=0.85):
 	"""Run a sequence of action in goal to build, analyse, extract descriptors and evaluate with just one called
 
 	Args:
@@ -1067,14 +1067,15 @@ def mlnaPipeline(cwd, domain, dataset_link, target_variable, dataset_delimiter='
 			value_clfs=promise[7],
 			OHE=promise[8], 
 			nominal_factor_colums=promise[2], 
-			cwd=cwd+f"/outputs/{domain}/qualitative", 
+			cwd=cwd+f"/outputs/{domain}/{alpha}/qualitative", 
 			domain=domain, 
 			fix_imbalance=fix_imbalance, 
 			target_variable=target_variable, 
 			custom_color=custom_color, 
 			modelD=modelD, 
 			verbose=verbose, 
-			clfs=clfs
+			clfs=clfs,
+			alpha=alpha
 			)
 		# ]
 
@@ -1087,14 +1088,15 @@ def mlnaPipeline(cwd, domain, dataset_link, target_variable, dataset_delimiter='
 			value_clfs=promise[7],
 			OHE=promise[8], 
 			nominal_factor_colums=sorted(promise[2]), 
-			cwd=cwd+f"/outputs/{domain}/qualitative", 
+			cwd=cwd+f"/outputs/{domain}/{alpha}/qualitative", 
 			domain=domain, 
 			fix_imbalance=fix_imbalance, 
 			target_variable=target_variable, 
 			custom_color=custom_color, 
 			modelD=modelD, 
 			verbose=verbose, 
-			clfs=clfs
+			clfs=clfs,
+			alpha=alpha
 			)
 		# ]
 
@@ -1140,14 +1142,15 @@ def mlnaPipeline(cwd, domain, dataset_link, target_variable, dataset_delimiter='
 			value_clfs=promise[7], 
 			OHE=promise[10], 
 			nominal_factor_colums=list(set([*promise[5], *promise[6]])-set([target_variable])), 
-			cwd=cwd+f"/outputs/{domain}/quantitative", 
+			cwd=cwd+f"/outputs/{domain}/{alpha}/quantitative", 
 			domain=domain, 
 			fix_imbalance=fix_imbalance, 
 			target_variable=target_variable, 
 			custom_color=custom_color, 
 			modelD=modelD, 
 			verbose=verbose, 
-			clfs=clfs
+			clfs=clfs,
+			alpha=alpha
 			)
 		# ]
 
@@ -1160,14 +1163,15 @@ def mlnaPipeline(cwd, domain, dataset_link, target_variable, dataset_delimiter='
 			value_clfs=promise[7], 
 			OHE=promise[10], 
 			nominal_factor_colums=sorted(list(set([*promise[5], *promise[6]])-set([target_variable]))), 
-			cwd=cwd+f"/outputs/{domain}/quantitative", 
+			cwd=cwd+f"/outputs/{domain}/{alpha}/quantitative", 
 			domain=domain, 
 			fix_imbalance=fix_imbalance, 
 			target_variable=target_variable, 
 			custom_color=custom_color, 
 			modelD=modelD, 
 			verbose=verbose, 
-			clfs=clfs
+			clfs=clfs,
+			alpha=alpha
 			)
 		# ]
 		# table = print_summary([default, *global_logic],modelD)
@@ -1189,14 +1193,15 @@ def mlnaPipeline(cwd, domain, dataset_link, target_variable, dataset_delimiter='
 			value_clfs=promise[7],
 			OHE=[*promise[8],*promise[10]], 
 			nominal_factor_colums=sorted(list(set([*promise[4],*promise[5], *promise[6]])-set([target_variable]))), 
-			cwd=cwd+f"/outputs/{domain}/mixed", 
+			cwd=cwd+f"/outputs/{domain}/{alpha}/mixed", 
 			domain=domain, 
 			fix_imbalance=fix_imbalance, 
 			target_variable=target_variable, 
 			custom_color=custom_color, 
 			modelD=modelD, 
 			verbose=verbose, 
-			clfs=clfs
+			clfs=clfs,
+			alpha=alpha
 			)
 		# ]
 

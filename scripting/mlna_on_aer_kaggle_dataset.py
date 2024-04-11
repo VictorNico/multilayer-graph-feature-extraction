@@ -40,7 +40,8 @@ if __name__ == '__main__':
         levels=[2],
         to_remove= [], 
         encoding="utf-8",
-        index_col=None
+        index_col=None,
+        alpha=0.5
         )
     contenu = f'END OF 1 AT {time.strftime("%Y_%m_%d_%H_%M_%S")} \n'
     with open("process.dtvni", "a") as fichier:

@@ -322,8 +322,8 @@ def get_intra_perso_nodes_label(graph,borrowers, layers):
         edges = [(A,B) for i in range(layers) for (A,B) in graph.edges(['C'+str(i)+'-U-'+str(borrower)])]
         linked = set()
         for A, B in edges: # for each edge of the borower in the layer 
-            linked.add(A) if '-M-' in k else None
-            linked.add(B) if '-M-' in k else None
+            linked.add(A) if '-M-' in A else None
+            linked.add(B) if '-M-' in B else None
 
         linked_table.append(list(linked)) # convert to list of node label
     return (linked_table, set(tuple(borr) for borr in linked_table))
@@ -344,8 +344,8 @@ def get_inter_perso_nodes_label(graph,borrowers, layers):
         edges = [(A,B) for i in range(layers) for (A,B) in graph.edges(['C'+str(i)+'-U-'+str(borrower)])]
         linked = set()
         for A, B in edges: # for each edge of the borower in the layer 
-            linked.add(A) if '-U-' in k else None
-            linked.add(B) if '-U-' in k else None
+            linked.add(A) if '-U-' in A else None
+            linked.add(B) if '-U-' in B else None
 
         linked_table.append(list(linked)) # convert to list of node label
     return (linked_table, set(tuple(borr) for borr in linked_table))
