@@ -87,11 +87,14 @@ int main(int argc, char *argv[])
 
 	nb_d_words=0;
 	tab_d_words = (char**)malloc(sizeof(char*));
+	
+
 
 
 	//print_tab_string(tab_lines, nb_lines);
 
 
+	top1();
 
 	pthread_mutex_init(&mutex_variable, NULL);
 	
@@ -124,6 +127,11 @@ int main(int argc, char *argv[])
 	//print_tab_string(tab_words, nb_words);
 
 	quicksort_string(tab_words, 0, nb_words-1);
+	//string_insertion_sort(tab_words,nb_words);
+
+
+	//char** tmp = (char**)malloc(sizeof(char*)*nb_words);
+	//triFusion(0, nb_words-1,tab_words, tmp);
 
 	//print_tab_string(tab_words, nb_words);
 
@@ -151,6 +159,29 @@ int main(int argc, char *argv[])
 		}
 		//printf("Main: completed join with thread %ld having a statusof %ld\n",t,(long)status);
 	}
+	
 	printf("Le nombre de mots du fichier est: %d\n", nb_words);
 	print_word_occurrence(tab_d_words, nb_d_words, tab_occ_words);
+
+	top2();
+
+	unsigned long temps = cpu_time();
+	printf("\ntime seq = %ld.%03ldms\n", temps/1000, temps%1000);
+
+
+	const char* path = "results.csv";
+	const char* line_1 = "tri,mr_time";
+
+
+	if (fileExists(path)) {
+		printf("%s exists\n",path);
+	} else {
+		write_csv(line_1, path);
+	}
+	
+	char line[100];
+	snprintf(line, sizeof(line), "1,%ld.%03ld", temps/1000, temps%1000);
+
+	write_csv(line, path);
 }
+

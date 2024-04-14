@@ -5,15 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 
-/*** function used to split a line of string
- * Params:
- * 		str - vector of characters - input string line
- * 		car - character - the separator partern
- * 		reslt - vector of string - sub string resultat of split base on car character pattern
- * Return:
- * 		j_retourn - integer - the number of sub string found after split
- * 
- */
+
 int str_split(char* str, char* car, char*reslt[])
 {
 	char *str1, *token;
@@ -21,30 +13,27 @@ int str_split(char* str, char* car, char*reslt[])
         int j, j_retour;
 
 	for (j = 1, str1 = str; ; j++, str1 = NULL) {
-		// strtok_r  function in C is used to tokenize a string into smaller tokens, based on a set of delimiter characters.
-		// char *strtok_r(char *str, const char *delim, char **saveptr);
-       token = strtok_r(str1, car, &saveptr1);
-       if (token == NULL) // if not token extract with the delimiter break and end the loop
-           break;
-		reslt[j-1] = token; // else save the current substring before the delimiter
-		j_retour = j; // the number of substring found
-    }
+               token = strtok_r(str1, car, &saveptr1);
+               if (token == NULL)
+                   break;
+		reslt[j-1] = token;
+		j_retour = j;
+        }
 
 	return j_retour;
 }
 
 void *map(void *arg)
 {
-	
+
 	int i, vector_length, j; 
 	long begin, end;
 	long thread_id;
 	thread_id = (long)arg;
 	char** tab_local = (char**)malloc(sizeof(char*));
 
-	vector_length = nb_lines; //length of the vector of sentences
+	vector_length = nb_lines;//length of the vector of sentences
 
-	// block paralisation logic to bound the thread's load
 	begin = thread_id*(vector_length/NB_THREADS);
 
 	if(thread_id == (NB_THREADS - 1))
@@ -55,10 +44,6 @@ void *map(void *arg)
 	char* resl_split[200];	
 	int split_resl_length = 0, length_tab_local = 0, prev;
 
-	// fetch on lines in the file
-	// for each line split within " " pattern
-	// reajust the table of substring found to integrate the new substring starting on the previous end
-	// and then add the news substring to the vector of substrings
 	for (i= begin; i<end ; i++)
 	{
 		split_resl_length = str_split(tab_lines[i]," ",resl_split);
@@ -68,7 +53,7 @@ void *map(void *arg)
 		tab_local = realloc(tab_local, length_tab_local*sizeof(char*));
 		for(j=0;j<split_resl_length;j++)
 		{
-			//printf("Thread %d prev=%d j = %d prev+j=%d\n", thread_id, prev, j, prev+j);
+		//	printf("Thread %d prev=%d j = %d prev+j=%d\n", thread_id, prev, j, prev+j);
 			tab_local[prev+j] = malloc(sizeof(char)*strlen(resl_split[j]));
 			strcpy(tab_local[prev+j], resl_split[j]);
 		}
@@ -76,8 +61,6 @@ void *map(void *arg)
 	}
 	//printf("Thread %ld debut = %ld fin = %ld\n", indice, debut, fin);
 
-	// save the local vector in the global one 
-	// for that lock variable access before to limit colision
 	pthread_mutex_lock (&mutex_variable);
 		prev = nb_words;
 		nb_words = nb_words + length_tab_local;
@@ -108,7 +91,6 @@ void *reduce(void *arg)
 	else
 	   end =  begin + (vector_length/NB_THREADS);
 
-	// count the number of occurence of subword in the vector of substring
 	for (i= begin; i<end; i++)
 	{
 		tab_occ_words[i] = count_word_occurence(tab_d_words[i], tab_words, nb_words);
@@ -117,15 +99,6 @@ void *reduce(void *arg)
 	pthread_exit((void*) 0);
 }
 
-/** count occurence of a word
- * Params:
- * 		word - vector of characters - the word to count
- * 		tab_words - vector of string - vector of all words
- * 		nb_words - integer - the number of words in the tab_words
- * Return:
- * 		result - integer - the number of occurence
- * 
- */
 int count_word_occurence(char*word, char**tab_words, int nb_words)
 {
 	int i = 0, result = 0;
@@ -140,7 +113,6 @@ int count_word_occurence(char*word, char**tab_words, int nb_words)
 	return result;
 }
 
-// open a file and read lines content's and count
 int count_lines(char * file_name){
   FILE * fichier = fopen(file_name, "r");
   char ligne [TAILLE];
@@ -192,7 +164,7 @@ void print_word_occurrence(char** tab_d_words, int nb_line, int* tab_occur)
 	
 	while(i<nb_line)
 	{
-		printf(" %s\t\t:%d\n", tab_d_words[i], tab_occur[i]);
+		printf("%s\t:%d\n", tab_d_words[i], tab_occur[i]);
 		i++;
 	}
 
@@ -216,37 +188,87 @@ void quicksort_string(char** tab_string, int first, int last){
    char* temp;
 
    if(first<last){
-		pivot=first;
-		i=first;
-		j=last;
+      pivot=first;
+      i=first;
+      j=last;
 
-		while(i<j){
-			// find the next word i which is lexicographically greater than pivot word
-			while((strcmp(tab_string[i], tab_string[pivot])<=0) && (i<last))
-				i++;
-			// find the next word j which is lexicographically less than pivot word
-			while(strcmp(tab_string[j], tab_string[pivot])>0)
-				j--;
-			
-			if(i<j){
-				temp = (char*)malloc(sizeof(char)*strlen(tab_string[i]));
-				strcpy(temp, tab_string[i]);
-				strcpy(tab_string[i], tab_string[j]);
-				strcpy(tab_string[j], temp);
-				free(temp);
-			}
-		}
-
-	    temp = (char*)malloc(sizeof(char)*strlen(tab_string[pivot]));
-		strcpy(temp, tab_string[pivot]);
-		strcpy(tab_string[pivot], tab_string[j]);
-		strcpy(tab_string[j], temp);
+      while(i<j){
+         while((strcmp(tab_string[i], tab_string[pivot])<=0) && (i<last))
+            i++;
+         while(strcmp(tab_string[j], tab_string[pivot])>0)
+            j--;
+         if(i<j){
+	    temp = (char*)malloc(sizeof(char)*strlen(tab_string[i]));
+               strcpy(temp, tab_string[i]);
+               strcpy(tab_string[i], tab_string[j]);
+               strcpy(tab_string[j], temp);
 	    free(temp);
+         }
+      }
 
-		quicksort_string(tab_string, first,j-1);
-		quicksort_string(tab_string, j+1,last);
+    temp = (char*)malloc(sizeof(char)*strlen(tab_string[pivot]));
+        strcpy(temp, tab_string[pivot]);
+        strcpy(tab_string[pivot], tab_string[j]);
+        strcpy(tab_string[j], temp);
+    free(temp);
+
+      quicksort_string(tab_string, first,j-1);
+      quicksort_string(tab_string, j+1,last);
 
    }
+}
+
+void string_insertion_sort(char** tab_string, int SIZE){
+	char* temp;
+	int i, j;
+	for (i=1 ; i <= SIZE-1; i++) {
+		j = i;
+		while (j > 0 && strcmp(tab_string[j-1], tab_string[j])>0) {
+			temp = (char*)malloc(sizeof(char)*strlen(tab_string[j]));
+			strcpy(temp, tab_string[j]);
+            strcpy(tab_string[j], tab_string[j-1]);
+            strcpy(tab_string[j-1], temp);
+		
+		j--;
+    }
+  }
+	 
+	
+}
+
+void triFusion(int i, int j,char** tab_string, char**  tmp) {
+    if(j <= i){ return;}
+  
+    int m = (i + j) / 2;
+    triFusion(i, m, tab_string, tmp);     //trier la moitié gauche récursivement
+    triFusion(m + 1, j, tab_string, tmp); //trier la moitié droite récursivement
+    int pg = i;     //pg pointe au début du sous-tableau de gauche
+    int pd = m + 1; //pd pointe au début du sous-tableau de droite
+    int c;          //compteur
+// on boucle de i à j pour remplir chaque élément du tableau final fusionné
+    for(c = i; c <= j; c++) {
+		
+        if(pg == m + 1) { //le pointeur du sous-tableau de gauche a atteint la limite
+			tmp[c] = (char*)malloc(sizeof(char)*strlen(tab_string[pd]));
+            strcpy(tmp[c] ,tab_string[pd]);
+            pd++;
+        }else if (pd == j + 1) { //le pointeur du sous-tableau de droite a atteint la limite
+			tmp[c] = (char*)malloc(sizeof(char)*strlen(tab_string[pg]));
+            strcpy(tmp[c] ,tab_string[pg]);
+            pg++;
+        }else if (strcmp(tab_string[pg] ,tab_string[pd]) < 0) { //le pointeur du sous-tableau de gauche pointe vers un élément plus petit
+            tmp[c] = (char*)malloc(sizeof(char)*strlen(tab_string[pg]));
+			strcpy(tmp[c] , tab_string[pg]);
+            pg++;
+        }else {  //le pointeur du sous-tableau de droite pointe vers un élément plus petit
+            tmp[c] = (char*)malloc(sizeof(char)*strlen(tab_string[pd]));
+			strcpy(tmp[c], tab_string[pd]);
+            pd++;
+        }
+    }
+    for(c = i; c <= j; c++) {  //copier les éléments de tmp[] à tab[]
+        strcpy(tab_string[c],tmp[c]);
+    }
 }
 
 void extract_distinct_words()
@@ -271,4 +293,22 @@ void extract_distinct_words()
 		}
 		i = i+1;
 	}
+}
+
+
+void write_csv(const char* line, const char* path) {
+    FILE* file = fopen(path, "a");
+    if (file != NULL) {
+        fprintf(file, "%s\n", line);
+        fclose(file);
+    }
+}
+
+int fileExists(const char* filePath) {
+    FILE* file = fopen(filePath, "r");
+    if (file != NULL) {
+        fclose(file);
+        return 1;
+    }
+    return 0;
 }

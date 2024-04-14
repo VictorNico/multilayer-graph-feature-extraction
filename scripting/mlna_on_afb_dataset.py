@@ -37,10 +37,11 @@ if __name__ == '__main__':
         all_numeric=False, 
         verbose=True, 
         fix_imbalance=False, 
-        levels=[3],
+        levels=[2],
         to_remove= ['Type'], 
         encoding="utf-8",
-        index_col=None
+        index_col=None,
+        alphas=[.1,.2,.3,.4,.5,.6,.7,.8,.9]
         )
     contenu = f'END OF 222 AT {time.strftime("%Y_%m_%d_%H_%M_%S")} \n'
     with open("process.dtvni", "a") as fichier:

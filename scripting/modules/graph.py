@@ -98,8 +98,9 @@ def build_mlg(data, features):
     list_of_edges = []
     list_of_nodes = []
     
-    LIST_OF_CUSTOMERS = data.index.values.tolist()
+    LIST_OF_CUSTOMERS = get_persons(data)
     LEN_OF_FEATURES = len(features)
+    print
     
     colors = [
         '#e6194b',
@@ -132,7 +133,9 @@ def build_mlg(data, features):
             list_of_nodes.append(('C'+str(i)+'-U-'+str(el),{'color': 'g'}))
             for attr in features[i].tolist(): # fetch on home ownership encode values
                 code = f"#{format(255-10*i, '02x')}{format(150+9*i, '02x')}{format(55+10*i, '02x')}"
+                print(f"{el} <-{data.loc[el,attr]}-> {attr}")
                 if int(data.loc[el,attr]) == 1: # check if exists relation between both
+                    print(f"{el} <--> {attr}")
                     # bidirectional relation between home ownership and user
                     list_of_edges.append(('C'+str(i)+'-U-'+str(el),'C'+str(i)+'-M-'+attr, {'color': 'b'})) # add edge to list
                     list_of_edges.append(('C'+str(i)+'-M-'+attr, 'C'+str(i)+'-U-'+str(el), {'color': 'b'})) # add edge to list
@@ -317,15 +320,17 @@ def get_intra_perso_nodes_label(graph,borrowers, layers):
       A list of all inter nodes inside the graph
     """
     linked_table= []
-    
+    print(f"---------{borrowers}")
     for borrower in borrowers:
         edges = [(A,B) for i in range(layers) for (A,B) in graph.edges(['C'+str(i)+'-U-'+str(borrower)])]
         linked = set()
         for A, B in edges: # for each edge of the borower in the layer 
+            print(f"{A} -> {B}")
             linked.add(A) if '-M-' in A else None
             linked.add(B) if '-M-' in B else None
 
         linked_table.append(list(linked)) # convert to list of node label
+        #print(linked_table)
     return (linked_table, set(tuple(borr) for borr in linked_table))
 
 # @profile

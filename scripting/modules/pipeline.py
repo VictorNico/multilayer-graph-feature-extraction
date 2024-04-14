@@ -240,7 +240,8 @@ def make_mlna_1_variable(default, value_graph, value_clfs, OHE, nominal_factor_c
 	"""
 	## visualization of result
 	modelD = model_desc()
-	PERSONS = get_persons(value_clfs)
+	PERSONS = get_persons(value_graph)
+	#print(PERSONS)
 	# local eval storage
 	logic_g = []
 	logic_p = []
@@ -250,7 +251,7 @@ def make_mlna_1_variable(default, value_graph, value_clfs, OHE, nominal_factor_c
 		logic_i_p = []
 		# build the MLN for the variable i
 		MLN = build_mlg(value_graph, [OHE[i]])
-
+		#print(value_clfs.iloc[:,])
 		# save the graph
 		save_graph(
 			cwd= cwd+'/mlna_1', 
@@ -970,7 +971,7 @@ def make_builder(fix_imbalance, DATA_OVER, target_variable, clfs, cwd, prefix, v
 	return (domain, store)
 
 # @profile
-def mlnaPipeline(cwd, domain, dataset_link, target_variable, dataset_delimiter=',', all_nominal=True, all_numeric=False, verbose=True, fix_imbalance=True, levels=None, to_remove=None, encoding="utf-8",index_col=None, na_values=None, alpha=0.85):
+def mlnaPipeline(cwd, domain, dataset_link, target_variable, dataset_delimiter=',', all_nominal=True, all_numeric=False, verbose=True, fix_imbalance=True, levels=None, to_remove=None, encoding="utf-8",index_col=None, na_values=None, alphas=[0.85]):
 	"""Run a sequence of action in goal to build, analyse, extract descriptors and evaluate with just one called
 
 	Args:
@@ -1002,7 +1003,13 @@ def mlnaPipeline(cwd, domain, dataset_link, target_variable, dataset_delimiter='
 
 
 	# eda
+	#print(dataset.shape)
+	dataset = dataset.sample(int(dataset.shape[0]*.25))
+	dataset.reset_index(drop=True, inplace=True)
+	#print(dataset.shape)
+	# dataset = make_eda(dataframe=dataset, verbose=verbose)
 	dataset = make_eda(dataframe=dataset, verbose=verbose)
+	#print(dataset.shape)
 	# preprocessing
 	# (
 	# col_list,
@@ -1026,7 +1033,7 @@ def mlnaPipeline(cwd, domain, dataset_link, target_variable, dataset_delimiter='
 		verbose=verbose,
 		levels=levels 
 		)
-
+	#print(promise[7].shape)
 	# get dict of models
 	clfs = init_models()
 
@@ -1045,173 +1052,190 @@ def mlnaPipeline(cwd, domain, dataset_link, target_variable, dataset_delimiter='
 	# global logic
 	# global_logic = []
 	# start with model building and importance analysis
-
+	# exit()
 	## default
-	default = make_builder(
-		fix_imbalance=fix_imbalance, 
-		DATA_OVER=promise[7], 
-		target_variable=target_variable, 
-		clfs=clfs, 
-		domain= 'classic', 
-		prefix=domain, 
-		verbose=verbose,
-		cwd= cwd+f"/outputs/{domain}"
-		)
-	
-	if (2 in levels) and (len(promise[8]) > 0): # if this stage is allowed
+	if sum(['classic_metric' in file for _,_,files in os.walk(f"{cwd}/outputs/{domain}/data_selection_storage") for file in files]) == 0:
+		default = make_builder(
+			fix_imbalance=fix_imbalance, 
+			DATA_OVER=promise[7], 
+			target_variable=target_variable, 
+			clfs=clfs, 
+			domain= 'classic', 
+			prefix=domain, 
+			verbose=verbose,
+			cwd= cwd+f"/outputs/{domain}"
+			)
+	else:
+		name = [file for _,_,files in os.walk(f"{cwd}/outputs/{domain}/data_selection_storage") for file in files if 'classic_metric' in file][0]
+		default = (
+			'classic', 
+			load_data_set_from_url(
+				path=f"{cwd}/outputs/{domain}/data_selection_storage/{name}"
+				,sep=dataset_delimiter
+				,encoding=encoding
+				,index_col=0
+				,na_values=na_values
+				)
+			)
+		print(default)
+		print("load classic training")
+
+
+	for alpha in alphas:
+		if (2 in levels) and (len(promise[8]) > 0): # if this stage is allowed
+			
+			# global_logic =[*
+			make_mlna_1_variable(
+				default=default, 
+				value_graph=promise[7], 
+				value_clfs=promise[7],
+				OHE=promise[8], 
+				nominal_factor_colums=promise[2], 
+				cwd=cwd+f"/outputs/{domain}/{alpha}/qualitative", 
+				domain=domain, 
+				fix_imbalance=fix_imbalance, 
+				target_variable=target_variable, 
+				custom_color=custom_color, 
+				modelD=modelD, 
+				verbose=verbose, 
+				clfs=clfs,
+				alpha=alpha
+				)
+			# ]
+
+		# 2) build an MLN on just k variable, 1 < k <= len of OHE
+		if (3 in levels)  and (len(promise[8]) > 0):
+			# global_logic =[*global_logic, *
+			make_mlna_k_variable(
+				default=default, 
+				value_graph=promise[7], 
+				value_clfs=promise[7],
+				OHE=promise[8], 
+				nominal_factor_colums=sorted(promise[2]), 
+				cwd=cwd+f"/outputs/{domain}/{alpha}/qualitative", 
+				domain=domain, 
+				fix_imbalance=fix_imbalance, 
+				target_variable=target_variable, 
+				custom_color=custom_color, 
+				modelD=modelD, 
+				verbose=verbose, 
+				clfs=clfs,
+				alpha=alpha
+				)
+			# ]
+
+			# table = print_summary([default, *global_logic],modelD)
+			# create_file(
+			# 	content= table[1], 
+			# 	cwd= cwd+f"/outputs/{domain}/qualitative", 
+			# 	prefix= domain, 
+			# 	filename= f"mlna_for_all_categorial_data", 
+			# 	extension=".html"
+			# 	)
+
+
+			# elif 'Variables' in key:
+		# case where with triggers just categorials data to perform our MLNA
 		
-		# global_logic =[*
-		make_mlna_1_variable(
-			default=default, 
-			value_graph=promise[7], 
-			value_clfs=promise[7],
-			OHE=promise[8], 
-			nominal_factor_colums=promise[2], 
-			cwd=cwd+f"/outputs/{domain}/{alpha}/qualitative", 
-			domain=domain, 
-			fix_imbalance=fix_imbalance, 
-			target_variable=target_variable, 
-			custom_color=custom_color, 
-			modelD=modelD, 
-			verbose=verbose, 
-			clfs=clfs,
-			alpha=alpha
-			)
-		# ]
-
-	# 2) build an MLN on just k variable, 1 < k <= len of OHE
-	if (3 in levels)  and (len(promise[8]) > 0):
-		# global_logic =[*global_logic, *
-		make_mlna_k_variable(
-			default=default, 
-			value_graph=promise[7], 
-			value_clfs=promise[7],
-			OHE=promise[8], 
-			nominal_factor_colums=sorted(promise[2]), 
-			cwd=cwd+f"/outputs/{domain}/{alpha}/qualitative", 
-			domain=domain, 
-			fix_imbalance=fix_imbalance, 
-			target_variable=target_variable, 
-			custom_color=custom_color, 
-			modelD=modelD, 
-			verbose=verbose, 
-			clfs=clfs,
-			alpha=alpha
-			)
-		# ]
-
-		# table = print_summary([default, *global_logic],modelD)
-		# create_file(
-		# 	content= table[1], 
-		# 	cwd= cwd+f"/outputs/{domain}/qualitative", 
-		# 	prefix= domain, 
-		# 	filename= f"mlna_for_all_categorial_data", 
-		# 	extension=".html"
-		# 	)
-
-
-		# elif 'Variables' in key:
-	# case where with triggers just categorials data to perform our MLNA
-	
-	# build divers logic of MLNA
-	# 1) build an MLN on just one variable
-	# global logic
-	# del global_logic
-	# global_logic = []
-	# start with model building and importance analysis
-
-
-	## default
-	# default = make_builder(
-	# 	fix_imbalance=fix_imbalance, 
-	# 	DATA_OVER=value, 
-	# 	target_variable=target_variable, 
-	# 	clfs=clfs, 
-	# 	domain= 'classic_all', 
-	# 	prefix=domain, 
-	# 	verbose=verbose,
-	# 	cwd= cwd+'/outputs'
-	# 	)
-	
-	if (4 in levels)  and (len(promise[10]) > 0): # if this stage is allowed
-		
-		# global_logic =[*global_logic, *
-		make_mlna_1_variable(
-			default=default, 
-			value_graph=promise[9], 
-			value_clfs=promise[7], 
-			OHE=promise[10], 
-			nominal_factor_colums=list(set([*promise[5], *promise[6]])-set([target_variable])), 
-			cwd=cwd+f"/outputs/{domain}/{alpha}/quantitative", 
-			domain=domain, 
-			fix_imbalance=fix_imbalance, 
-			target_variable=target_variable, 
-			custom_color=custom_color, 
-			modelD=modelD, 
-			verbose=verbose, 
-			clfs=clfs,
-			alpha=alpha
-			)
-		# ]
-
-	# 2) build an MLN on just k variable, 1 < k <= len of OHE
-	if (5 in levels) and (len(promise[10]) > 0):
-		# global_logic =[*global_logic, *
-		make_mlna_k_variable(
-			default=default, 
-			value_graph=promise[9], 
-			value_clfs=promise[7], 
-			OHE=promise[10], 
-			nominal_factor_colums=sorted(list(set([*promise[5], *promise[6]])-set([target_variable]))), 
-			cwd=cwd+f"/outputs/{domain}/{alpha}/quantitative", 
-			domain=domain, 
-			fix_imbalance=fix_imbalance, 
-			target_variable=target_variable, 
-			custom_color=custom_color, 
-			modelD=modelD, 
-			verbose=verbose, 
-			clfs=clfs,
-			alpha=alpha
-			)
-		# ]
-		# table = print_summary([default, *global_logic],modelD)
-		# create_file(
-		# 	content= table[1], 
-		# 	cwd= cwd+f"/outputs/{domain}/quantitative", 
-		# 	prefix= domain, 
-		# 	filename= f"mlna_for_all_data_quantitative", 
-		# 	extension=".html"
-		# 	)
-
-	if (6 in levels) and (len(promise[10]) > 0 and len(OHE) > 0):
+		# build divers logic of MLNA
+		# 1) build an MLN on just one variable
+		# global logic
 		# del global_logic
 		# global_logic = []
-		# global_logic =[*global_logic, *
-		make_mlna_k_variable(
-			default=default, 
-			value_graph=promise[9], 
-			value_clfs=promise[7],
-			OHE=[*promise[8],*promise[10]], 
-			nominal_factor_colums=sorted(list(set([*promise[4],*promise[5], *promise[6]])-set([target_variable]))), 
-			cwd=cwd+f"/outputs/{domain}/{alpha}/mixed", 
-			domain=domain, 
-			fix_imbalance=fix_imbalance, 
-			target_variable=target_variable, 
-			custom_color=custom_color, 
-			modelD=modelD, 
-			verbose=verbose, 
-			clfs=clfs,
-			alpha=alpha
-			)
-		# ]
+		# start with model building and importance analysis
 
-		# table = print_summary([default, *global_logic],modelD)
-		# create_file(
-		# 	content= table[1], 
-		# 	cwd= cwd+f"/outputs/{domain}/mixed", 
-		# 	prefix= domain, 
-		# 	filename= f"mlna_for_all_mixed", 
-		# 	extension=".html"
+
+		## default
+		# default = make_builder(
+		# 	fix_imbalance=fix_imbalance, 
+		# 	DATA_OVER=value, 
+		# 	target_variable=target_variable, 
+		# 	clfs=clfs, 
+		# 	domain= 'classic_all', 
+		# 	prefix=domain, 
+		# 	verbose=verbose,
+		# 	cwd= cwd+'/outputs'
 		# 	)
+		
+		if (4 in levels)  and (len(promise[10]) > 0): # if this stage is allowed
+			
+			# global_logic =[*global_logic, *
+			make_mlna_1_variable(
+				default=default, 
+				value_graph=promise[9], 
+				value_clfs=promise[7], 
+				OHE=promise[10], 
+				nominal_factor_colums=list(set([*promise[5], *promise[6]])-set([target_variable])), 
+				cwd=cwd+f"/outputs/{domain}/{alpha}/quantitative", 
+				domain=domain, 
+				fix_imbalance=fix_imbalance, 
+				target_variable=target_variable, 
+				custom_color=custom_color, 
+				modelD=modelD, 
+				verbose=verbose, 
+				clfs=clfs,
+				alpha=alpha
+				)
+			# ]
+
+		# 2) build an MLN on just k variable, 1 < k <= len of OHE
+		if (5 in levels) and (len(promise[10]) > 0):
+			# global_logic =[*global_logic, *
+			make_mlna_k_variable(
+				default=default, 
+				value_graph=promise[9], 
+				value_clfs=promise[7], 
+				OHE=promise[10], 
+				nominal_factor_colums=sorted(list(set([*promise[5], *promise[6]])-set([target_variable]))), 
+				cwd=cwd+f"/outputs/{domain}/{alpha}/quantitative", 
+				domain=domain, 
+				fix_imbalance=fix_imbalance, 
+				target_variable=target_variable, 
+				custom_color=custom_color, 
+				modelD=modelD, 
+				verbose=verbose, 
+				clfs=clfs,
+				alpha=alpha
+				)
+			# ]
+			# table = print_summary([default, *global_logic],modelD)
+			# create_file(
+			# 	content= table[1], 
+			# 	cwd= cwd+f"/outputs/{domain}/quantitative", 
+			# 	prefix= domain, 
+			# 	filename= f"mlna_for_all_data_quantitative", 
+			# 	extension=".html"
+			# 	)
+
+		if (6 in levels) and (len(promise[10]) > 0 and len(OHE) > 0):
+			# del global_logic
+			# global_logic = []
+			# global_logic =[*global_logic, *
+			make_mlna_k_variable(
+				default=default, 
+				value_graph=promise[9], 
+				value_clfs=promise[7],
+				OHE=[*promise[8],*promise[10]], 
+				nominal_factor_colums=sorted(list(set([*promise[4],*promise[5], *promise[6]])-set([target_variable]))), 
+				cwd=cwd+f"/outputs/{domain}/{alpha}/mixed", 
+				domain=domain, 
+				fix_imbalance=fix_imbalance, 
+				target_variable=target_variable, 
+				custom_color=custom_color, 
+				modelD=modelD, 
+				verbose=verbose, 
+				clfs=clfs,
+				alpha=alpha
+				)
+			# ]
+
+			# table = print_summary([default, *global_logic],modelD)
+			# create_file(
+			# 	content= table[1], 
+			# 	cwd= cwd+f"/outputs/{domain}/mixed", 
+			# 	prefix= domain, 
+			# 	filename= f"mlna_for_all_mixed", 
+			# 	extension=".html"
+			# 	)
 	return True
 	

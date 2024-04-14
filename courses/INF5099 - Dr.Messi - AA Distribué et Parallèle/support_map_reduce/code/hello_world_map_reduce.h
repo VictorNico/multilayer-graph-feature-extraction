@@ -43,6 +43,10 @@ void quicksort_string(char** tab_string, int first, int last);
 void extract_distinct_words();
 int count_word_occurence(char*word, char**tab_words, int nb_words);
 void print_word_occurrence(char** tab_d_words, int nb_line, int* tab_occur);
+void triFusion(int i, int j,char** tab_string, char**  tmp);
+void string_insertion_sort(char** tab_string, int SIZE);
+void write_csv(const char* line, const char* path);
+int fileExists(const char* filePath) ;
 
 #endif
 
