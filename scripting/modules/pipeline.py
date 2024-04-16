@@ -1004,8 +1004,8 @@ def mlnaPipeline(cwd, domain, dataset_link, target_variable, dataset_delimiter='
 
 	# eda
 	#print(dataset.shape)
-	dataset = dataset.sample(int(dataset.shape[0]*.25))
-	dataset.reset_index(drop=True, inplace=True)
+	# dataset = dataset.sample(int(dataset.shape[0]*.25))
+	# dataset.reset_index(drop=True, inplace=True)
 	#print(dataset.shape)
 	# dataset = make_eda(dataframe=dataset, verbose=verbose)
 	dataset = make_eda(dataframe=dataset, verbose=verbose)

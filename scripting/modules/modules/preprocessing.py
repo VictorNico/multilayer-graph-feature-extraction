@@ -365,3 +365,24 @@ def get_SMOTHE_dataset(X, y, random_state=42, sampling_strategy='auto'):
     # DATA_OVER[target_variable] = y_r
 
     return X_r, y_r
+
+def random_sample_merge(df, target_column, percentage):
+    # Séparation du dataframe en fonction des valeurs de la colonne cible
+    groups = df.groupby(target_column)
+    
+    # Liste pour stocker les échantillons de chaque groupe
+    samples = []
+    
+    # Pour chaque groupe, effectuer un échantillonnage aléatoire du pourcentage spécifié
+    for group_name, group_df in groups:
+        sample_size = int(len(group_df) * percentage)
+        sample = group_df.sample(n=sample_size)
+        samples.append(sample)
+    
+    # Fusionner les échantillons en un seul dataframe
+    merged_df = pd.concat(samples)
+    
+    # Réorganiser l'index du dataframe fusionné
+    merged_df.reset_index(drop=True, inplace=True)
+    
+    return merged_df

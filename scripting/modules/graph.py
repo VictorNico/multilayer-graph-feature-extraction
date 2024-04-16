@@ -504,3 +504,93 @@ def inject_features_extracted(data,features):
         dataframe[key] = val
     return dataframe
 
+# show
+def plot_digraph(CRP_G,path)
+    colors = nx.get_edge_attributes(CRP_G,'color').values()
+    colorsN = nx.get_node_attributes(CRP_G,'color').values()
+    nx.draw(
+        CRP_G,
+        edge_color=colors,
+        node_color=colorsN,
+        with_labels=True)
+    plt.show()
+    plt.savefig(path, dpi=700)
+    plt.close()
+
+def build_mlg_with_class(data, features, className):
+    """Build a multi-layer graph
+    Args:
+      data: a dataframe
+      features: a list of dimension
+      className: the target name
+
+    Returns:
+      A directed graph
+    """
+    
+    CRP_G = nx.DiGraph() # create an empty directed graph
+
+    # build edges
+    list_of_edges = []
+    list_of_nodes = []
+    
+    LIST_OF_CUSTOMERS = data.index.values.tolist()
+    LEN_OF_FEATURES = len(features)
+    
+    colors = [
+        '#e6194b',
+        '#ffe119',
+        '#4363d8',
+        '#f58231',
+        '#911eb4',
+        '#46f0f0',
+        '#f032e6',
+        '#bcf60c',
+        '#fabebe',
+        '#008080',
+        '#e6beff',
+        '#9a6324',
+        '#fffac8',
+        '#800000',
+        '#aafdc9',
+        '#808000',
+        '#ffd8b1',
+        '#000075',
+        '#9cb44b',
+        '#808080'
+
+    ]
+    
+    for el in LIST_OF_CUSTOMERS: #fetch on custumers list
+        # layer building
+        for i in range(LEN_OF_FEATURES):
+            # add nodes
+            list_of_nodes.append(('C'+str(i)+'-U-'+str(el),{'color': 'g'}))
+            for attr in features[i].tolist(): # fetch on home ownership encode values
+                #code = f"#{format(255-10*i, '02x')}{format(150+9*i, '02x')}{format(55+10*i, '02x')}"
+                if int(data.loc[el,attr]) == 1: # check if exists relation between both
+                    # bidirectional relation between home ownership and user
+                    list_of_edges.append(('C'+str(i)+'-U-'+str(el),'C'+str(i)+'-M-'+attr, {'color': 'b'})) # add edge to list
+                    list_of_edges.append(('C'+str(i)+'-M-'+attr, 'C'+str(i)+'-U-'+str(el), {'color': 'b'})) # add edge to list
+                    # add nodes
+                    list_of_nodes.append(('C'+str(i)+'-M-'+attr,{'color': colors[i]}))
+            # add directed relation between user node from C1 and C2
+            list_of_edges.append(('C'+str(i)+'-U-'+str(el),'C'+str(i+1)+'-U-'+str(el), {'color': 'r'})) # add edge to list
+            list_of_edges.append(('C'+str(i+1 )+'-U-'+str(el), 'C'+str(i)+'-U-'+str(el), {'color': 'r'})) # add edge to list
+        #code = f"#{format(255-10*LEN_OF_FEATURES, '02x')}{format(150+9*LEN_OF_FEATURES, '02x')}{format(55+10*LEN_OF_FEATURES, '02x')}"
+        # add class nodes
+        list_of_nodes.append(('C'+str(LEN_OF_FEATURES)+'-U-'+str(el),{'color': 'g'}))
+        list_of_nodes.append(('C'+str(LEN_OF_FEATURES)+'-M-C-'+str(data.loc[el,className]),{'color': colors[LEN_OF_FEATURES]}))
+        # bidirectional relation between home ownership and user
+        list_of_edges.append(('C'+str(LEN_OF_FEATURES)+'-U-'+str(el),'C'+str(LEN_OF_FEATURES)+'-M-C-'+str(data.loc[el,className]), {'color': 'b'})) # add edge to list
+        list_of_edges.append(('C'+str(LEN_OF_FEATURES)+'-M-C-'+str(data.loc[el,className]), 'C'+str(LEN_OF_FEATURES)+'-U-'+str(el), {'color': 'b'})) # add edge to list
+        # add directed relation between user node from C1 and C2
+        list_of_edges.append(('C'+str(LEN_OF_FEATURES)+'-U-'+str(el),'C'+str(LEN_OF_FEATURES-1)+'-U-'+str(el), {'color': 'r'})) # add edge to list
+        list_of_edges.append(('C'+str(LEN_OF_FEATURES-1 )+'-U-'+str(el), 'C'+str(LEN_OF_FEATURES)+'-U-'+str(el), {'color': 'r'})) # add edge to list
+    # add edges to the oriented graph
+    # print(list_of_nodes)
+    CRP_G.add_nodes_from(list_of_nodes)
+    CRP_G.add_edges_from(list_of_edges)
+
+    # return the graph
+    return CRP_G
