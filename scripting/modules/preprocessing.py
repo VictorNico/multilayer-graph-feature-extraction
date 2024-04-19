@@ -365,3 +365,31 @@ def get_SMOTHE_dataset(X, y, random_state=42, sampling_strategy='auto'):
     # DATA_OVER[target_variable] = y_r
 
     return X_r, y_r
+
+def random_sample_merge(df, target_column, percentage):
+    # Séparation du dataframe en fonction des valeurs de la colonne cible
+    lenDF = df.shape[0]
+    groups = df.groupby(target_column)
+
+    # Trouver la classe minoritaire et sa taille
+    #minority_class = groups.min()[target_column]
+    minority_size = groups.size().min() 
+    print(f"{minority_size} -- {lenDF - minority_size} {percentage}")
+    minority_size_percentage = minority_size * percentage
+    
+    # Liste pour stocker les échantillons de chaque groupe
+    samples = []
+    
+    # Pour chaque groupe, effectuer un échantillonnage aléatoire du pourcentage spécifié
+    for group_name, group_df in groups:
+        sample_size = int(minority_size_percentage)
+        sample = group_df.sample(n=sample_size)
+        samples.append(sample)
+    
+    # Fusionner les échantillons en un seul dataframe
+    merged_df = pd.concat(samples)
+    
+    # Réorganiser l'index du dataframe fusionné
+    merged_df.reset_index(drop=True, inplace=True)
+    
+    return merged_df

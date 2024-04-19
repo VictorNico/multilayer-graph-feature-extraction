@@ -41,7 +41,8 @@ if __name__ == '__main__':
         to_remove= ['Type'], 
         encoding="utf-8",
         index_col=None,
-        alphas=[.1,.2,.3,.4,.5,.6,.7,.8,.85,.9]
+        alphas=[.1,.2,.3,.4,.5,.6,.7,.8,.85,.9], 
+        portion=.1
         )
     contenu = f'END OF 222 AT {time.strftime("%Y_%m_%d_%H_%M_%S")} \n'
     with open("process.dtvni", "a") as fichier:

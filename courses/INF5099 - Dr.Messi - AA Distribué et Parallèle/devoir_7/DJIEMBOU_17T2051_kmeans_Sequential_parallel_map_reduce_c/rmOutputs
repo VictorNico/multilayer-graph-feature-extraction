@@ -1,0 +1,2 @@
+rm outputs/*
+rm cluster_*

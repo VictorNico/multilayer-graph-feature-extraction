@@ -133,9 +133,9 @@ def build_mlg(data, features):
             list_of_nodes.append(('C'+str(i)+'-U-'+str(el),{'color': 'g'}))
             for attr in features[i].tolist(): # fetch on home ownership encode values
                 code = f"#{format(255-10*i, '02x')}{format(150+9*i, '02x')}{format(55+10*i, '02x')}"
-                print(f"{el} <-{data.loc[el,attr]}-> {attr}")
+                # print(f"{el} <-{data.loc[el,attr]}-> {attr}")
                 if int(data.loc[el,attr]) == 1: # check if exists relation between both
-                    print(f"{el} <--> {attr}")
+                    # print(f"{el} <--> {attr}")
                     # bidirectional relation between home ownership and user
                     list_of_edges.append(('C'+str(i)+'-U-'+str(el),'C'+str(i)+'-M-'+attr, {'color': 'b'})) # add edge to list
                     list_of_edges.append(('C'+str(i)+'-M-'+attr, 'C'+str(i)+'-U-'+str(el), {'color': 'b'})) # add edge to list
@@ -320,12 +320,12 @@ def get_intra_perso_nodes_label(graph,borrowers, layers):
       A list of all inter nodes inside the graph
     """
     linked_table= []
-    print(f"---------{borrowers}")
+    # print(f"---------{borrowers}")
     for borrower in borrowers:
         edges = [(A,B) for i in range(layers) for (A,B) in graph.edges(['C'+str(i)+'-U-'+str(borrower)])]
         linked = set()
         for A, B in edges: # for each edge of the borower in the layer 
-            print(f"{A} -> {B}")
+            # print(f"{A} -> {B}")
             linked.add(A) if '-M-' in A else None
             linked.add(B) if '-M-' in B else None
 
@@ -505,7 +505,7 @@ def inject_features_extracted(data,features):
     return dataframe
 
 # show
-def plot_digraph(CRP_G,path)
+def plot_digraph(CRP_G,path):
     colors = nx.get_edge_attributes(CRP_G,'color').values()
     colorsN = nx.get_node_attributes(CRP_G,'color').values()
     nx.draw(

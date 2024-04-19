@@ -323,16 +323,16 @@ def make_mlna_1_variable(default, value_graph, value_clfs, OHE, nominal_factor_c
 				mlna.add(nominal_factor_colums[i])
 
 		# classic
-		plot_features_importance_as_barh(
-			    data= default[1],
-			    getColor= custom_color,
-			    modelDictName= modelD,
-			    plotTitle= "Classic features importance",
-			    prefix= domain, 
-			    cwd= cwd+'/mlna_1',
-			    graph_a= list(mlna),
-			    save= True
-			)
+		# plot_features_importance_as_barh(
+		# 	    data= default[1],
+		# 	    getColor= custom_color,
+		# 	    modelDictName= modelD,
+		# 	    plotTitle= "Classic features importance",
+		# 	    prefix= domain, 
+		# 	    cwd= cwd+'/mlna_1',
+		# 	    graph_a= list(mlna),
+		# 	    save= True
+		# 	)
 
 		# save descriptors
 		extract_g_df = pd.DataFrame(extracts_g)
@@ -398,26 +398,26 @@ def make_mlna_1_variable(default, value_graph, value_clfs, OHE, nominal_factor_c
 			)
 
 		# classic + mln
-		plot_features_importance_as_barh(
-			    data= logic_i_p[-1][1],
-			    getColor= custom_color,
-			    modelDictName= modelD,
-			    plotTitle= f"Classic + mln features importance for_{nominal_factor_colums[i]}",
-			    prefix= domain, 
-			    cwd= cwd+'/mlna_1/personalized',
-			    graph_a= list(mlna),
-			    save= True
-			)
-		plot_features_importance_as_barh(
-			    data= logic_i_p[-1][1],
-			    getColor= custom_color,
-			    modelDictName= modelD,
-			    plotTitle= f"Classic + mln features importance for_{nominal_factor_colums[i]}",
-			    prefix= domain, 
-			    cwd= cwd+'/mlna_1/global',
-			    graph_a= list(mlna),
-			    save= True
-			)
+		# plot_features_importance_as_barh(
+		# 	    data= logic_i_p[-1][1],
+		# 	    getColor= custom_color,
+		# 	    modelDictName= modelD,
+		# 	    plotTitle= f"Classic + mln features importance for_{nominal_factor_colums[i]}",
+		# 	    prefix= domain, 
+		# 	    cwd= cwd+'/mlna_1/personalized',
+		# 	    graph_a= list(mlna),
+		# 	    save= True
+		# 	)
+		# plot_features_importance_as_barh(
+		# 	    data= logic_i_p[-1][1],
+		# 	    getColor= custom_color,
+		# 	    modelDictName= modelD,
+		# 	    plotTitle= f"Classic + mln features importance for_{nominal_factor_colums[i]}",
+		# 	    prefix= domain, 
+		# 	    cwd= cwd+'/mlna_1/global',
+		# 	    graph_a= list(mlna),
+		# 	    save= True
+		# 	)
 
 		VALUE_MINUS_MLNa = value_clfs.drop(list(mlna), axis=1)
 
@@ -475,26 +475,26 @@ def make_mlna_1_variable(default, value_graph, value_clfs, OHE, nominal_factor_c
 				)
 			)
 		# classic + mln - mln attribut
-		plot_features_importance_as_barh(
-			    data= logic_i_p[-1][1],
-			    getColor= custom_color,
-			    modelDictName= modelD,
-			    plotTitle= f"Classic + mln - mln attributs features importance for_{nominal_factor_colums[i]}",
-			    prefix= domain, 
-			    cwd= cwd+'/mlna_1/personalized',
-			    graph_a= list(mlna),
-			    save= True
-			)
-		plot_features_importance_as_barh(
-			    data= logic_i_g[-1][1],
-			    getColor= custom_color,
-			    modelDictName= modelD,
-			    plotTitle= f"Classic + mln - mln attributs features importance for_{nominal_factor_colums[i]}",
-			    prefix= domain, 
-			    cwd= cwd+'/mlna_1/global',
-			    graph_a= list(mlna),
-			    save= True
-			)
+		# plot_features_importance_as_barh(
+		# 	    data= logic_i_p[-1][1],
+		# 	    getColor= custom_color,
+		# 	    modelDictName= modelD,
+		# 	    plotTitle= f"Classic + mln - mln attributs features importance for_{nominal_factor_colums[i]}",
+		# 	    prefix= domain, 
+		# 	    cwd= cwd+'/mlna_1/personalized',
+		# 	    graph_a= list(mlna),
+		# 	    save= True
+		# 	)
+		# plot_features_importance_as_barh(
+		# 	    data= logic_i_g[-1][1],
+		# 	    getColor= custom_color,
+		# 	    modelDictName= modelD,
+		# 	    plotTitle= f"Classic + mln - mln attributs features importance for_{nominal_factor_colums[i]}",
+		# 	    prefix= domain, 
+		# 	    cwd= cwd+'/mlna_1/global',
+		# 	    graph_a= list(mlna),
+		# 	    save= True
+		# 	)
 
 		# print html report for analysis of variable i
 		#logic_i=[default,*logic_i]
@@ -727,26 +727,26 @@ def make_mlna_k_variable(default, value_graph, value_clfs, OHE, nominal_factor_c
 					)
 				)
 			# classic + mln
-			plot_features_importance_as_barh(
-				    data= logic_i_g[0][1],
-				    getColor= custom_color,
-				    modelDictName= modelD,
-				    plotTitle= f"Classic + mln features importance for_{case_k}",
-				    prefix= domain, 
-				    cwd= cwd+f'/mlna_{k}/global',
-				    graph_a= list(mlna),
-				    save= True
-				)
-			plot_features_importance_as_barh(
-				    data= logic_i_p[0][1],
-				    getColor= custom_color,
-				    modelDictName= modelD,
-				    plotTitle= f"Classic + mln features importance for_{case_k}",
-				    prefix= domain, 
-				    cwd= cwd+f'/mlna_{k}/personalized',
-				    graph_a= list(mlna),
-				    save= True
-				)
+			# plot_features_importance_as_barh(
+			# 	    data= logic_i_g[0][1],
+			# 	    getColor= custom_color,
+			# 	    modelDictName= modelD,
+			# 	    plotTitle= f"Classic + mln features importance for_{case_k}",
+			# 	    prefix= domain, 
+			# 	    cwd= cwd+f'/mlna_{k}/global',
+			# 	    graph_a= list(mlna),
+			# 	    save= True
+			# 	)
+			# plot_features_importance_as_barh(
+			# 	    data= logic_i_p[0][1],
+			# 	    getColor= custom_color,
+			# 	    modelDictName= modelD,
+			# 	    plotTitle= f"Classic + mln features importance for_{case_k}",
+			# 	    prefix= domain, 
+			# 	    cwd= cwd+f'/mlna_{k}/personalized',
+			# 	    graph_a= list(mlna),
+			# 	    save= True
+			# 	)
 			
 			## default - MLNa
 			
@@ -771,16 +771,16 @@ def make_mlna_k_variable(default, value_graph, value_clfs, OHE, nominal_factor_c
 					)
 				logic_i_p.append(logic_i_g[-1])
 				# classic - mln attribut
-				plot_features_importance_as_barh(
-					    data= logic_i_g[-1][1],
-					    getColor= custom_color,
-					    modelDictName= modelD,
-					    plotTitle= f"Classic - mln attributs features importance for_{case_k}",
-					    prefix= domain, 
-					    cwd= cwd+f'/mlna_{k}',
-					    graph_a= list(mlna),
-					    save= True
-					)
+				# plot_features_importance_as_barh(
+				# 	    data= logic_i_g[-1][1],
+				# 	    getColor= custom_color,
+				# 	    modelDictName= modelD,
+				# 	    plotTitle= f"Classic - mln attributs features importance for_{case_k}",
+				# 	    prefix= domain, 
+				# 	    cwd= cwd+f'/mlna_{k}',
+				# 	    graph_a= list(mlna),
+				# 	    save= True
+				# 	)
 				#print(f"{typeof(mlna)} {mmlna}")
 
 			## default + MLN - MLNa
@@ -812,26 +812,26 @@ def make_mlna_k_variable(default, value_graph, value_clfs, OHE, nominal_factor_c
 					)
 				)
 			# classic + mln - mln attribut
-			plot_features_importance_as_barh(
-				    data= logic_i_p[-1][1],
-				    getColor= custom_color,
-				    modelDictName= modelD,
-				    plotTitle= f"Classic + mln - mln attributs features importance for_{case_k}",
-				    prefix= domain, 
-				    cwd= cwd+f'/mlna_{k}/personalized',
-				    graph_a= list(mlna),
-				    save= True
-				)
-			plot_features_importance_as_barh(
-				    data= logic_i_g[-1][1],
-				    getColor= custom_color,
-				    modelDictName= modelD,
-				    plotTitle= f"Classic + mln - mln attributs features importance for_{case_k}",
-				    prefix= domain, 
-				    cwd= cwd+f'/mlna_{k}/global',
-				    graph_a= list(mlna),
-				    save= True
-				)
+			# plot_features_importance_as_barh(
+			# 	    data= logic_i_p[-1][1],
+			# 	    getColor= custom_color,
+			# 	    modelDictName= modelD,
+			# 	    plotTitle= f"Classic + mln - mln attributs features importance for_{case_k}",
+			# 	    prefix= domain, 
+			# 	    cwd= cwd+f'/mlna_{k}/personalized',
+			# 	    graph_a= list(mlna),
+			# 	    save= True
+			# 	)
+			# plot_features_importance_as_barh(
+			# 	    data= logic_i_g[-1][1],
+			# 	    getColor= custom_color,
+			# 	    modelDictName= modelD,
+			# 	    plotTitle= f"Classic + mln - mln attributs features importance for_{case_k}",
+			# 	    prefix= domain, 
+			# 	    cwd= cwd+f'/mlna_{k}/global',
+			# 	    graph_a= list(mlna),
+			# 	    save= True
+			# 	)
 			
 			
 			
@@ -971,7 +971,7 @@ def make_builder(fix_imbalance, DATA_OVER, target_variable, clfs, cwd, prefix, v
 	return (domain, store)
 
 # @profile
-def mlnaPipeline(cwd, domain, dataset_link, target_variable, dataset_delimiter=',', all_nominal=True, all_numeric=False, verbose=True, fix_imbalance=True, levels=None, to_remove=None, encoding="utf-8",index_col=None, na_values=None, alphas=[0.85]):
+def mlnaPipeline(cwd, domain, dataset_link, target_variable, dataset_delimiter=',', all_nominal=True, all_numeric=False, verbose=True, fix_imbalance=True, levels=None, to_remove=None, encoding="utf-8",index_col=None, na_values=None, alphas=[0.85], portion=.65):
 	"""Run a sequence of action in goal to build, analyse, extract descriptors and evaluate with just one called
 
 	Args:
@@ -1004,8 +1004,9 @@ def mlnaPipeline(cwd, domain, dataset_link, target_variable, dataset_delimiter='
 
 	# eda
 	#print(dataset.shape)
-	# dataset = dataset.sample(int(dataset.shape[0]*.25))
-	# dataset.reset_index(drop=True, inplace=True)
+	dataset = random_sample_merge(df=dataset, target_column=target_variable, percentage=portion)
+	dataset.reset_index(drop=True, inplace=True)
+	print(f"loaded dataset dim: {dataset.shape}") if verbose else None
 	#print(dataset.shape)
 	# dataset = make_eda(dataframe=dataset, verbose=verbose)
 	dataset = make_eda(dataframe=dataset, verbose=verbose)
