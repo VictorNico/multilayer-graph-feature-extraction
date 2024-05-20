@@ -1596,7 +1596,7 @@ def make_mlna_1_variable_v2(
         for borrower in PERSONS:
             # compute descriptors for current borrower
             current = extract_descriptors_from_graph_model(
-                graph=MLN,
+                graph=removeEdge(MLN, 1, copT.loc[borrower,target_variable], borrower),
                 y_graph=removeEdge(MLN, 1, copT.loc[borrower,target_variable], borrower),
                 graphWithClass=graphWithClass,
                 alpha=alpha,
