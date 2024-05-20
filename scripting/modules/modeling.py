@@ -25,9 +25,10 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import GridSearchCV, StratifiedKFold
 #from lightgbm import LGBMClassifier
 from sklearn.metrics import precision_score,accuracy_score,f1_score, recall_score
-from modules.file import save_model, save_dataset
+from .file import save_model, save_dataset
 #from sklearn.linear_model import LinearRegression
 from sklearn.svm import SVC
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 #from sklearn.naive_bayes import MultinomialNB
 #from sklearn.ensemble import AdaBoostClassifier
 #from sklearn.ensemble import BaggingClassifier
@@ -46,7 +47,7 @@ from sklearn.svm import SVC
 ##          Methods definition
 #################################################
 # @profile
-def test_train(dataframe, target, test_size=0.2, random_state=12):
+def test_train(dataframe, target, test_size=0.2, random_state=12, reset_index=True):
     """Split train test data labels
     Args:
     dataframe: dataframe
@@ -64,16 +65,17 @@ def test_train(dataframe, target, test_size=0.2, random_state=12):
 
     x_train, x_test, y_train, y_test = train_test_split(X,Y,test_size=test_size,random_state=random_state)
     #save_dataset(x_train, 'x_train')
-    x_train.reset_index(inplace = True)
-    x_test.reset_index(inplace = True)
+    if reset_index:
+        x_train.reset_index(inplace = True)
+        x_test.reset_index(inplace = True)
 
-    x_train = x_train.drop(['index'], axis=1)
-    x_train.reset_index(inplace = True)
-    x_train = x_train.drop(['index'], axis=1)
+        x_train = x_train.drop(['index'], axis=1)
+        x_train.reset_index(inplace = True)
+        x_train = x_train.drop(['index'], axis=1)
 
-    x_test = x_test.drop(['index'], axis=1)
-    x_test.reset_index(inplace = True)
-    x_test = x_test.drop(['index'], axis=1)
+        x_test = x_test.drop(['index'], axis=1)
+        x_test.reset_index(inplace = True)
+        x_test = x_test.drop(['index'], axis=1)
 
     return x_train, x_test, y_train, y_test
 
@@ -88,13 +90,13 @@ def init_models():
     A dict of init model
     """
 
-    knc = KNeighborsClassifier() 
+    # knc = KNeighborsClassifier()
     #algorithm='ball_tree', leaf_size=10, n_neighbors=18, p=1, weights='distance'
     dtc = DecisionTreeClassifier()
     lrc = LogisticRegression()
     rfc = RandomForestClassifier()
     xgb = XGBClassifier(booster = 'gbtree', use_label_encoder=False)
-
+    lda = LinearDiscriminantAnalysis()
     svc = SVC(
         kernel = 'linear'
         #,cache_size = 7100
@@ -108,18 +110,18 @@ def init_models():
     #lgb = lgb.LGBMClassifier(colsample_bytree= 0.7378703019867917,learning_rate= 0.007929963347654646,max_depth=5,min_child_weight= 0.05345076003503776,num_leaves= 20,subsample= 0.892939141154265)
 
     clfs = {
-    'xgb':xgb,
-    'dtc':dtc,
-    'lrc':lrc,
-    'rfc':rfc,
-    'sv' :svc,
-    #'knn':knc
+    'LDA':lda,
+    'LR':lrc,
+    'SVM' :svc,
+    'DT':dtc,
+    'RF':rfc,
+    'XGB':xgb,
     }
 
     return clfs
 
 # @profile
-def init_training_store(dataframe):
+def init_training_store(dataframe, withCost=True):
     """Initialize training information storage dataframe
     Args:
     dataframe: a dataframe 
@@ -132,6 +134,12 @@ def init_training_store(dataframe):
     cols = dataframe.columns.to_list()
     #print(cols)
     cols.extend([
+    'precision',
+    'accuracy',
+    'recall',
+    'f1-score',
+    'financial-cost'
+    ]) if withCost else cols.extend([
     'precision',
     'accuracy',
     'recall',
@@ -155,19 +163,34 @@ def get_xgb_imp(xgb):
     return {k:v/total for k,v in imp_vals.items()}
 
 # @profile
-def save_shap(clf, name, x_test):
-    explainer = shap.Explainer(clf.predict, x_test)
-    shap_values = explainer(x_test)
-    timestr = time.strftime("%Y_%m_%d_%H_%M_%S")
-    filename = './plots/shap_summary_'+name+'_'+timestr+'.png'
-    shap.summary_plot(shap_values,show=False)
-    plt.savefig(filename,dpi=700) #.png,.pdf will also support here
-    filename1 = './plots/shap_bar_'+name+'_'+timestr+'.png'
-    shap.plots.bar(shap_values,show=False)
-    plt.savefig(filename1,dpi=700) #.png,.pdf will also support here
+# def save_shap(clf, name, x_test):
+#     explainer = shap.Explainer(clf.predict, x_test)
+#     shap_values = explainer(x_test)
+#     timestr = time.strftime("%Y_%m_%d_%H_%M_%S")
+#     filename = './plots/shap_summary_'+name+'_'+timestr+'.png'
+#     shap.summary_plot(shap_values,show=False)
+#     plt.savefig(filename,dpi=700) #.png,.pdf will also support here
+#     filename1 = './plots/shap_bar_'+name+'_'+timestr+'.png'
+#     shap.plots.bar(shap_values,show=False)
+#     plt.savefig(filename1,dpi=700) #.png,.pdf will also support here
 
 # @profile
-def train_classifier(name, clf,X_train,y_train,X_test,y_test, store, domain, prefix, cwd):
+def train_classifier(
+        name,
+        clf,
+        X_train,
+        y_train,
+        X_test,
+        y_test,
+        store,
+        domain,
+        prefix,
+        cwd,
+        financialOption,
+        duration_divider,
+        rate_divider,
+        withCost=True
+):
     """Train a classifier on a dataframe
     Args:
     name: name of classifier
@@ -189,6 +212,15 @@ def train_classifier(name, clf,X_train,y_train,X_test,y_test, store, domain, pre
 
     accuracy = accuracy_score(y_test,y_pred)
     precision = precision_score(y_test,y_pred)
+    if withCost:
+        cost = compute_classification_financial_cost(
+            list(y_pred),
+            list(y_test),
+            financialOption,
+            X_test,
+            duration_divider,
+            rate_divider
+        )
     recall = recall_score(y_test,y_pred, average='macro')
     f1_score_r = f1_score(y_test,y_pred, average='macro')
 
@@ -199,19 +231,24 @@ def train_classifier(name, clf,X_train,y_train,X_test,y_test, store, domain, pre
                     clf_name= f'{name}_{domain}', 
                     prefix= prefix
                     )
-    if 'lr' in name or 'sv' in name:
+    if 'LR' in name or 'SVM' in name or 'LDA' in name:
         #print(f"support_vectors_:{clf.support_vectors_} dual_coef_{clf.dual_coef_}")
         vals = list(clf.coef_[0])
         #print(f"len {len(vals)}")
         #print(vals)
-        vals.extend([precision,accuracy,recall,f1_score_r])
+        vals.extend([precision,accuracy,recall,f1_score_r,cost]) if withCost else vals.extend([precision,accuracy,recall,f1_score_r])
         keys = X_train.columns.to_list()
         keys.extend([
             'precision',
             'accuracy',
             'recall',
-            'f1-score'
-            ])
+            'f1-score',
+            'financial-cost'
+            ]) if withCost else keys.extend([
+            'precision',
+            'accuracy',
+            'recall',
+            'f1-score'])
         #print(f"{name} keys:{len(keys)} vals:{len(vals)}")
         store.loc[name] = pd.Series(
                 vals, 
@@ -220,17 +257,22 @@ def train_classifier(name, clf,X_train,y_train,X_test,y_test, store, domain, pre
         store.fillna(0, inplace=True)
         #print(f"{store.isna().sum()} ---")
         #save_dataset(store, name+'_'+domain)
-    elif 'rf' in name or 'dt' in name or 'kn' in name:
+    elif 'RF' in name or 'DT' in name or 'KN' in name:
         vals = list(clf.feature_importances_)
         #print(f"len {len(vals)}")
-        vals.extend([precision,accuracy,recall,f1_score_r])
+        vals.extend([precision,accuracy,recall,f1_score_r,cost]) if withCost else vals.extend([precision,accuracy,recall,f1_score_r])
         keys = X_train.columns.to_list()
         keys.extend([
             'precision',
             'accuracy',
             'recall',
-            'f1-score'
-            ])
+            'f1-score',
+            'financial-cost'
+        ]) if withCost else keys.extend([
+            'precision',
+            'accuracy',
+            'recall',
+            'f1-score'])
         #print(f"{name} keys:{len(keys)} vals:{len(vals)}")
         store.loc[name] = pd.Series(
                 vals, 
@@ -239,7 +281,7 @@ def train_classifier(name, clf,X_train,y_train,X_test,y_test, store, domain, pre
         store.fillna(0, inplace=True)
         #print(f"{store.isna().sum()} +++")
         #save_dataset(store, name+'_'+domain)
-    elif 'xg' in name:
+    elif 'XGB' in name:
         vals = get_xgb_imp(clf)
         keys = list(vals.keys())
         vals = list(vals.values())
@@ -247,9 +289,14 @@ def train_classifier(name, clf,X_train,y_train,X_test,y_test, store, domain, pre
             'precision',
             'accuracy',
             'recall',
-            'f1-score'
-            ])
-        vals.extend([precision,accuracy,recall,f1_score_r])
+            'f1-score',
+            'financial-cost'
+        ]) if withCost else keys.extend([
+            'precision',
+            'accuracy',
+            'recall',
+            'f1-score'])
+        vals.extend([precision,accuracy,recall,f1_score_r,cost]) if withCost else vals.extend([precision,accuracy,recall,f1_score_r])
         #print(f"{name} keys:{len(keys)} vals:{len(vals)}")
         store.loc[name] = pd.Series(
                 vals, 
@@ -262,7 +309,21 @@ def train_classifier(name, clf,X_train,y_train,X_test,y_test, store, domain, pre
     return store
 
 # @profile
-def train(clfs,x_train,y_train,x_test,y_test, store, domain, prefix, cwd):
+def train(
+        clfs,
+        x_train,
+        y_train,
+        x_test,
+        y_test,
+        store,
+        domain,
+        prefix,
+        cwd,
+        duration_divider,
+        rate_divider,
+        financialOption,
+        withCost=True
+):
     """Train our baseline classifiers
     Args:
     clfs: dict of classifiers instance
@@ -279,8 +340,27 @@ def train(clfs,x_train,y_train,x_test,y_test, store, domain, prefix, cwd):
     """
 
     for name,clf in clfs.items():
-        print(name)
-        store = train_classifier(name, clf, x_train,y_train,x_test,y_test, store, domain, prefix, cwd)
+
+        try:
+            print(name)
+            store = train_classifier(
+                name,
+                clf,
+                x_train,
+                y_train,
+                x_test,
+                y_test,
+                store,
+                domain,
+                prefix,
+                cwd,
+                financialOption,
+                withCost,
+                duration_divider,
+                rate_divider
+            )
+        except:
+            print(f"An exception occurred during training: {name}")
 
     # save of model training logs    
     link_to_evaluations_data = save_dataset(
@@ -294,4 +374,37 @@ def train(clfs,x_train,y_train,x_test,y_test, store, domain, prefix, cwd):
     return store
 
 
+def compute_classification_financial_cost(ypred, yreal, financialOption, test_dataset, duration_divider, rate_divider):
+    """
+    Compute the financial cost of an investment
+    Parameters
+    ----------
+    ypred : predicted values
+    yreal : real values
+    financialOption : financial option
+    test_dataset : test dataset
+    duration_divider : duration divider
+    rate_divider : rate divider
 
+    Returns
+    -------
+    cost : financial cost
+    """
+    cost = 0
+
+    for i,example in enumerate(list(test_dataset.index)):
+        rate = test_dataset[financialOption['rate']][example] / rate_divider
+        amount = test_dataset[financialOption['amount']][example]
+        duration = test_dataset[financialOption['duration']][example] / duration_divider
+        # print(rate, amount, duration)
+        true_label = yreal[i]
+        predicted_label = ypred[i]
+
+        if predicted_label == 0 and true_label == 1:  # Bad debtor announced as good
+            cost += amount * rate
+
+        elif predicted_label == 1 and true_label == 0:  # Good customer announced as bad
+            deficit = amount * rate * duration
+            cost += deficit
+
+    return cost

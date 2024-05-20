@@ -16,7 +16,7 @@ import pandas as pd
 import time
 import os
 import joblib
-from networkx import write_gml, write_graphml_lxml
+from networkx import write_gml, write_graphml_lxml, read_gml #, read_graphml_lxml
 
 ###### End
 
@@ -152,18 +152,18 @@ def read_graph(path):
       The graph instance saved previously
     """
     
-    return nx.read_gml(path)
+    return read_gml(path)
 
-def read_digraph(path):
-    """Read directed graph
-    Args:
-      path: path to digraph
-
-    Returns:
-      The digraph instance saved previously
-    """
-    
-    return nx.read_graphml_lxml(path)
+# def read_digraph(path):
+#     """Read directed graph
+#     Args:
+#       path: path to digraph
+#
+#     Returns:
+#       The digraph instance saved previously
+#     """
+#
+#     return read_graphml_lxml(path)
     
 def read_dataset(path,sep='\t'):
     """Read graph

@@ -17,19 +17,19 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import seaborn as sns
 #import missingno as msno
-import plotly.express as px
-import plotly.figure_factory as ff
-import plotly.graph_objects as go
+# import plotly.express as px
+# import plotly.figure_factory as ff
+# import plotly.graph_objects as go
 #import shap
-import sys
+# import sys
 import numpy as np
 import time
-import os
-import joblib
+# import os
+# import joblib
 import networkx as nx
 from IPython.core.display import HTML
-import imgkit
-from modules.file import create_domain
+# import imgkit
+from .file import create_domain
 import pandas as pd
 # from memory_profiler import profile
 # from markdown2pdf import convert
@@ -54,7 +54,7 @@ def multi_table(table_list):
         return HTML('<table><tr style="background-color:#2020d1; color: #FFFFFF;">' +  ''.join(['<td>' + table._repr_html_() + '</td>' for table in table_list]) +'</tr></table>')
 
 # @profile
-def plot_graph():
+def plot_graph(CRP_G_1):
         # show
         colors = nx.get_edge_attributes(CRP_G_1,'color').values()
         colorsN = nx.get_node_attributes(CRP_G_1,'color').values()
@@ -71,15 +71,13 @@ def plot_graph():
 
 # @profile
 def custom_color(dataframe, graph_a=[]):
-    cols= dataframe.columns.tolist()
+    cols= dataframe.tolist()
     colors= []
     for col in cols:
-        if col in graph_a:
-            colors.append('yellow')
-        elif 'MLN_' in col:
+        if 'PER_' in col:
             colors.append('green')
-        # elif 'STAT_' in col:
-        #     colors.append('blue')
+        elif 'GLO_' in col:
+            colors.append('yellow')
         else:
             colors.append('dodgerblue')
     return [colors, cols]
@@ -101,12 +99,12 @@ def get_color():
 
 def model_desc():
     modelD = {
-    'sv' :'SVM',
-    'lrc':'LOGISTIC REGRESSION',
-    'dtc':'DECISION TREE',
-    'rfc':'RANDOM FOREST',
-    'xgb':'XGBOOST',
-    #'knn':'knc'
+        'LDA': 'LDA',
+        'LR': 'LR',
+        'SVM': 'SVM',
+        'DT': 'DT',
+        'RF': 'RF',
+        'XGB': 'XGB',
     }
     return modelD
 
@@ -124,8 +122,9 @@ def plot_features_importance_as_barh(data, getColor, modelDictName,plotTitle, cw
         ok = ok.sort_values(
                 by = index,
                 axis = 1, 
-                ascending = True
-            )
+                ascending = True,
+                key=lambda row: abs(row)
+            ).head(20)
         # fig setup
         width = 10
         height = int(len(np.unique(ok.columns.tolist()))/4)

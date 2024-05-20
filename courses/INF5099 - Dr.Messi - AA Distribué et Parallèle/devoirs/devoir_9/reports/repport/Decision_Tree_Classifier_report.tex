@@ -1,0 +1,447 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage{pgf}
+% \usepackage[condensed,math]{kurier}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{svg}
+\usepackage[french]{babel}
+\usepackage{tikz}
+\usepackage{stanli}
+\usepackage{afterpage}
+\usepackage{multirow}
+%\usepackage{subfig}
+\usepackage{pgfpages}
+\usepackage{pdfpages}
+\usepackage{svg}
+\usepackage{rotating}
+\usepackage{multicol}
+\usepackage[utf8]{inputenc}
+\usepackage{translator}
+\usepackage{float}
+\usepackage{subfigure}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+%\usepackage{algpseudocode}
+\usepackage{acronym}
+% Language setting
+% Replace `english' with e.g. `spanish' to change the document language
+%\usepackage[english]{babel}
+% Useful packages
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{graphics}
+\usepackage[colorlinks=true, allcolors=black]{hyperref}
+\usepackage{tikz}
+\usetikzlibrary{positioning}
+% Set page size and margins
+% Replace `letterpaper' with `a4paper' for UK/EU standard size
+\usepackage[a4paper,top=2cm,bottom=1.5cm,left=1.5cm,right=1.5cm,marginparwidth=1.75cm]{geometry}
+\usepackage{fancyhdr}
+% modules
+
+
+
+
+\title{}
+\author{}
+\date{}
+
+%Sets the margins
+
+\textwidth = 7.5 in
+\textheight = 9.5 in
+\oddsidemargin = -0.7 in
+\evensidemargin = -0.3 in
+\topmargin = -0.3 in
+\headheight = 0.0 in
+\headsep = 0.0 in
+\parskip = 0.1in
+\parindent = 0.0in
+
+% Define the boxed layout
+\pgfpagesdeclarelayout{boxed}
+{
+    \edef\pgfpageoptionborder{0pt}
+}
+{
+    \pgfpagesphysicalpageoptions
+    {%
+        logical pages=1,%
+    }
+    \pgfpageslogicalpageoptions{1}
+    {
+        border code={},%
+        border shrink=\pgfpageoptionborder,%
+        resized width=.9\pgfphysicalwidth,%
+        resized height=.9\pgfphysicalheight,%
+        center=\pgfpoint{.5\pgfphysicalwidth}{.5\pgfphysicalheight}%
+    }%
+}
+
+\fancypagestyle{firstpage}{
+	\fancyhf{} % Clear header and footer
+	\renewcommand{\headrulewidth}{0pt} % Remove header rule
+	\renewcommand{\footrulewidth}{0pt} % Remove footer rule
+	\fancyfoot[C]{} % Remove page number in the center
+}
+\begin{document}
+\pgfpagesuselayout{boxed}
+%\thispagestyle{firstpage}
+\includepdf[pages=1, scale=1.1]{guard/Decision_Tree_Classifier_report.pdf}  % Include only page 1
+\newpage
+\tableofcontents
+
+\pagebreak
+
+\acrodef{DT}{Decision Tree Classifier}
+
+
+\section{Généralité}
+\label{sec:ge}
+La classification est un tache qui consiste a associer un object à une catégorie.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.55\linewidth]{classif.png}
+    \caption{Schéma d'une Classification}
+    \label{fig:enter-label}
+\end{figure}
+
+\textbf{Un arbre de décision} est un algorithme qui permet de former un modèle qui se base sur les arbres de décision pour associer une classe ou un catégorie a une entrée. 
+
+Explicitement, un arbre classique comporte une racine, des branches et des feuilles. Les arbres de décision en comporte de même. Les conditions qui permettent de séparer au mieux l'ensemble de données est contenu dans les noeuds, les sorties possibles de la condition de séparation sont portées par les branches ou arêtes; et enfin les catégories ou classes sont définies par les feuilles.
+
+Le noeud racine est le parent de tous les noeuds, c'est le noeud le plus haut dans l'arbre. L'arbre de décision permet donc de représenter chaque attribut dans les noeuds; les branches définissent les règles de séparations et les feuilles définissent les sorties qui peuvent être numériques ou catégorielles.
+
+Nous remarquons donc qu'il s'agit là d'un reproduction du processus de décision de la vie réelle. Si nous voulons par exemple représenter un processus de décision dépendanment des conditions météorologiques, nous pouvons construire l'arbre suivant
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1.\linewidth]{example.png}
+    \caption{Exemple de processus de décision}
+    \label{fig:enter-label}
+\end{figure}
+
+Nous remarquons cette situation de décision dans la vie réelle peut bien se résumé ou se reproduire en faisant usage d'un arbre de décision.
+
+Lorsque les données n'offrent pas d'avantages lors du fractionnement, l'exécution est directement interrompue. Essayez de trouver un test à la fois plutôt que d'optimiser l'ensemble de l'arbre.
+
+
+\subsection{Versions existantes et comparaison}
+\label{sec:v}
+Il existe plusieurs variétés d'algorithmes d'arbre de décision, les tableaux si contre vous détails les spécificités de chacune d'elles.
+
+L'algorithme $ID3$ est considéré comme un algorithme d'arbre de décision très simple (Quinlan, 1986). ID3 utilise le gain d'information comme critère de division. La croissance s'arrête lorsque toutes les instances appartiennent à une seule valeur de la caractéristique cible ou lorsque le meilleur gain d'information n'est pas supérieur à zéro. ID3 n'applique aucune procédure d'élagage et ne traite pas les attributs numériques ou les valeurs manquantes.
+
+$C4.5$ est une évolution de ID3, présentée par le même auteur (Quinlan, 1993), qui utilise le rapport de gain comme critère de division. Le découpage cesse lorsque le nombre d'instances à découper est inférieur à un certain seuil. L'élagage basé sur les erreurs est effectué après la phase de croissance. C4.5 peut traiter des attributs numériques. Il peut produire à partir d'un ensemble d'apprentissage qui incorpore des valeurs manquantes en utilisant des critères de rapport de gain corrigés comme présenté ci-dessus.
+
+$CART$ est l'acronyme de Classiﬁcation and Regression Trees (Breiman et al., 1984) et se caractérise par le fait qu'il construit des arbres binaires, c'est-à-dire que chaque nœud interne a exactement deux arêtes sortantes. Les scissions sont sélectionnées à l'aide des deux critères de séparation et l'arbre obtenu est élagué par l'élagage coût-complexité.Lorsque cela est possible, CART peut prendre en compte les coûts de mauvaise classification dans l'induc-tion de l'arbre. Une caractéristique importante de CART est sa capacité à générer des arbres de régression. Les arbres de régression sont des arbres dont les feuilles prédisent un nombre réel et non une classe. Dans le cas de la régression, CART recherche les divisions qui minimisent l'erreur quadratique des prédictions (l'écart le moins élevé). La prédiction dans chaque feuille est basée sur la moyenne pondérée pour le nœud.
+
+Dès le début des années soixante-dix, des chercheurs en statistiques appliquées ont développé des procédures de génération d'arbres de décision, telles que : AID (Sonquist et al., 1971), MAID (Gillo, 1972), THAID (Morgan et Messenger, 1973) et CHAID (Kass, 1980). CHAID (Chisquare-Automatic-Interaction-Detection) a été conçu à l'origine pour traiter uniquement des attributs nominaux. Pour chaque attribut d'entrée ai, CHAID recherche la paire de valeurs dans Vith qui est la moins significativement différente par rapport à l'attribut cible. La différence signiﬁcative est mesurée par la valeur p obtenue à partir d'un test statistique. Le test statistique utilisé dépend du type d'attribut cible. Si l'attribut cible est continu, un $F$ test est utilisé. S'il est nominal, un test chi-carré de Pearson est utilisé. S'il est ordinal, un test de rapport de vraisemblance est utilisé.
+
+CHAID vérifie si la valeur p obtenue est supérieure à un certain seuil de fusion. Si la réponse est positive, il fusionne les valeurs et recherche une autre paire potentielle à fusionner. Le processus est répété jusqu'à ce qu'aucune paire significative ne soit trouvée. Le meilleur attribut d'entrée à utiliser pour scinder le nœud actuel est alors sélectionné, de sorte que chaque nœud enfant soit constitué d'un groupe de valeurs homogènes de l'attribut sélectionné. Il convient de noter qu'aucune scission n'est effectuée si la valeur p ajustée du meilleur attribut d'entrée n'est pas inférieure à un certain seuil de scission. Cette procédure s'arrête également lorsque l'une des conditions suivantes est remplie : 
+
+\begin{enumerate}
+\item La profondeur maximale de l'arbre est atteinte.
+\item le nombre minimum de cas dans le nœud pour être un parent est atteint, de sorte qu'il ne peut plus être scindé.
+\item le nombre minimum de cas dans le nœud pour être un nœud enfant est atteint.
+\end{enumerate}
+
+CHAID traite les valeurs manquantes en les considérant toutes comme une seule catégorie valide. CHAID n'effectue pas d'élagage.
+
+
+
+\begin{table}[H]
+    \centering
+    \resizebox{\textwidth}{!}{%
+    \renewcommand{\arraystretch}{1.9} % Augmenter la hauteur du tableau
+    \begin{tabular}{|c|c|c|c|}
+        \hline
+    Algorithme d'arbre de décision  & Type de données & Méthode de fractionnement des données numériques & Outils possibles\\ \hline
+    CHAID (CHi-square Automatic Interaction Detector)  &  Catégorielle  & Indéfini  & SPSS answer tree \\ \hline
+   ID3 (Iterative Dichotomiser 3)   &  Catégorielle  & Pas de restriction  &  WEKA\\ \hline
+       C4.5  & Catégorielle et Numérique & Pas de restriction &  WEKA \\ \hline
+       CART (Classification and Regression Tree)   & Catégorielle et Numérique & Séparation binaire &  CART 5.0  \\ \hline
+    \end{tabular}
+    }
+    \caption{Tableau caractérisation des arbres de décision}
+    \label{tab:my_label}
+\end{table}
+
+
+\begin{table}[H]
+    \centering
+    \resizebox{\textwidth}{!}{%
+    \renewcommand{\arraystretch}{2.5} % Augmenter la hauteur du tableau
+    \begin{tabular}{|p{7cm}|p{7cm}|p{7cm}|}
+        \hline
+        \textbf{Nom de l'algorithme} & \textbf{Classification} & \textbf{Description}\\ \hline
+        CHAID (CHi-square Automatic Interaction Detector)  &  Antérieur à l'implémentation originale de l'ID3 & Ce type d'arbre de décision est utilisé pour une variable nominale à échelle. La technique détecte la variable dépendante à partir des variables catégorisées d'un ensemble de données \\ \hline
+        ID3 (Iterative Dichotomiser 3)  & Utilise la fonction d'entropie et le gain d'information comme mesures & La seule préoccupation concerne les valeurs discrètes. Par conséquent, l'ensemble de données continues doit être classé dans l'ensemble de données discrètes\\ \hline
+        C4.5 & La version améliorée de l'ID 3 & Traite à la fois des données discrètes et continues. Il peut également gérer les données incomplètes \\ \hline
+        CART (Classification and Regression Tree) & Utilise l'indice de Gini comme mesure & En appliquant la division numérique, nous pouvons construire l'arbre basé sur CART \\ \hline
+    \end{tabular}}
+    \caption{Tableau de decription des arbres de décision}
+    \label{tab:my_label}
+\end{table}
+
+ \subsection{Fonctionnement d'ID3}
+ \label{sec:sp}
+ 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\linewidth]{image.png}
+    \caption{Squelette d'un arbre de décision}
+    \label{fig:enter-label}
+\end{figure}
+
+L'algorithme d'ID3 se base essentiellement sur un certain nombre d'opération:
+\begin{enumerate}
+    \item \textit{Le calcul de l'impureté dans l'ensemble de données.} Ceci est possible en estimant soit \textbf{l'indice de Gini} ou \textbf{l'entropie }:
+    \begin{itemize}
+        \item \textbf{Entropie} :
+L'entropie est une mesure de l'incertitude dans un ensemble de données. Plus l'entropie est élevée, plus les données sont dispersées et moins elles sont prévisibles. Dans le contexte de l'algorithme ID3, l'entropie est utilisée pour quantifier l'impureté d'un ensemble d'exemples en termes de distribution de classes.
+
+Une entropie de 0 signifie que tous les exemples de l'ensemble de données appartiennent à la même classe, donc l'ensemble est pur.
+
+Une entropie plus proche de 1 signifie que les exemples sont répartis de manière équitable entre plusieurs classes, donc l'ensemble est impur. Son equation est fournie par $$E(S) = \sum^c_{i=1}-p_ilog_2p_i$$
+\item \textbf{indice de Gini} :
+L'indice de Gini est une mesure alternative utilisée pour évaluer l'impureté d'un ensemble de données. Il quantifie la probabilité qu'un exemple choisi au hasard soit incorrectement classé en fonction de la distribution des classes.
+
+Un indice de Gini de 0 indique que l'ensemble de données est pur, c'est-à-dire que tous les exemples appartiennent à la même classe.
+
+Un indice de Gini plus proche de 1 indique une plus grande impureté, avec une distribution équitable ou presque équitable des exemples entre les classes.$$Gini = 1- \sum^n_{i=1}(P_i)^2$$
+    \end{itemize}
+\item Lorsque nous avons, ceci nous intéressons plus à comment identifier la meilleurs condition de séparation sachant une variable et encore; quelle variable qui permet de purifier au mieux l'ensemble de données:
+$$Information\ Gain_{Classification}= E(d)– \sum \frac{|s|}{|d|}E(s)$$
+
+
+$$Information\ Gain_{Regression}= Variance(d)– \sum \frac{|s|}{|d|}Variance(s)$$
+\item la construction d'un arbre de décision peut donc se définir comme une succession de recherche du meilleur attribut qui permet de purifier au mieux l'ensemble de données jusqu'à atteindre un seuil où tous les exemples d'un sous ensemble de données appartiennent à la même classe.
+\end{enumerate}
+
+Notons que l'objectif de ID3 est de réduire l'entropie, c'est-à-dire de diviser les données de manière à obtenir des sous-ensembles plus purs lorsque nous utilisons l'entropie comme indicateur. D'autre part, de minimiser l'indice de Gini, c'est-à-dire de trouver la division des données qui minimise l'incertitude de classification pour une version d'ID3 basé sur Gini.
+
+Concernant la sensibilité aux valeurs extrêmes, entropie l'emporte haut la main sur Gini et en terme d'utilisation, Entropie est plus propre à ID3 et Gini à CART.
+
+ 
+ \section{Algorithmes}
+  \label{sec:as}
+
+ \subsection{Version récursive}
+  \label{sec:as1}
+  
+  \begin{algorithm}
+\caption{Algorithme de l'arbre de décision recursive (DTR)}
+\label{algo:id3}
+\begin{algorithmic}[1]
+\REQUIRE $dataset$: Ensemble d'entraînement $D \gets \{(x_1,y_1), \ldots, (x_n,y_n)\}$, $depth$ la profondeur de l'arbre  et le critère d'arrêt
+\REQUIRE $attributes$: Liste des attributs de l'ensemble de données
+\REQUIRE $target\_attribute$: Attribut cible (classe)
+\ENSURE $tree$: Arbre de décision résultant
+
+ \IF{$D,depth$ satisfont le critère d'arrêt}
+            \RETURN un noeud avec comme etiquette la classe majoritaire du jeu
+       \ELSE
+            \STATE Trouver le meilleur candidat diviseur de $D$ $\gets \{col,val,ig,type\}$
+            \IF{ig satisfait le critère d'arrêt}
+            	\RETURN un noeud avec comme etiquette la classe majoritaire du jeu
+            \ELSE	
+                \STATE $gauche, droite \gets $ Diviser $D$ sur la base du meilleur candidat
+                \IF{Candidat numérique}
+                		\STATE $cond \gets col + '<=' + val $  
+                \ELSE
+                		\STATE $cond \gets col + 'in' + val $  
+                \ENDIF
+                \STATE $sous\_arbre \gets \{cond: []\}$
+                \STATE  $\text{réponse}_{gauche} \gets DTR(gauche,\ depth+1,\ \text{critère}\ \text{d'arrêt})$
+                \STATE  $\text{réponse}_{droite} \gets DTR(droite,\ depth+1,\ \text{critère}\ \text{d'arrêt})$
+                \IF{$réponse_{gauche} == réponse_{droite}$}
+                		\STATE $sous\_arbre \gets réponse_{droite}$
+                \ELSE
+                		\STATE ajouter $\text{réponse}_{gauche}$ dans $sous\_arbre[cond]$
+			\STATE ajouter $\text{réponse}_{droite}$ dans $sous\_arbre[cond]$
+                \ENDIF
+            \ENDIF
+       \ENDIF
+
+\RETURN $node$ comme nœud de l'arbre de décision
+\end{algorithmic}
+\end{algorithm}
+
+Il faut noter que la version séquentielle traites les différentes branches gauches et droites de façons recursive. De plus, le nombre de branche n'est pas figé pour tous les niveaux du graphes.
+
+\newpage
+
+ \subsection{Version itérative}
+  \label{sec:as2}
+
+\begin{algorithm}
+\caption{Algorithme de l'arbre de décision itératif}
+\label{alg:decision_tree}
+\begin{algorithmic}[1]
+    \REQUIRE Ensemble d'entraînement $D \gets \{(x_1,y_1), \ldots, (x_n,y_n)\}$ et le critère d'arrêt
+    \REQUIRE $attributes$: Liste des attributs de l'ensemble de données
+    \REQUIRE $target\_attribute$: Attribut cible (classe)
+    \ENSURE $tree$: Arbre de décision résultant
+
+    \STATE  Créer un noeud racine définit Root $\{col, val, ig, cond, left, right\}$
+    \STATE Initialiser une pile $T$ vide
+    \STATE Empiler $\{depth=0, node=Root, data=D\}$ dans $T$  
+    \WHILE{il y a des noeuds non étiquetées dans $T$}    
+    	\STATE $depth,node,data \gets $Depiller $T$ 
+        \IF{$depth,data$ satisfont le critère d'arrêt}
+            \STATE Étiqueter $node.cond$ avec l'étiquette la plus fréquente parmi les échantillons dans $data$.
+       \ELSE
+            \STATE Trouver le meilleur candidat diviseur de $data$ $\gets \{col,val,ig,type\}$
+            \IF{ig satisfait le critère d'arrêt}
+            	\STATE Étiqueter $node.cond$ avec l'étiquette la plus fréquente parmi les échantillons dans $data$.
+            \ELSE	
+                \STATE $left, right \gets $ Diviser $data$ sur la base du meilleur candidat
+                \IF{Candidat numérique}
+                		\STATE $node.cond \gets col + '<=' + val $  
+                \ELSE
+                		\STATE $node.cond \gets col + 'in' + val $  
+                \ENDIF
+                \STATE Mettre a jour $\{col,val,ig\}$ par celui de la meilleur division
+                \STATE Empiler $\{depth=depth+1, node=node.left, data=left\}$ dans $T$ 
+                \STATE Empiler $\{depth=depth+1, node=node.right, data=right\}$ dans $T$ 
+            \ENDIF
+       \ENDIF
+    \ENDWHILE
+\end{algorithmic}
+\end{algorithm}
+
+  % \subsection{Complexité}
+%  \label{sec:as3}
+ 
+\section{Implementation python From scratch}
+ \label{sec:lp}
+  \subsection{Module de gestion de fichier et données}
+  \label{sec:lp1}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\linewidth]{file_loader.png}
+    \caption{Fonction from scratch pour charger les fichiers}
+    \label{fig:load-file}
+\end{figure}
+Cette fonction lit un fichier et charge les données comme un dictionnaire de vecteurs qui contient les informations de chaque ligne du fichier associé à la dimension qui fait office de clef.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\linewidth]{cast_to_appropriate_rype.png}
+    \caption{Fonction from scratch pour convertir  des types des différents informations }
+    \label{fig:cast-type}
+\end{figure}
+Cette fonction se charge d'assurer que les données du fichier sont caster vers les types appropriés.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\linewidth]{train_test_split.png}
+    \caption{fig:train-test}
+\end{figure}
+Lors du chargement, un champ d'indexage est ajouté pour faciliter la manipulation de lignes du jeu de données. Dans fonction, nous faisons usage de ce détail pour garantir un separation conforme du jeu de données basé sur la variable cible.
+
+  
+  \subsection{Module de métriques}
+  \label{sec:lp2}
+    \begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\linewidth]{confusion.png}
+    \caption{Fonction from scratch pour construire la matrice de confusion}
+    \label{fig:confusion}
+\end{figure}
+  \begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\linewidth]{accuracy.png}
+    \caption{Fonction from scratch pour évaluer l'accuracy}
+    \label{fig:laccuracy}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\linewidth]{precision.png}
+    \caption{Fonction from scratch pour  évaluer la precision}
+    \label{fig:precision}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\linewidth]{recall.png}
+    \caption{Fonction from scratch pour  évaluer le rappel}
+    \label{fig:recall}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\linewidth]{f1.png}
+    \caption{Fonction from scratch pour  évaluer la f1-score}
+    \label{fig:l1}
+\end{figure}
+  
+  
+  \subsection{Module de gestion d'arbre de décision}
+  \label{sec:lp3}
+  
+  \begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\linewidth]{entropy.png}
+    \caption{Fonction from scratch pour évaluer l'entropie}
+    \label{fig:entropy}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\linewidth]{gini.png}
+    \caption{Fonction from scratch pour  évaluer l'indice de gini}
+    \label{fig:gini}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\linewidth]{ig.png}
+    \caption{Fonction from scratch pour évaluer le gain}
+    \label{fig:ig}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\linewidth]{variance.png}
+    \caption{Fonction from scratch pour évaluer la variance}
+    \label{fig:variance}
+\end{figure}
+  
+\section{Résultats expérimentaux (données, métriques d'évaluation, résultats)}
+ \label{sec:re}
+ \subsection{Données}
+  \label{sec:re1}
+  Pour évaluer le travail fournir, nous avons éprouvé sur le jeu de données $GERMAN$. Il s'agit d'un jeu de données est utilisé dans le cadre de mon projet de mémoire de Master deux et conserve des historiques bancaire anonymes.
+  \begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\linewidth]{data.png}
+    \caption{extrait du jeu de données}
+    \label{fig:data}
+\end{figure}
+
+  \subsection{Comparaisons des résultats}
+  \label{sec:re2}
+    \begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\linewidth]{res.png}
+    \caption{Métriques du modèle construit from scratch }
+    \label{fig:met}
+\end{figure}
+
+    \begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\linewidth]{module.png}
+    \caption{Métriques du modèle construit avec sklearn dans mon environment expérimentale }
+    \label{fig:meto}
+\end{figure}
+
+% reférence
+\newpage
+\bibliographystyle{IEEEtran}
+\bibliography{sample}
+\nocite{*}
+
+\end{document}
