@@ -16,7 +16,7 @@ for alpha in "${alphas[@]}"; do
     screen -S "$SCREEN_NAME" -dm bash -c "python3.9 $param2 \
         --alpha=$alpha"
 
-    echo "Le pipeline avec alpha=${alpha:1} avec class $wc a été lancé dans l'écran '$SCREEN_NAME'."
+    echo "Le pipeline avec alpha=${alpha:1} avec class a été lancé dans l'écran '$SCREEN_NAME'."
 done
 
 for alpha in "${alphas[@]}"; do
@@ -25,5 +25,5 @@ for alpha in "${alphas[@]}"; do
         --alpha=$alpha \
         --graph"
 
-    echo "Le pipeline avec alpha=${alpha:1} avec class $wc a été lancé dans l'écran '$SCREEN_NAME'."
+    echo "Le pipeline avec alpha=${alpha:1} avec class a été lancé dans l'écran '$SCREEN_NAME'."
 done

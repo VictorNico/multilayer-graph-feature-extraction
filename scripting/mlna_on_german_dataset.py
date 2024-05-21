@@ -66,7 +66,7 @@ if __name__ == '__main__':
         encoding="utf-8",
         index_col=None,
         alphas=[args.alpha],
-        portion=1.,
+        portion=.1,
         graphWithClass=args.graph,
         financialOption={
             'amount': 'Attribute_5',
