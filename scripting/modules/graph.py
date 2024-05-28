@@ -1031,7 +1031,7 @@ def build_mlg_with_class(data, features, className):
 
 def compute_distance_descriptor(graph, k, label, loan_id):
     # Format loan node and decision label node
-    loan_node = f"C-{k}-U-{loan_id}"
+    loan_node = f"C-0-U-{loan_id}"
     decision_label_node = f"C-{k}-M-C-{label}"
     # Remove edge between start_node and end_node
     modified_graph = graph.copy()

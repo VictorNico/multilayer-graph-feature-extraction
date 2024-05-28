@@ -1,0 +1,692 @@
+\documentclass[10pt]{beamer}
+\usepackage[utf8]{inputenc}
+
+\usepackage{bm}
+\usepackage{multirow,rotating}
+\usepackage{color}
+\usepackage{hyperref}
+\usepackage{tikz-cd}
+\usepackage{array}
+\usepackage{siunitx}
+\usepackage{mathtools,nccmath}%
+\usepackage{etoolbox, xparse} 
+\usetheme{CambridgeUS}%CambridgeUS Warsaw
+\usecolortheme{dolphin}
+
+% set colors
+%\definecolor{myNewColorA}{RGB}{158, 27,50}
+%\definecolor{myNewColorB}{RGB}{158, 27,50}
+%\definecolor{myNewColorC}{RGB}{158, 27,50} % {130,138,143}
+%\setbeamercolor*{palette primary}{bg=myNewColorC}
+%\setbeamercolor*{palette secondary}{bg=myNewColorB, fg = white}
+%\setbeamercolor*{palette tertiary}{bg=myNewColorA, fg = white}
+%\setbeamercolor*{titlelike}{fg=myNewColorA}
+%\setbeamercolor*{title}{bg=myNewColorA, fg = white}
+%\setbeamercolor*{item}{fg=myNewColorA}
+%\setbeamercolor*{caption name}{fg=myNewColorA}
+%\usefonttheme{professionalfonts}
+
+\usepackage{natbib}
+\usepackage{hyperref}
+%------------------------------------------------------------
+% \titlegraphic{\includegraphics[height=0.75cm]{ua_eng_logo.png}} 
+
+% logo of my university
+
+
+\titlegraphic{%
+%\includegraphics[width=3.0cm]{ua_seal.png}
+}
+
+\setbeamerfont{title}{size=\large}
+\setbeamerfont{subtitle}{size=\small}
+\setbeamerfont{author}{size=\small}
+\setbeamerfont{date}{size=\footnotesize}
+\setbeamerfont{institute}{size=\footnotesize}
+\title[]{Time aware implicit social influence estimation to enhance recommender systems performances}%title
+
+
+% \begin{figure}[ht]
+%             \centering
+%             \begin{minipage}{0.43\textwidth}
+%                 \centering
+%                 \includegraphics[width=0.25\linewidth]{logo_Univ.jpg}
+%                 %\caption{Exponential decay function - EDF  }
+%                 \label{fig:edf}
+%             \end{minipage}\hfill
+%             \begin{minipage}{0.4\textwidth}
+%                 \centering
+%                 \includegraphics[width=0.45\linewidth]{logo_UMMISCO.png}
+%                 %\caption{Logistic decay function - LDF }
+%                 \label{fig:ldf}
+%             \end{minipage}\hfill
+    
+%         \end{figure}
+
+%     \vspace{-1.2cm}
+
+
+%\subtitle{ }%%subtitle
+\author[]{ NZEKON Armel$^{1,3}$, HAMZA Adamou$^{1,3}$, MESSI Thomas$^{1,2,3}$ and BETNDAM Bleriot$^{1}$  \\
+\vspace{0.3cm}
+  \\
+\vspace{0.3cm}
+$^{1}$University of Yaounde I, FS, Computer Science Department, Cameroon \\
+\vspace{0.3cm}
+$^{2}$University of Ebolowa, HITLC, Computer Engineering Department, Cameroon\\
+\vspace{0.3cm}
+$^{3}$Sorbonne Université, IRD, UMI 209 UMMISCO, F-93143, Bondy, France\\
+\vspace{0.4cm}
+\includegraphics[width=0.35\textwidth]{logos_CRI_rr.png}
+\vspace{-0.7cm}
+%\vspace{0.3cm}
+}%%authors  email: pagnaul.betndam@facsciences-uy1.cm
+
+%\begin{figure}[ht]
+%\vspace{-0.7cm}
+%\includegraphics[width=0.3\textwidth]{logos_CRI_r.png}
+%\vspace{-0.8cm}
+%\caption{KNN results with Ciao and Epinions} \label{fig:knn_sc}
+%\end{figure}
+
+% \begin{figure}
+%             \centering
+%             \begin{minipage}{0.43\textwidth}
+%                 \centering
+%                 \includegraphics[width=0.25\linewidth]{logo_Univ.jpg}
+%                 %\caption{Exponential decay function - EDF  }
+%                 \label{fig:edf}
+%             \end{minipage}\hfill
+%             \begin{minipage}{0.4\textwidth}
+%                 \centering
+%                 \includegraphics[width=0.45\linewidth]{logo_UMMISCO.png}
+%                 %\caption{Logistic decay function - LDF }
+%                 \label{fig:ldf}
+%             \end{minipage}\hfill
+    
+%         \end{figure}
+
+%     \vspace{-1.2cm}
+
+%\includegraphics[width=0.15\textwidth]{logo_Univ.jpg}
+
+\institute[]{}
+\date[\textcolor{white}{Rapport de lecture}]
+{13 December 2023}
+\vspace{-0.1cm}
+
+%------------------------------------------------------------
+%This block of commands puts the table of contents at the 
+%beginning of each section and highlights the current section:
+%\AtBeginSection[]
+%{
+%  \begin{frame}
+%    \frametitle{Contents}
+%    \tableofcontents[currentsection]
+%  \end{frame}
+%}
+% \AtBeginSection[]{
+%   \begin{frame}
+%   \vfill
+%   \centering
+%   \begin{beamercolorbox}[sep=8pt,center,shadow=true,rounded=true]{title}
+%     \usebeamerfont{title}\insertsectionhead\par%
+%   \end{beamercolorbox}
+%   \vfill
+%   \end{frame}
+% }
+% ------Contents below------
+%------------------------------------------------------------
+
+\begin{document}
+
+%The next statement creates the title page.
+\frame{\titlepage}
+\begin{frame}
+\frametitle{PLAN}
+\tableofcontents
+\end{frame}
+
+
+% consider removing it if it's too redundant
+% \AtBeginSection[]
+% {
+%   \begin{frame}
+%     \frametitle{Table of Contents}
+%     \tableofcontents[currentsection]
+%   \end{frame}
+% }
+
+%------------------------------------------------------------
+\section{Introduction}
+%\subsection{Context}
+\begin{frame}{Context}
+    \begin{center}
+        \includegraphics[width=0.55\textwidth]{Context_CRI_r.png}
+    \end{center}
+    
+\end{frame}
+
+%\subsection{Overview}
+\section{Recommender systems}
+\begin{frame}{Definitions of recommender systems}
+\begin{block}{Definitions}
+    \begin{enumerate}
+        \item According to Gediminas Adomavicius et al[6] recommender systems help to cope with information overload and provide recommendations for personalised content and services.
+\vspace{1cm}
+        %\item Information filtering techniques that predict the rank or preference that a user assigns to an item from a set of items that are likely to be of interest.
+        \item Suggest to each user items he is most likely to like in the near future.
+
+        %de même nature (films, musiques, livres, images, etc.)
+    \end{enumerate}
+    
+\end{block}
+
+\end{frame}
+
+\subsection{Recommender system approaches}
+\begin{frame}{Recommender system approaches}
+\vspace{-0.4cm}
+\begin{block}{Recommender system approaches}
+    \begin{enumerate}
+        \item \textbf{Collaborative filtering} \\
+        Recommend the same items to users who have had the same preferences in the past.
+        
+        \item \textbf{Content-based filtering} \\
+       
+        Recommend items with the same characteristics as those that the target user has liked in the past.
+
+        \item \textbf{Hybrid filtering} \\
+        Taking advantage of the strengths of the two previous approaches while avoiding some of their weaknesses.
+    \end{enumerate}
+    
+\end{block}
+
+\vspace{-0.3cm}
+\begin{block}{Limits of these approaches}
+    \begin{enumerate}
+    \vspace{-0.1cm}
+        \item \textbf{Cold start :} new user on the platform.
+        \item \textbf{Lack of data :} users interact with very few items. 
+        \item \textbf{Under-use of the history of ratings that users assign to items:} timing of item purchases by users is not exploited.
+        \item \textbf{The non-use of certains informations :} relationships of friendship and trust between users.
+    \end{enumerate}
+    
+\end{block}
+
+\end{frame}
+
+\subsection{Trust-based recommender systems}
+\begin{frame}{Trust-based recommender systems}
+\begin{block}{Definitions of trust}
+In the social context, \textbf{Trust} generally refers to the fact that one person trusts the words and actions of another.\\
+
+ In the field of recommender systems, \textbf{Trust} is defined in
+terms of a user’s ability to provide relevant recommendations to another user, Guo et al. [3]
+\end{block}
+
+\begin{block}{Properties of trust}
+\begin{enumerate}
+        \item Transitivity: if $u \rightarrow v$ and $v \rightarrow w$ then $u \rightarrow w$
+
+        \item Asymmetry: $trust(u,v) \ne trust(v,u)$
+
+        \item Context dependency: $trust(u,v,c_1) \ne trust(u,v,c_2)$
+        \item Personalized: $trust(u,v) \ne trust(u,w)$ and $trust(u,v) \ne trust(w,v)$ 
+    \end{enumerate}
+    
+\end{block}
+
+Trust-based recommender systems use information about trust and friendship between users to recommend items.
+
+\end{frame}
+
+\subsubsection{Explicit trust-based recommender systems}
+\begin{frame}{Explicit trust-based recommender systems}
+\begin{enumerate}
+    \item \textbf{Jian-Ping Mei , Han Yu , Zhiqi Shen and Chunyan Miao - 2017 [2]:}\\
+    \begin{itemize}
+        \item Explicit trust relationships between users available in the epinions dataset and the history of user ratings are exploited to calculate the trust that one user $u$ places in another $v$.  
+        \item These calculated trusts are then integrated into two classical recommender systems, one based on k nearest neighbours and the other based on matrix factorisation.
+    \end{itemize}
+\vspace{0.3cm}
+\begin{center}
+    $Trust(u,v) = NTrust_v$ or $Trust(u,v) = NRating_v$\\ \\
+\end{center}
+        
+        \vspace{0.3cm} 
+     with \bm{$NTrust_v$} being the number of users who have explicitly declared that they trust $v$ and \bm{$NRating_v$} the number of purchases user $v$ has made on the e-commerce site. \\
+     \vspace{0.3cm}
+    \textbf{Limits:} Trust here is not personalised and does not take into account the temporal dynamics of social influence.
+
+    % \begin{equation}
+    %     Trust(u,v) = NTrust_v
+    % \end{equation}
+    %  with $NTrust_v$ being the number of users who have explicitly declared that they trust v.
+     
+    % \begin{equation}
+    %     Trust(u,v) = NRating_v
+    % \end{equation}
+    % with $NRating_v$ being the number of purchases user $v$ has made on the e-commerce site.
+
+    % \textbf{Limits:} trust here is not personalised and does not take into account the temporal dynamics of social influence.
+    
+\end{enumerate}
+\end{frame}
+
+
+\subsubsection{Implicit trust-based recommender systems}
+\begin{frame}{Implicit trust-based recommender systems}
+\begin{enumerate}[2]
+    
+    \item \textbf{Armel Jacques Nzekon Nzeko’o, Maurice Tchuente and Matthieu Latapy - 2019 [1]: }\\
+    \begin{itemize}
+        \item Jaccard similarity is used to estimate trust between users based on their rating history.
+        \item These estimated trusts are then integrated into a classical recommender systems based on graphs.
+    \end{itemize}
+
+    \begin{equation}
+        Jaccard(u,v) =  \frac{|I_u \cap I_v|}{|I_u \cup I_v|}
+    \end{equation}
+    with $I_u$ being the set of items that user $u$ purchased and $I_v$ being those that user $v$ purchased on the e-commerce site.\\
+    \vspace{0.5cm}
+    \textbf{Limits:} Trust here is non-asymmetrical and does not take time into account.
+    
+\end{enumerate}
+\end{frame}
+
+
+
+\section{Problem statement}
+\begin{frame}{Problem statement}
+
+
+
+\begin{block}{Problem statement}
+Is it possible to take time into account when estimating social influence? 
+\end{block}
+\vspace{1cm}
+The influence that one user has on another can change over time.\\
+\vspace{1cm}
+\textbf{We propose to take account of temporal dynamics when estimating the social influence between two users.}
+\end{frame}
+
+
+
+
+
+\section{Time aware social influence estimation}
+\subsection{Estimation of social influence}
+
+\begin{frame}{Architecture of contribution }
+\begin{block}{\ }
+    \begin{figure}
+    \includegraphics[width=0.8\textwidth]{Architecture_rr.png}
+    %\vspace{-0.5cm}
+    \caption{Architecture of recommender system with time aware implicit social influence.} \label{fig:vc}
+    \end{figure}
+\end{block}
+    
+\end{frame}
+
+
+
+\begin{frame}{Asymmetrical social influence }
+
+\begin{itemize}
+    % \item Jaccard similarity :
+    % \begin{equation}
+    %     Jaccard(u,v) =  \frac{|I_u \cap I_v|}{|I_u \cup I_v|}
+    % \end{equation}
+   \item Asymmetrical social influence (A):
+   \begin{equation}
+        \bm{InfsoA(u,v) =  \frac{|I_u \cap I_v|}{|I_u|}}
+    \end{equation}
+
+   \item Asymmetrical social influence + sequencing (S):
+   \begin{equation}
+    \bm{InfSoS(u,v) =  \frac{|u \rightarrow v|}{|I_u |}} 
+    \end{equation}
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Temporal asymmetric social influence}
+    \begin{itemize}
+        \item Temporal asymmetric social influence (T)
+        \begin{equation}
+            \bm{InfSoT(u,v) = \frac{\sum_{|u \rightarrow v|}^{} f(t_u - t_v)}{|I_u |}}    
+        \end{equation}
+
+         \begin{figure}[ht]
+            \centering
+            \begin{minipage}{0.43\textwidth}
+                \centering
+                \includegraphics[width=\linewidth]{EDF.png}
+                \caption{Exponential decay function - EDF  }
+                \label{fig:edf}
+            \end{minipage}\hfill
+            \begin{minipage}{0.4\textwidth}
+                \centering
+                \includegraphics[width=\linewidth]{LDF.png}
+                \caption{Logistic decay function - LDF }
+                \label{fig:ldf}
+            \end{minipage}\hfill
+    
+        \end{figure}
+        %\includegraphics[height=0.37\textwidth]{MF.png}
+        \quad $f(x) = e^{-x.ln(2)/to}$ \qquad  \qquad  \qquad \qquad \qquad \quad $f (x) = 1- 1/(e^ {-K(x-to)}+1)$
+       
+    \end{itemize}
+    
+\end{frame}
+
+\subsection{Integration of social influence into KNN}
+\begin{frame}{K nearest neighbours based recommender system }
+    \begin{itemize}
+        \item \textbf{K-nearest neighbour model based recommender system (KNN)}
+
+        \begin{block}{Steps of the algorithm }
+            \begin{enumerate}
+                \item Calculation of the similarity between all users and the target user $u$
+                    \begin{equation}
+                    Sim(u,v) = Pearson(u,v) = \frac{ \sum_{i\in I_u\cap I_v} (r_{ui}-\mu_u).(r_{vi}-\mu_v) }{ \sqrt{\sum_{i\in I_u\cap I_v} (r_{ui}-\mu_u)^2} . \sqrt{\sum_{i\in I_u\cap I_v} (r_{vi}-\mu_v)^2} }
+                    \end{equation}
+                
+                \item Select the K users who are most similar to $u$ and who rated item $i$. ($P_u(i)$)
+                
+                \item Predict the rating that $u$ will give to $i$.
+                   \begin{equation}
+                        r_{ui} = \mu_u + \frac{ \sum_{v\in P_u(i)} Sim(u,v).(r_{vi}-\mu_v) }{ \sum_{v\in P_u(i)} \lvert Sim(u,v) \rvert }
+                   \end{equation}
+            \end{enumerate}
+            
+        \end{block}
+       
+    \end{itemize}
+    
+\end{frame}
+
+
+\begin{frame}{K nearest neighbours with social influence }
+    \begin{itemize}
+        \item \textbf{Integration of social influence into KNN}
+
+        \begin{block}{Steps of the algorithm }
+            \begin{enumerate}
+                \item Calculation of the social influence on $u$ of other users $v$.
+
+                $InfSo(u,v) \in \{InfSoA, InfSoS, InfSoT\}$
+                    
+                \item Select the top K influencers from $u$ who rated item $i$. ($P_u(i)$)
+                
+                \item Predict the rating that $u$ will give to $i$.
+                   \begin{equation}
+                        r_{ui} = \mu_u + \frac{ \sum_{v\in P_u(i)} InfSo(u,v).(r_{vi}-\mu_v) }{ \sum_{v\in P_u(i)} \lvert InfSo(u,v) \rvert }
+                   \end{equation}
+            \end{enumerate}
+            
+        \end{block}
+       
+    \end{itemize}
+    
+\end{frame}
+
+\section{Experiments and Results}
+\begin{frame}{Description and division of data sets}
+
+
+\begin{block}{Description of data sets}
+Set of tuples (u, i, c, r, t).
+
+    \begin{table}
+    \caption{Description of data sets Epinions and Ciao.}\label{tab:descrition_datasets}
+    \vspace{-0.5cm}
+    \resizebox{\textwidth}{!}{
+    \begin{tabular}{|l|l|l|l|l|l|l|}
+    \hline
+    \textbf{Name} & \textbf{NbUsers} & \textbf{NbItems} & \textbf{minU} & \textbf{minI} & \textbf{NbRating} & \textbf{Period} \\
+    \hline
+    \textbf{Ciao} & 889 & 9053 & 1 & 1 & 12742 & 2007-2011  \\
+    \hline
+    \textbf{Epinions} & 728 & 18141 & 20 & 2 & 58717 & 2006-2010 \\
+    \hline
+    \end{tabular}
+    }
+    \end{table}
+\end{block}
+
+\begin{block}{Division of data sets}
+
+    \begin{figure}
+    \includegraphics[width=0.7\textwidth]{Validation_croisee.png}
+    \vspace{-0.5cm}
+    \caption{Cross-validation with increasing time window size.} \label{fig:vc}
+    \end{figure}
+    
+\end{block}
+\end{frame}
+
+\begin{frame}{Evaluation metrics and parameter values}
+    
+
+\begin{block}{Evaluation metrics}
+\begin{equation} \label{eq: rmse}
+    RMSE = \sqrt{\frac{\sum_{u,i \in r_{test}} (r_{ui} - \hat{r}_{ui})^2 }{|r_{test}|}} 
+\end{equation}
+
+\begin{equation} \label{eq: mae}
+    MAE = \frac{\sum_{u,i \in r_{test}} |r_{ui} - \hat{r}_{ui}| }{|r_{test}|} 
+\end{equation}
+
+\textbf{The closer it is to 0, the better the model performs.}
+
+%with $r_{test}$ the test data set.
+    
+\end{block}
+
+\begin{block}{Predefined parameter values}
+
+    \begin{table}
+    \caption{Predefined parameter values for KNN}\label{tab:val_predef_knn}
+    \vspace{-0.5cm}
+    \resizebox{\textwidth}{!}{
+    \begin{tabular}{|l|l|l|}
+    \hline
+    & \textbf{Parameter description} & \textbf{Predefined values}\\
+    \hline
+    \textbf{K} & Number of neighbors & 2, 3, 5, 10, 20, 30 \\
+    \hline
+    \textbf{To} & Half-life of EDF and LDF functions & 30, 60, 120, 240, 360 days\\
+    \hline
+    \end{tabular}
+    }
+    \end{table}
+    
+\end{block}
+    
+\end{frame}
+
+\begin{frame}{Results}
+%\begin{block}{Résultats}
+
+\begin{figure}
+\vspace{-0.7cm}
+\includegraphics[width=\textwidth]{ciao_epinions_sc_eng_v_r.png}
+\vspace{-0.8cm}
+\caption{KNN results with Ciao and Epinions} \label{fig:knn_sc}
+\end{figure}
+    
+%\end{block}
+\vspace{-0.3cm}
+%\textbf{B:} Basic KNN \quad \textbf{J:} KNN with Jaccard similarity \quad
+%\textbf{A:} KNN with asymetric social influence \quad \textbf{S:} KNN with asymetric + sequence sc \quad \textbf{TE:} KNN with asymetric temporal sc with EDF \quad \textbf{TL:} KNN with asymetric temporal sc with LDF
+
+\textbf{B:} Basic KNN \qquad \qquad \qquad \qquad \quad \quad  \quad \textbf{J:} KNN with Jaccard similarity \\
+\textbf{A:} KNN with asymetric social influence \hspace{0.1cm} \textbf{S:} KNN with asymetric + sequence sc \\
+\textbf{TE:} KNN with temporal sc with EDF \quad \hspace{0.01cm} \textbf{TL:} KNN with temporal sc with LDF
+    \vspace{-0.8cm}
+\end{frame}
+
+\begin{frame}{Best parameter values}
+
+    \begin{itemize}
+        \item \textbf{Number of neighbors (K):} 2 et 3 \\
+        The top 2 or top 3 influencers of the target user are more predictive of the rating he will give to the items.
+        \vspace{1cm}
+        \item \textbf{Half-life (To) :} 30 days\\
+        After 30 days, the influence that one user has on another with regard to an item is halved
+    \end{itemize}
+    
+\end{frame}
+
+\section{Conclusion and Futur work}
+\begin{frame}{Conclusion and Futur work}
+\begin{block}{Conclusion}
+
+\begin{itemize}
+    \item We looked at implicit trust by exploiting the history of ratings that users assign to items
+
+    \item We have proposed a framework that takes time into account when estimating social influence.
+
+    \item We obtained interesting results by integrating these social influences into the KNN-based recommender system.
+
+    
+    % \item Implicit social influence (rating history)
+    % \item Time aware social influence \\
+    % The influence one user has on another changes over time
+    % \item Integration into KNN
+\end{itemize}
+    
+\end{block}
+\begin{block}{Futur work}
+\begin{itemize}
+    \item Take into account that the influence that one user has on another varies according to the category of item.
+    
+    \item Integrating social influence into matrix factorization based recommender systems  and graphs based recommender systems.
+   
+    \item Experiment with other data sets.
+    %Pompare, Movilens, RetailRocket
+    \item Evaluate with others metrics like NDGC, MAP, Hit Ratio.
+\end{itemize}
+    
+\end{block}
+    
+\end{frame}
+
+\begin{frame}{References}
+\textbf{1.} Nzeko’o Armel Jacques Nzekon: A general graph-based framework for top-N recommendation using content, temporal and trust information. Journal of Interdisciplinary Methodologies and Issues in Sciences 5, (2019)\\
+\textbf{2.} Mei Jian-Ping: A social influence based trust model for recommender systems. In-
+telligent Data Analysis 21(2), 263–277 (2017) \\
+\textbf{3.} Guo Guibing, Zhang Jie, Thalmann Daniel, Basu Anirban, Yorke-Smith Neil.: From
+ratings to trust: an empirical study of implicit trust in recommender systems. In:
+Proceedings of the 29th annual acm symposium on applied computing, pp. 248–253.
+, (2014) \\
+\textbf{4.}  Tang Jiliang, Gao Huiji, Liu Huan: mTrust: Discerning multi-faceted trust in a
+connected world. In: Proceedings of the fifth ACM international conference on Web
+search and data mining, pp. 93–102., (2012) \\
+\textbf{5.} Ricci Francesco, Rokach Lior, Shapira Bracha: Recommender systems handbook.
+Springer, 1–35 (2011)\\
+\textbf{6.} Adomavicius Gediminas: Toward the next generation of recommender systems: A
+survey of the state-of-the-art and possible extensions. IEEE transactions on knowl-
+edge and data engineering 17(6), 734–749 (2005)
+    
+\end{frame}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+% \begin{frame}{Etat actuel des travaux }
+%     \begin{itemize}
+%         \item Implémentation du modèle de K nearest neighbors (KNN)
+%         \begin{center}
+            
+%             \includegraphics[height=0.46\textwidth]{knn.png}    
+%         \end{center}
+        
+       
+%     \end{itemize}
+    
+% \end{frame}
+
+% \begin{frame}{Etat actuel des travaux }
+% Les fonctions de similarité :
+%     \begin{itemize}
+%         \item Similarité cosinus
+%         \[ Sim(u,v) = cosine(u,v) = \frac{ \sum_{i\in I_u\cap I_v} (r_{ui}).(r_{vi}) }{ \sqrt{\sum_{i\in I_u\cap I_v} (r_{ui})^2} . \sqrt{\sum_{i\in I_u\cap I_v} (r_{vi})^2} }\]
+        
+%         \item Similarité de pearson
+%         \[ Sim(u,v) = Pearson(u,v) = \frac{ \sum_{i\in I_u\cap I_v} (r_{ui}-\mu_u).(r_{vi}-\mu_v) }{ \sqrt{\sum_{i\in I_u\cap I_v} (r_{ui}-\mu_u)^2} . \sqrt{\sum_{i\in I_u\cap I_v} (r_{vi}-\mu_v)^2} }\]
+%        \item Similarité de Jaccard
+       
+%        \[ Sim(u,v) = Jaccard(u,v) =  \frac{|I_u \cap I_v|}{|I_u \cup I_v|}\]
+       
+%     \end{itemize}
+   
+% \end{frame}
+
+% \begin{frame}{Etat actuel des travaux }
+%      La fonction de prédiction de notes 
+
+%     \[r_{ui} = \mu_u + \frac{ \sum_{v\in P_u(i)} Sim(u,v).(r_{vi}-\mu_v) }{ \sum_{v\in P_u(i)} \lvert Sim(u,v) \rvert } \] \\
+
+%     Notre idée pour le calcul des influences sociales s'inspire de la formule de la similarité de Jaccard précédente.
+%     \[ Sim(u,v) = InfSo(u,v) =  \frac{|I_u \cap I_v|}{|I_u |} \]
+%     Ici, $Sim(u,v)$ représente l'influence que subit $u$ par $v$. Cette nouvelle facon de calculer la similarité nous permettra de capturer au mieux l'influence sociale qu'exerce un utilisateur $v$ sur $u$.
+% \end{frame}
+
+% \begin{frame}{Etat actuel des travaux }
+% \begin{itemize}
+    
+
+%  \item Jeux de données Epinions 
+%   \includegraphics[height=0.6\textwidth]{Epinions.png}
+   
+%         \end{itemize}
+    
+% \end{frame}
+
+
+
+% \begin{frame}{Etat actuel des travaux}
+
+%     \begin{itemize}
+    
+%     \item Resultat de test 
+
+%     \includegraphics[height=0.4\textwidth]{Results1.png}
+   
+%     \end{itemize}
+    
+% \end{frame}
+
+
+\section*{Acknowledgement}  
+\begin{frame}
+
+\textcolor{myNewColorA}{\huge{\centerline{Thank you for your attention!}}}
+\vspace*{0.5cm}
+
+%{\Large{\centerline{E-mail: bleriot.tchamba@gmail.com}}}
+
+\end{frame}
+
+
+
+\end{document}
+
+
+

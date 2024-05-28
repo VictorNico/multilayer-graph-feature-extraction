@@ -82,7 +82,7 @@ def variance(y):
 
 getMask = lambda X, cond, val: [cond(x, val) for x in X]
 NumCond = lambda x, val: x < val
-CatCond = lambda x, val: val in x
+CatCond = lambda x, val: val == x
 
 
 def information_gain(y, mask, func=entropy):
@@ -92,19 +92,20 @@ def information_gain(y, mask, func=entropy):
     mask: split choice.
     func: function to be used to calculate Information Gain in case of classification.
     '''
-
+    # print(mask)
     a = sum(mask)
     b = len(mask) - a
 
     if a == 0 or b == 0:
         ig = 0
     else:
+
         if isinstance(y[0], (int, float)):
             ig = variance(y) - (a / (a + b) * variance([y[i] for i in range(len(y)) if mask[i]])) - (
                     b / (a + b) * variance([y[i] for i in range(len(y)) if not mask[i]]))
         else:
-            ig = func(y) - a / (a + b) * func([y[i] for i in range(len(y)) if mask[i]]) - b / (a + b) * func(
-                [y[i] for i in range(len(y)) if not mask[i]])
+            ig = func(y) - (a / (a + b) * func([y[i] for i in range(len(y)) if mask[i]])) - (b / (a + b) * func(
+                [y[i] for i in range(len(y)) if not mask[i]]))
 
     return ig
 
@@ -153,7 +154,7 @@ def max_information_gain_split(x, y, func=entropy):
     numeric_variable = True if isinstance(x[0], (int, float)) else False
 
     if numeric_variable:
-        options = sorted(list(set(x)))[1:]
+        options = sorted(list(set(x)))
     else:
         options = list(set(x))
 
@@ -167,6 +168,7 @@ def max_information_gain_split(x, y, func=entropy):
         return None, None, None, False
     else:
         best_ig = max(ig)
+        # print(ig)
         best_ig_index = ig.index(best_ig)
         best_split = split_value[best_ig_index]
         return best_ig, best_split, numeric_variable, True
@@ -214,7 +216,7 @@ def make_split(variable, value, data, is_numeric):
         data_1 = {key: [data[key][i] for i in index] for key in data.keys()}
         data_2 = {key: [data[key][i] for i in index2] for key in data.keys()}
     else:
-        index = [i for i, el in enumerate(data[variable]) if value in el]
+        index = [i for i, el in enumerate(data[variable]) if value == el]
         index2 = list(set(range(len(data[variable]))) - set(index))
         data_1 = {key: [data[key][i] for i in index] for key in data.keys()}
         data_2 = {key: [data[key][i] for i in index2] for key in data.keys()}
@@ -400,7 +402,7 @@ def predict(observation, tree):
 
     else:
 
-        if observation[question.split()[0]] in (question.split()[2]):
+        if observation[question.split()[0]] == (question.split()[2]):
             answer = tree['left']
         else:
             answer = tree['right']

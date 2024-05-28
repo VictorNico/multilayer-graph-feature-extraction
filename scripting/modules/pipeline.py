@@ -2175,8 +2175,13 @@ def make_mlna_top_k_variable_v2(
     x_train, x_test, y_train, y_test = x_traini, x_testi, y_traini, y_testi
     PERSONS = get_persons(x_train)
     PERSONS_T = get_persons(x_test)
+    exitingMLNB = [dirnames for _, dirnames, _ in os.walk(f'{cwd}')][0]
+    exitingMLNB = sorted([int(el.split("_")[1]) for el in exitingMLNB if "_b" in el])
+    print(exitingMLNB,"//", alpha)
+    BexitingMLNB = exitingMLNB[-1] if len(exitingMLNB) > 0 else None
 
-    for k in range(2, len(topR) + 1):  # for 1<k<|OHE[i]|+2
+    start = BexitingMLNB + 1 if len(exitingMLNB) > 0 else 2
+    for k in range(start, len(topR) + 1):  # for 1<k<|OHE[i]|+2
         # for k in [2]: # for 1<k<|OHE[i]|+2
         # for k in range(2:len(OHE)+1: # for 1<k<|OHE[i]|+2
         layer_config = topR[:k]  # create subsets of k index of OHE and fetch it
@@ -2425,30 +2430,31 @@ def make_mlna_top_k_variable_v2(
         logic_i_g = None
         logic_i_p = None
         mlc_cf = None
-    table_p = print_summary([default, *logic_p], modelD)
-    table_g = print_summary([default, *logic_g], modelD)
-    table_pg = print_summary([default, *logic_pg], modelD)
-    create_file(
-        content=table_p[1],
-        cwd=cwd + f'/mlna_{k}_b/personalized',
-        prefix=domain,
-        filename=f"mlna_for_all_categorial data",
-        extension=".html"
-    )
-    create_file(
-        content=table_g[1],
-        cwd=cwd + f'/mlna_{k}_b/global',
-        prefix=domain,
-        filename=f"mlna_for_all_categorial data",
-        extension=".html"
-    )
-    create_file(
-        content=table_pg[1],
-        cwd=cwd + f'/mlna_{k}_b/mixed',
-        prefix=domain,
-        filename=f"mlna_for_all_categorial data",
-        extension=".html"
-    )
+    if start != len(topR) + 1:
+        table_p = print_summary([default, *logic_p], modelD)
+        table_g = print_summary([default, *logic_g], modelD)
+        table_pg = print_summary([default, *logic_pg], modelD)
+        create_file(
+            content=table_p[1],
+            cwd=cwd + f'/mlna_{k}_b/personalized',
+            prefix=domain,
+            filename=f"mlna_for_all_categorial data",
+            extension=".html"
+        )
+        create_file(
+            content=table_g[1],
+            cwd=cwd + f'/mlna_{k}_b/global',
+            prefix=domain,
+            filename=f"mlna_for_all_categorial data",
+            extension=".html"
+        )
+        create_file(
+            content=table_pg[1],
+            cwd=cwd + f'/mlna_{k}_b/mixed',
+            prefix=domain,
+            filename=f"mlna_for_all_categorial data",
+            extension=".html"
+        )
     modelD = None
     PERSONS = None
     table_p = None

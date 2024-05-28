@@ -1,0 +1,224 @@
+\documentclass[11pt]{beamer}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{translator}
+\usepackage[french]{babel}
+\usetheme{madrid}
+\usepackage{fontspec}
+\usepackage{color}
+\usepackage{xcolor}
+\setsansfont{Times New Roman}
+\usepackage{graphics}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{booktabs}
+\usepackage{subfigure}
+\usepackage{multicol}
+\usepackage{fancyhdr}
+\usepackage{lipsum}
+\usepackage{tikz}
+\usepackage{wallpaper}
+\usepackage{wrapfig}
+\usepackage{multicol}
+\usetikzlibrary{positioning}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{acronym}
+
+\begin{document}
+	\author[V.DJIEMBOU]{DJIEMBOU TIENTCHEU VICTOR NICO\inst{1} }
+	\title{Questions de restitution des connaissances}
+	\subtitle{Cas des devoirs 1 à 3}
+	\titlegraphic{\includegraphics[scale=0.3]{assets/logo}}
+	\institute[UYI]{\inst{1} \textit{Université de Yaoundé I,\\ Faculté des Sciences,\\ Département d'Informatique,\\ Étudiant Master SD} }
+	%\date{}
+	%\subject{}
+	%\setbeamercovered{transparent}
+	\setbeamertemplate{navigation symbols}{}
+	\setbeamertemplate{itemize }{circle}
+	\newcommand\Background{
+            \begin{tikzpicture}[remember picture,overlay]
+			\node[inner sep=0pt,outer sep=0pt,opacity=1]
+			at (5.7,-4)
+			{\includegraphics[scale=0.23]{assets/999}};
+		\end{tikzpicture}
+        }
+	%\setbeamertemplate{background canvas}{\includegraphics[scale=0.19]{999}}
+	\setbeamercolor{frametitle}{bg=gray}
+	%\AtBeginSection[]{
+  	%	\begin{frame}
+    	%		\frametitle{Outline}
+   	%		 \tableofcontents[currentsection]
+  	%	\end{frame}
+	%}
+	
+	% Définition des acronymes
+\acrodef{MLN}{MultiLayer Network}
+	
+\begin{frame}[plain]
+	\Background
+	\maketitle
+\end{frame}
+
+\begin{frame}
+	\Background
+	\tableofcontents
+\end{frame}
+% Introduction
+
+\section{Questions devoir 1}
+\begin{frame}
+	\frametitle{\textsc{Compréhension du sujet de recherche}}
+	\begin{block}{\texttt{Q1:} Pourquoi prédire le risque de crédit bancaire ?}
+	Pour limiter le défaut de crédit car le crédit bancaire est l'une des meilleures sources de revenu pour les banques mais expose à des risques de non remboursement.
+	\end{block}
+	
+	\begin{block}{\texttt{Q2:} Quel est le problème à résoudre dans le contexte du crédit scoring ?}
+	Trouver un moyen efficace d'évaluer la probabilité associée au remboursement d'un emprunt.
+	\end{block}
+	
+	\begin{block}{\texttt{Q3:} Quelles sont les contraintes classic sur les données de credit scoring ?}
+		\begin{itemize}
+			\item Données déséquilibrés et peu représentatives,
+			\item Le défaut de crédit n'a pas la même valeur pour tous les crédits.
+		\end{itemize}
+	\end{block}
+	
+\end{frame}
+
+\section{Questions devoir 2}
+\begin{frame}
+	\frametitle{\textsc{Sous-problème d'extraction de descripteurs}}
+	\begin{block}{\texttt{Q1:} Comment construire un graphe multicouches dans le contexte du credit scoring?}
+	Il s'agit d'un graphe multicouches où 
+	\begin{itemize}
+		\item chaque emprunteur a autant de nœud qu’il y a de couches considérées
+		\item les nœuds de chaque emprunteur sont tous reliés les uns aux autres
+		\item chaque attribut d’une dimension a un nœud associé
+		\item si un emprunteur est décrit par un attribut dans une dimension donnée, alors le
+nœud emprunteur de cette dimension est relié au nœud attribut associé
+		\item la navigation d’une couche à une autre se fait en passant par les nœuds
+emprunteurs des différentes couches
+	\end{itemize}
+	\end{block}
+	
+	
+\end{frame}
+
+\begin{frame}
+	\frametitle{\textsc{Sous-problème d'extraction de descripteurs}}	
+	\begin{block}{\texttt{Q2:} Comment extraire les nouveaux descripteurs du graphe multicouches?}
+	Les nouveaux descripteurs sont extraits en exécutant des algorithmes d'analyse de lien dans les graphes comme le PageRank qui fourni après analyse l'important de chaque noeud dans le graphe.
+	\end{block}
+	
+	\begin{block}{\texttt{Q3:}  Quels sont les descripteurs extraits du graphe multicouches?}
+		\begin{itemize}
+			\item Dégrée d'un noeud: le nombre de noeuds emprunt qui partagent les même descriptions dans les différentes couches
+			\item Score de PageRank d'un noeud: l'information de PageRank d'un noeud après exécution de l'algorithme de PageRank sur le graphe.
+		\end{itemize}
+	\end{block}
+\end{frame}
+
+\begin{frame}
+	\frametitle{\textsc{Sous-problème d'extraction de descripteurs}}		
+	\begin{block}{\texttt{Q4:}  Comment est-ce que les descripteurs extraits des graphes multicouches sont utilisés pour résoudre le problème du credit scoring?}
+	\begin{itemize}
+		\item Ils sont ajoutés en entré des jeux de données classic pour créer de nouvelles dimensions descriptives
+		\item en espérant qu'elle permettent d'améliorer les performance métriques des modèles de machine learning
+		\item et qu'ils soient des sources pertinentes pour les sortis des modèles.
+	\end{itemize}
+	  
+	\end{block}
+\end{frame}
+\begin{frame}
+	\frametitle{\textsc{Sous-problème d'extraction de descripteurs}}		
+	\begin{block}{\texttt{Q5:}  Comment apprécier l'impact de l'ajout des nouveaux descripteurs?}
+	\begin{itemize}
+		\item Performances: 
+		\begin{itemize}
+			\item Entrainer sur le jeu de données sans descripteurs 
+			\item puis sur le jeu de données ajouté des descripteurs
+			\item comparer les performances métriques des modèles formés.
+		\end{itemize}
+		\item Pertinence:
+		\begin{itemize}
+			\item Plotter les courbes SHAP pour chaque modèles
+			\item et évaluer la présences des descripteur extraits  dans le top k des meilleurs caractéristiques qui explique la sortie des modèles.
+		\end{itemize}
+	\end{itemize}
+
+	\end{block}
+	
+\end{frame}
+
+\section{Questions devoir 3}
+\begin{frame}
+	\frametitle{\textsc{Implementation du sous-problème d'extraction de descripteurs.}}
+	\begin{block}{\texttt{Q1:} Citer deux types de descripteurs extraits des graphes ?}
+	\begin{itemize}
+		\item les statistiques de degré (degré moyen, distribution des degrés)
+		\item les mesures de centralité (centralité de degré, de proximité, d'intermédiarité)
+		\item les caractéristiques topologiques (coefficient de clustering, diamètre, modularité)
+	\end{itemize}
+
+	\end{block}
+\end{frame}
+
+\begin{frame}
+	\frametitle{\textsc{Implementation du sous-problème d'extraction de descripteurs.}}
+	\begin{block}{\texttt{Q2:}  Quel est principe du Linear discriminate analysis ?}
+		\begin{itemize}
+			\item \textbf{Réduction de dimensionnalité}: projeter les données d'entrée dans un sous-espace de plus faible dimension tout en préservant au mieux la séparabilité des classes tel qu'il maximiser la séparation entre les classes tout en minimisant la variance intra-classe.
+			\item \textbf{Recherche d'un hyperplan optimal de séparation}: défini par un vecteur normal qui maximise le rapport entre la variance inter-classe et la variance intra-classe
+			\item \textbf{Classification}: classer de nouvelles observations en les projetant sur cet hyperplan et en les assignant à la classe la plus proche
+		\end{itemize}
+
+	\end{block}
+\end{frame}
+
+\begin{frame}
+	\frametitle{\textsc{Implementation du sous-problème d'extraction de descripteurs.}}
+	\begin{block}{\texttt{Q3:} expliquer les 3 mots clés du principe de fonctionnement de l'algorithme du PageRank}
+	\begin{itemize}
+			\item \textbf{Récursivité}: calcule de manière récursive l'importance (ou le "rang") d'un noeud en se basant sur les liens entrants provenant d'autres noeud
+			\item \textbf{Influence}: le rang d'un noeud dépend de l'influence des noeud qui y pointent. Plus un noeud est influent (a un rang élevé), plus il transmet de l'importance aux noeuds qu'il référence
+			\item \textbf{Itératif}: le calcul se fait de manière itérative jusqu'à convergence, permettant d'obtenir une estimation stable de l'importance relative de chaque noeud dans l'ensemble du graphe
+		\end{itemize}
+
+	\end{block}
+\end{frame}
+
+\begin{frame}
+	\frametitle{\textsc{Implementation du sous-problème d'extraction de descripteurs.}}
+	\begin{block}{\texttt{Q4:}  Q'est-ce-que XAI ?}
+		L'intelligence artificielle explicable (ou XAI) est un ensemble de processus et de méthodes qui permettent aux utilisateurs humains de comprendre et de faire confiance aux résultats créés par les algorithmes de machine learning. 
+	\end{block}
+\end{frame}
+	
+\begin{frame}
+	\frametitle{\textsc{Implementation du sous-problème d'extraction de descripteurs.}}
+	
+	\begin{block}{\texttt{Q5:}  Quels sont selon le NIST (Le National Institute of Standards and Technology), les quatres principes qui régissent le XAI?}
+		\begin{itemize}
+			\item \textbf{Explication}: Les systèmes fournissent des preuves ou des motifs qui accompagnent tous les résultats
+			\item \textbf{Compréhensible}: Les systèmes fournissent des explications que les utilisateurs peuvent comprendre
+			\item \textbf{Précision des explications}: Les explications traduisent parfaitement le processus du système pour produire les résultats
+			\item \textbf{Limites des connaissances}: Le système ne fonctionne que dans les conditions prévues ou lorsque ses résultats ont atteint un niveau de confiance suffisant
+		\end{itemize}
+	
+	\end{block}
+\end{frame}
+
+\begin{frame}[plain]
+	\Background
+	\begin{center}
+		{\Huge \textbf{Merci de votre attention}}\\
+		\vspace{9pt}
+		Victor DJIEMBOU $^{1}$ \\
+		\vspace{9pt}
+		$^{1}$ \textit{Université de Yaoundé I,\\ Faculté des Sciences,\\ Département d'Informatique,\\ Étudiant Master SD}
+	\end{center}
+	
+\end{frame}
+\end{document}

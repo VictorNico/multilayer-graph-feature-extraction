@@ -1,5 +1,6 @@
 import random
 from collections import defaultdict
+import time
 def process_file(file_path, details_separator, header_flag):
     """
 
@@ -105,3 +106,26 @@ def train_test_split(data, labels, test_size=0.2, random_state=None):
 def write_file(file_path, line):
     with open(file_path, 'a') as file:
         file.write(line)
+
+
+def save_metrics_to_csv(filename, metric_names, metric_values):
+    # Vérifier que le nombre de métriques correspond
+    if len(metric_names) != len(metric_values):
+        print("Nombre de noms de métriques et de valeurs de métriques différents.")
+        return
+
+    # Obtenir l'heure actuelle
+    timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
+
+    # Ouvrir le fichier en mode ajout
+    file_exists = os.path.isfile(filename)
+    with open(filename, mode='a', newline='') as file:
+        # Écrire l'en-tête s'il n'existe pas déjà
+        if not file_exists:
+            file.write(','.join(['Temps'] + metric_names) + '\n')
+
+        # Écrire les données de métriques
+        row = [timestamp] + [str(value) for value in metric_values]
+        file.write(','.join(row) + '\n')
+
+    print(f"Métriques enregistrées dans le fichier : {filename}")

@@ -420,9 +420,8 @@ def compare_MlC_MCA_for_GLO_PER_GAP(outputs_path=None, cwd=None, data_folder=Non
                 <td colspan='2' rowspan='2'>{x}</td>
                 <td colspan='4'>Accuracy</td>
                 <td colspan='4'>F1-score</td>
-                <td colspan='4'>Financial-cost</td>
                 </tr>
-                <tr>{('<td>Classic</td><td>GLO' + svg + '</td><td>PER' + svg + '</td><td>GAP' + svg + '</td>') * 3}</tr>
+                <tr>{('<td>Classic</td><td>GLO' + svg + '</td><td>PER' + svg + '</td><td>GAP' + svg + '</td>') * 2}</tr>
                 """
         tab1_head = head_lambda(data_folder)
         tab1_body = ""
@@ -474,19 +473,19 @@ def compare_MlC_MCA_for_GLO_PER_GAP(outputs_path=None, cwd=None, data_folder=Non
                     'GAP': [],
                     'GLO': []
                 }
-            },
-            'financial-cost': {
-                'MlC': {
-                    'PER': [],
-                    'GAP': [],
-                    'GLO': []
-                },
-                'MCA': {
-                    'PER': [],
-                    'GAP': [],
-                    'GLO': []
-                }
             }
+            # 'financial-cost': {
+            #     'MlC': {
+            #         'PER': [],
+            #         'GAP': [],
+            #         'GLO': []
+            #     },
+            #     'MCA': {
+            #         'PER': [],
+            #         'GAP': [],
+            #         'GLO': []
+            #     }
+            # }
         }
 
         total_impact = {
@@ -509,12 +508,12 @@ def compare_MlC_MCA_for_GLO_PER_GAP(outputs_path=None, cwd=None, data_folder=Non
                 'PER': [],
                 'GAP': [],
                 'GLO': []
-            },
-            'financial-cost': {
-                'PER': [],
-                'GAP': [],
-                'GLO': []
             }
+            # 'financial-cost': {
+            #     'PER': [],
+            #     'GAP': [],
+            #     'GLO': []
+            # }
         }
 
         dictio = {
@@ -579,8 +578,9 @@ def compare_MlC_MCA_for_GLO_PER_GAP(outputs_path=None, cwd=None, data_folder=Non
                 "accuracy",
                 # "precision",
                 # "recall",
-                "f1-score",
-                "financial-cost"]
+                "f1-score"
+                # "financial-cost"
+            ]
 
             # fetch models
             for p in range(len(files['global']["MCA"])):
@@ -1405,7 +1405,7 @@ def analyzer_launcher_for_descriptor_rank_plot(
         with_class=False
 ):
     result_folders = [dirnames for _, dirnames, _ in os.walk(f'{os.getcwd()}/{outputs_name}')][0]
-
+    day = time.strftime("%Y_%m_%d_%H")
     for dataset_name in result_folders:
         print(dataset_name)
         classic_f = [
