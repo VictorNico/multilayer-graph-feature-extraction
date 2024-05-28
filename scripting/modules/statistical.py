@@ -223,12 +223,115 @@ def analyzer_launcher(outputs_name=None, analytical_func=None, layers=None, appr
         with_class = [dirnames for _, dirnames, _ in
                      os.walk(f'{os.getcwd()}/{outputs_name}/{dataset_name}')][0].__contains__("withClass")
         # if, launch a part analysis on this folder
+        metrics = {
+            'accuracy': {
+                'MlC': {
+                    'PER': [],
+                    'GAP': [],
+                    'GLO': []
+                },
+                'MCA': {
+                    'PER': [],
+                    'GAP': [],
+                    'GLO': []
+                }
+            },
+            # 'precision': {
+            #     'MlC': {
+            #         'PER': [],
+            #         'GAP': [],
+            #         'GLO': []
+            #     },
+            #     'MCA': {
+            #         'PER': [],
+            #         'GAP': [],
+            #         'GLO': []
+            #     }
+            # },
+            # 'recall': {
+            #     'MlC': {
+            #         'PER': [],
+            #         'GAP': [],
+            #         'GLO': []
+            #     },
+            #     'MCA': {
+            #         'PER': [],
+            #         'GAP': [],
+            #         'GLO': []
+            #     }
+            # },
+            'f1-score': {
+                'MlC': {
+                    'PER': [],
+                    'GAP': [],
+                    'GLO': []
+                },
+                'MCA': {
+                    'PER': [],
+                    'GAP': [],
+                    'GLO': []
+                }
+            },
+            'financial-cost': {
+                'MlC': {
+                    'PER': [],
+                    'GAP': [],
+                    'GLO': []
+                },
+                'MCA': {
+                    'PER': [],
+                    'GAP': [],
+                    'GLO': []
+                }
+            }
+        }
+
+        total_impact = {
+            'accuracy': {
+                'PER': [],
+                'GAP': [],
+                'GLO': []
+            },
+            # 'precision': {
+            #     'PER': [],
+            #     'GAP': [],
+            #     'GLO': []
+            # },
+            # 'recall': {
+            #     'PER': [],
+            #     'GAP': [],
+            #     'GLO': []
+            # },
+            'f1-score': {
+                'PER': [],
+                'GAP': [],
+                'GLO': []
+            },
+            'financial-cost': {
+                'PER': [],
+                'GAP': [],
+                'GLO': []
+            }
+        }
+
+        dictio = {
+            'MlC': 'MlC',
+            'MCA': 'MCA',
+            'classic': 'Classic'
+        }
+        day = time.strftime("%Y_%m_%d_%H")
+        hasFinancialCost = sum(['finan' in el for el in classic_f.columns.values.tolist()])
+        if hasFinancialCost == 0:
+            del total_impact['financial-cost']
+            del metrics['financial-cost']
+
+        tab_body_model = {key: deepcopy(metrics) for key in models_name.keys()}
         print(with_class)
         for i in alphaConfig:
             for typ2 in [dirnames for _, dirnames, _ in
                         os.walk(f'{os.getcwd()}/{outputs_name}/{dataset_name}/{i}')][0]:
                 print(typ2)
-                analytical_func(
+                res, files, approach, models_name = analytical_func(
                     outputs_path=f'{os.getcwd()}/{outputs_name}/{dataset_name}/{i}',
                     cwd=os.getcwd(),
                     data_folder=dataset_name,
@@ -254,13 +357,137 @@ def analyzer_launcher(outputs_name=None, analytical_func=None, layers=None, appr
                     type=typ2
                 )
 
+                for model in list(res.keys()):
+                    # fetch evaluation metric
+                    for metric in list(res[model].keys()):
+                        # fetch approach
+                        for key in list(res[model][metric].keys()):
+                            # add metric in the vector
+                            for logic in list(res[model][metric][key].keys()):
+                                tab_body_model[model][metric][key][logic].extend(res[model][metric][key][logic])
+        # print(tab_body_model)
+        print_compare(
+            f'{os.getcwd()}/{outputs_name}/{dataset_name}/{i}',
+            dataset_name,
+            models_list,
+            approach,
+            files,
+            dictio,
+            metrics,
+            hasFinancialCost,
+            total_impact,
+            tab_body_model,
+            os.getcwd(),
+            day,
+            'all',
+            models_name
+        )
         if with_class:
+            metrics = {
+                'accuracy': {
+                    'MlC': {
+                        'PER': [],
+                        'GAP': [],
+                        'GLO': []
+                    },
+                    'MCA': {
+                        'PER': [],
+                        'GAP': [],
+                        'GLO': []
+                    }
+                },
+                # 'precision': {
+                #     'MlC': {
+                #         'PER': [],
+                #         'GAP': [],
+                #         'GLO': []
+                #     },
+                #     'MCA': {
+                #         'PER': [],
+                #         'GAP': [],
+                #         'GLO': []
+                #     }
+                # },
+                # 'recall': {
+                #     'MlC': {
+                #         'PER': [],
+                #         'GAP': [],
+                #         'GLO': []
+                #     },
+                #     'MCA': {
+                #         'PER': [],
+                #         'GAP': [],
+                #         'GLO': []
+                #     }
+                # },
+                'f1-score': {
+                    'MlC': {
+                        'PER': [],
+                        'GAP': [],
+                        'GLO': []
+                    },
+                    'MCA': {
+                        'PER': [],
+                        'GAP': [],
+                        'GLO': []
+                    }
+                },
+                'financial-cost': {
+                    'MlC': {
+                        'PER': [],
+                        'GAP': [],
+                        'GLO': []
+                    },
+                    'MCA': {
+                        'PER': [],
+                        'GAP': [],
+                        'GLO': []
+                    }
+                }
+            }
+
+            total_impact = {
+                'accuracy': {
+                    'PER': [],
+                    'GAP': [],
+                    'GLO': []
+                },
+                # 'precision': {
+                #     'PER': [],
+                #     'GAP': [],
+                #     'GLO': []
+                # },
+                # 'recall': {
+                #     'PER': [],
+                #     'GAP': [],
+                #     'GLO': []
+                # },
+                'f1-score': {
+                    'PER': [],
+                    'GAP': [],
+                    'GLO': []
+                },
+                'financial-cost': {
+                    'PER': [],
+                    'GAP': [],
+                    'GLO': []
+                }
+            }
+
+            dictio = {
+                'MlC': 'MlC',
+                'MCA': 'MCA',
+                'classic': 'Classic'
+            }
+            if hasFinancialCost == 0:
+                del total_impact['financial-cost']
+                del metrics['financial-cost']
             for i in alphaConfig:
                 for typ1 in [dirnames for _, dirnames, _ in
                             os.walk(f'{os.getcwd()}/{outputs_name}/{dataset_name}/withClass/{i}')][0]:
 
                     print(typ1)
-                    analytical_func(
+                    res, files, approach, models_name = analytical_func(
                         # cols=quali_col if ('qualitative' in typ1) else quant_col,
                         outputs_path=f'{os.getcwd()}/{outputs_name}/{dataset_name}/withClass/{i}',
                         cwd=os.getcwd(),
@@ -288,6 +515,30 @@ def analyzer_launcher(outputs_name=None, analytical_func=None, layers=None, appr
                         type=typ1
                     )
 
+                    for model in list(res.keys()):
+                        # fetch evaluation metric
+                        for metric in list(res[model].keys()):
+                            # fetch approach
+                            for key in list(res[model][metric].keys()):
+                                # add metric in the vector
+                                for logic in list(res[model][metric][key].keys()):
+                                    tab_body_model[model][metric][key][logic].extend(res[model][metric][key][logic])
+            print_compare(
+                f'{os.getcwd()}/{outputs_name}/{dataset_name}/withClass/{i}',
+                dataset_name,
+                models_list,
+                approach,
+                files,
+                dictio,
+                metrics,
+                hasFinancialCost,
+                total_impact,
+                tab_body_model,
+                os.getcwd(),
+                day,
+                'all',
+                models_name
+            )
 
 def load_results(
         outputs_path,
@@ -393,38 +644,30 @@ def compare_MlC_MCA_for_GLO_PER_GAP(outputs_path=None, cwd=None, data_folder=Non
     -------
 
     """
-    print(f'{outputs_path}/{type}/model_storage')
-    name = \
-        [file for _, _, files in os.walk(
-            f'{outputs_path}/{type}/model_storage')
-         for file in files if
-         '_best_features' in file][0]
-    backup = read_model(
-        f'{outputs_path}/{type}/model_storage/{name}')
-    columns = backup["model"].keys()
-    cols = backup['name']
-    bestK = backup["bestK"]
-    print(f"bestK: {bestK}, serialized objects: {backup}")
+    # print(f'{outputs_path}/{type}/model_storage')
+    # name = \
+    #     [file for _, _, files in os.walk(
+    #         f'{outputs_path}/{type}/model_storage')
+    #      for file in files if
+    #      '_best_features' in file][0]
+    # backup = read_model(
+    #     f'{outputs_path}/{type}/model_storage/{name}')
+    # columns = backup["model"].keys()
+    # cols = backup['name']
+    # bestK = backup["bestK"]
+    # print(f"bestK: {bestK}, serialized objects: {backup}")
     day = time.strftime("%Y_%m_%d_%H")
-    if cols is not None or classic_metrics is not None:  # check if cols and classics metrics are filled
+    if classic_metrics is not None:  # check if cols and classics metrics are filled
         ## analyse of k layer
 
         # find out all best metric details
         """
         
                 <td colspan='4'>Precision</td>
-                <td colspan='4'>Recall</td>"""
-        head_lambda = lambda \
-                x: f"""
-                <tr>
-                <td colspan='2' rowspan='2'>{x}</td>
-                <td colspan='4'>Accuracy</td>
-                <td colspan='4'>F1-score</td>
-                </tr>
-                <tr>{('<td>Classic</td><td>GLO' + svg + '</td><td>PER' + svg + '</td><td>GAP' + svg + '</td>') * 2}</tr>
-                """
-        tab1_head = head_lambda(data_folder)
-        tab1_body = ""
+                <td colspan='4'>Recall</td>
+                <td colspan='4'>Financial-Cost</td>
+        """
+
         metrics = {
             'accuracy': {
                 'MlC': {
@@ -473,19 +716,19 @@ def compare_MlC_MCA_for_GLO_PER_GAP(outputs_path=None, cwd=None, data_folder=Non
                     'GAP': [],
                     'GLO': []
                 }
+            },
+            'financial-cost': {
+                'MlC': {
+                    'PER': [],
+                    'GAP': [],
+                    'GLO': []
+                },
+                'MCA': {
+                    'PER': [],
+                    'GAP': [],
+                    'GLO': []
+                }
             }
-            # 'financial-cost': {
-            #     'MlC': {
-            #         'PER': [],
-            #         'GAP': [],
-            #         'GLO': []
-            #     },
-            #     'MCA': {
-            #         'PER': [],
-            #         'GAP': [],
-            #         'GLO': []
-            #     }
-            # }
         }
 
         total_impact = {
@@ -508,12 +751,12 @@ def compare_MlC_MCA_for_GLO_PER_GAP(outputs_path=None, cwd=None, data_folder=Non
                 'PER': [],
                 'GAP': [],
                 'GLO': []
+            },
+            'financial-cost': {
+                'PER': [],
+                'GAP': [],
+                'GLO': []
             }
-            # 'financial-cost': {
-            #     'PER': [],
-            #     'GAP': [],
-            #     'GLO': []
-            # }
         }
 
         dictio = {
@@ -522,24 +765,20 @@ def compare_MlC_MCA_for_GLO_PER_GAP(outputs_path=None, cwd=None, data_folder=Non
             'classic': 'Classic'
         }
 
+        hasFinancialCost = sum(['finan' in el for el in classic_metrics.columns.values.tolist()])
+        if hasFinancialCost == 0:
+            del total_impact['financial-cost']
+            del metrics['financial-cost']
 
 
-        caption_content_lambda = lambda x: ''.join(
-            [f'<span><strong>{key}</strong>: {value}</span><br>' for key, value in {
-                **models_name,
-                'GLO': f'Learning from classic dataset of {data_folder} where just Global MLN had been added',
-                'PER': f'Learning from classic dataset of {data_folder} where just Personalised MLN had been added',
-                'GAP': f'DLearning from classic dataset of {data_folder} where both Global and Personalised MLN had been added',
-                'Classic': f'Learning from classic dataset',
-                'MlC': f'Learning from classic dataset where MLN had been added',
-                'MCA': f'Learning from classic dataset where MLN had been added and Att removed'
-            }.items()])
 
         tab1_body_model = {key: deepcopy(metrics) for key in models_name.keys()}
 
 
         # fetch layers
-        for k in layers:
+        exitingMLNB = [dirnames for _, dirnames, _ in os.walk(f'{outputs_path}/{type}/')][0]
+        exitingMLNB = sorted([int(el.split("_")[1]) for el in exitingMLNB if 'mlna' in el] )
+        for k in list(set(layers) & set(exitingMLNB)):
             # fetch each combinantion of atributs in layers
             # if k == 1:
             #     config = get_combinations(range(len(cols)), k)
@@ -578,8 +817,13 @@ def compare_MlC_MCA_for_GLO_PER_GAP(outputs_path=None, cwd=None, data_folder=Non
                 "accuracy",
                 # "precision",
                 # "recall",
-                "f1-score"
-                # "financial-cost"
+                "f1-score",
+                "financial-cost"
+            ] if hasFinancialCost == 1 else [
+                "accuracy",
+                # "precision",
+                # "recall",
+                "f1-score",
             ]
 
             # fetch models
@@ -624,102 +868,181 @@ def compare_MlC_MCA_for_GLO_PER_GAP(outputs_path=None, cwd=None, data_folder=Non
                             # total_impact[metric]["GLO"].append(tab1_body_model[model][metric][key]['P'] <= tab1_body_model[model][metric][key]['P'])
 
         # fetch each model
-        for model in models_list:
-            tab1_body += f'<tr> <td rowspan="{len(approach)}">{model}</td>'
-            # fetch approach
-            for i, key in enumerate(files['global'].keys() if approach == None else approach):
-                # fetch evaluation metric
-                tab1_body += f'<tr> <td>{dictio[key]}</td>' if i != 0 else f'<td>{dictio[key]}</td>'
-                for y, metric in enumerate(metrics):
+        print_compare(
+            outputs_path,
+            data_folder,
+            models_list,
+            approach,
+            files,
+            dictio,
+            metrics,
+            hasFinancialCost,
+            total_impact,
+            tab1_body_model,
+            cwd,
+            day,
+            alpha,
+            models_name
+        )
 
-                    act = min if y == len(metrics) - 1 else max
-                    if y != len(metrics) - 1:
-                        # add metric in the vector
-                        total_impact[metric]["PER"].append(
-                            (act(tab1_body_model[model][metric][key]["PER"]) > 0.0)
-                            and (act(tab1_body_model[model][metric][key]["GLO"]) <= act(
+    return tab1_body_model, files, approach, models_name
+
+
+def print_compare(
+        outputs_path,
+        data_folder,
+        models_list,
+        approach,
+        files,
+        dictio,
+        metrics,
+        hasFinancialCost,
+        total_impact,
+        tab1_body_model,
+        cwd,
+        day,
+        alpha,
+        models_name
+):
+    # find out all best metric details
+    """
+
+            <td colspan='4'>Precision</td>
+            <td colspan='4'>Recall</td>
+            <td colspan='4'>Financial-Cost</td>
+    """
+
+    head_lambda = lambda \
+            x, finance: f"""
+                    <tr>
+                    <td colspan='2' rowspan='2'>{x}</td>
+                    <td colspan='4'>Accuracy</td>
+                    <td colspan='4'>F1-score</td>
+                    {'<td colspan=4>Financial-Cost</td>' * int(finance == 1)}
+                    </tr>
+                    <tr>{('<td>Classic</td><td>GLO' + svg + '</td><td>PER' + svg + '</td><td>GAP' + svg + '</td>') * (2 if finance == 0 else 3)}</tr>
+                    """
+    tab1_body = ""
+
+
+    tab1_head = head_lambda(data_folder, hasFinancialCost)
+    caption_content_lambda = lambda x: ''.join(
+        [f'<span><strong>{key}</strong>: {value}</span><br>' for key, value in {
+            **models_name,
+            'GLO': f'Learning from classic dataset of {data_folder} where just Global MLN had been added',
+            'PER': f'Learning from classic dataset of {data_folder} where just Personalised MLN had been added',
+            'GAP': f'DLearning from classic dataset of {data_folder} where both Global and Personalised MLN had been added',
+            'Classic': f'Learning from classic dataset',
+            'MlC': f'Learning from classic dataset where MLN had been added',
+            'MCA': f'Learning from classic dataset where MLN had been added and Att removed'
+        }.items()])
+
+    for model in models_list:
+        tab1_body += f'<tr> <td rowspan="{len(approach)}">{model}</td>'
+        # fetch approach
+        for i, key in enumerate(files['global'].keys() if approach == None else approach):
+            # fetch evaluation metric
+            tab1_body += f'<tr> <td>{dictio[key]}</td>' if i != 0 else f'<td>{dictio[key]}</td>'
+            for y, metric in enumerate(metrics):
+
+                act = min if (y == len(metrics) - 1 and hasFinancialCost == 1) else max
+                if y != len(metrics) - 1 or hasFinancialCost == 0:
+                    # add metric in the vector
+                    total_impact[metric]["PER"].append(
+                        (act(tab1_body_model[model][metric][key]["PER"]) > 0.0)
+                        and (act(tab1_body_model[model][metric][key]["GLO"]) <= act(
                             tab1_body_model[model][metric][key]["PER"]))
-                            and (
+                        and (
                                 act(tab1_body_model[model][metric][key]["GAP"]) <= act(
                             tab1_body_model[model][metric][key]["PER"]))
-                        )
+                    )
 
-                        total_impact[metric]["GLO"].append(
-                            (act(tab1_body_model[model][metric][key]["GLO"]) > 0.0)
-                            and (act(tab1_body_model[model][metric][key]["GLO"]) >= act(
+                    total_impact[metric]["GLO"].append(
+                        (act(tab1_body_model[model][metric][key]["GLO"]) > 0.0)
+                        and (act(tab1_body_model[model][metric][key]["GLO"]) >= act(
                             tab1_body_model[model][metric][key]["PER"]))
-                            and (
+                        and (
                                 act(tab1_body_model[model][metric][key]["GLO"]) >= act(
                             tab1_body_model[model][metric][key]["GAP"]))
-                        )
+                    )
 
-                        total_impact[metric]["GAP"].append(
-                            (act(tab1_body_model[model][metric][key]["GAP"]) > 0.0)
-                            and (act(tab1_body_model[model][metric][key]["GAP"]) >= act(
+                    total_impact[metric]["GAP"].append(
+                        (act(tab1_body_model[model][metric][key]["GAP"]) > 0.0)
+                        and (act(tab1_body_model[model][metric][key]["GAP"]) >= act(
                             tab1_body_model[model][metric][key]["PER"]))
-                            and (
+                        and (
                                 act(tab1_body_model[model][metric][key]["GAP"]) >= act(
                             tab1_body_model[model][metric][key]["GLO"]))
-                        )
-                    else:
-                        # add metric in the vector
-                        total_impact[metric]["PER"].append(
-                            (act(tab1_body_model[model][metric][key]["PER"]) < 0.0)
-                            and (act(tab1_body_model[model][metric][key]["GLO"]) >= act(
-                                tab1_body_model[model][metric][key]["PER"]))
-                            and (
-                                    act(tab1_body_model[model][metric][key]["GAP"]) >= act(
-                                tab1_body_model[model][metric][key]["PER"]))
-                        )
+                    )
+                else:
+                    # add metric in the vector
+                    total_impact[metric]["PER"].append(
+                        (act(tab1_body_model[model][metric][key]["PER"]) < 0.0)
+                        and (act(tab1_body_model[model][metric][key]["GLO"]) >= act(
+                            tab1_body_model[model][metric][key]["PER"]))
+                        and (
+                                act(tab1_body_model[model][metric][key]["GAP"]) >= act(
+                            tab1_body_model[model][metric][key]["PER"]))
+                    )
 
-                        total_impact[metric]["GLO"].append(
-                            (act(tab1_body_model[model][metric][key]["GLO"]) < 0.0)
-                            and (act(tab1_body_model[model][metric][key]["GLO"]) <= act(
-                                tab1_body_model[model][metric][key]["PER"]))
-                            and (
-                                    act(tab1_body_model[model][metric][key]["GLO"]) <= act(
-                                tab1_body_model[model][metric][key]["GAP"]))
-                        )
+                    total_impact[metric]["GLO"].append(
+                        (act(tab1_body_model[model][metric][key]["GLO"]) < 0.0)
+                        and (act(tab1_body_model[model][metric][key]["GLO"]) <= act(
+                            tab1_body_model[model][metric][key]["PER"]))
+                        and (
+                                act(tab1_body_model[model][metric][key]["GLO"]) <= act(
+                            tab1_body_model[model][metric][key]["GAP"]))
+                    )
 
-                        total_impact[metric]["GAP"].append(
-                            (act(tab1_body_model[model][metric][key]["GAP"]) < 0.0)
-                            and (act(tab1_body_model[model][metric][key]["GAP"]) <= act(
-                                tab1_body_model[model][metric][key]["PER"]))
-                            and (
-                                    act(tab1_body_model[model][metric][key]["GAP"]) <= act(
-                                tab1_body_model[model][metric][key]["GLO"]))
-                        )
+                    total_impact[metric]["GAP"].append(
+                        (act(tab1_body_model[model][metric][key]["GAP"]) < 0.0)
+                        and (act(tab1_body_model[model][metric][key]["GAP"]) <= act(
+                            tab1_body_model[model][metric][key]["PER"]))
+                        and (
+                                act(tab1_body_model[model][metric][key]["GAP"]) <= act(
+                            tab1_body_model[model][metric][key]["GLO"]))
+                    )
 
-                    tab1_body += (
+                tab1_body += (
+                    (
                             f'<td>{round(files["classic"].loc[model, metric], 4)}</td><td>{"<strong>" * int((act(tab1_body_model[model][metric][key]["GLO"]) > 0) and (act(tab1_body_model[model][metric][key]["GLO"]) >= act(tab1_body_model[model][metric][key]["PER"])) and (act(tab1_body_model[model][metric][key]["GLO"]) >= act(tab1_body_model[model][metric][key]["GAP"])))}{act(tab1_body_model[model][metric][key]["GLO"])}{"</strong>" * int((act(tab1_body_model[model][metric][key]["GLO"]) > 0) and (act(tab1_body_model[model][metric][key]["GLO"]) >= act(tab1_body_model[model][metric][key]["PER"])) and (act(tab1_body_model[model][metric][key]["GLO"]) >= act(tab1_body_model[model][metric][key]["GAP"])))}</td>' +
                             f'<td> {"<strong>" * int((act(tab1_body_model[model][metric][key]["PER"]) > 0) and (act(tab1_body_model[model][metric][key]["GLO"]) <= act(tab1_body_model[model][metric][key]["PER"])) and (act(tab1_body_model[model][metric][key]["GAP"]) <= act(tab1_body_model[model][metric][key]["PER"])))}{act(tab1_body_model[model][metric][key]["PER"])}{"</strong>" * int((act(tab1_body_model[model][metric][key]["PER"]) > 0) and (act(tab1_body_model[model][metric][key]["GLO"]) <= act(tab1_body_model[model][metric][key]["PER"])) and (act(tab1_body_model[model][metric][key]["GAP"]) <= act(tab1_body_model[model][metric][key]["PER"])))}</td>' +
                             f'<td> {"<strong>" * int((act(tab1_body_model[model][metric][key]["GAP"]) > 0) and (act(tab1_body_model[model][metric][key]["GLO"]) <= act(tab1_body_model[model][metric][key]["GAP"])) and (act(tab1_body_model[model][metric][key]["PER"]) <= act(tab1_body_model[model][metric][key]["GAP"])))}{act(tab1_body_model[model][metric][key]["GAP"])}{"</strong>" * int((act(tab1_body_model[model][metric][key]["GAP"]) > 0) and (act(tab1_body_model[model][metric][key]["GLO"]) <= act(tab1_body_model[model][metric][key]["GAP"])) and (act(tab1_body_model[model][metric][key]["PER"]) <= act(tab1_body_model[model][metric][key]["GAP"])))}</td>'
-                    ) if y != len(metrics) - 1 else (
+                    ) if "financial-cost" != metric else (
                             f'<td>{round(files["classic"].loc[model, metric], 4)}</td><td>{"<strong>" * int((act(tab1_body_model[model][metric][key]["GLO"]) < 0) and (act(tab1_body_model[model][metric][key]["GLO"]) <= act(tab1_body_model[model][metric][key]["PER"])) and (act(tab1_body_model[model][metric][key]["GLO"]) <= act(tab1_body_model[model][metric][key]["GAP"])))}{act(tab1_body_model[model][metric][key]["GLO"])}{"</strong>" * int((act(tab1_body_model[model][metric][key]["GLO"]) < 0) and (act(tab1_body_model[model][metric][key]["GLO"]) <= act(tab1_body_model[model][metric][key]["PER"])) and (act(tab1_body_model[model][metric][key]["GLO"]) <= act(tab1_body_model[model][metric][key]["GAP"])))}</td>' +
                             f'<td> {"<strong>" * int((act(tab1_body_model[model][metric][key]["PER"]) < 0) and (act(tab1_body_model[model][metric][key]["GLO"]) >= act(tab1_body_model[model][metric][key]["PER"])) and (act(tab1_body_model[model][metric][key]["GAP"]) >= act(tab1_body_model[model][metric][key]["PER"])))}{act(tab1_body_model[model][metric][key]["PER"])}{"</strong>" * int((act(tab1_body_model[model][metric][key]["PER"]) < 0) and (act(tab1_body_model[model][metric][key]["GLO"]) >= act(tab1_body_model[model][metric][key]["PER"])) and (act(tab1_body_model[model][metric][key]["GAP"]) >= act(tab1_body_model[model][metric][key]["PER"])))}</td>' +
-                            f'<td> {"<strong>" * int((act(tab1_body_model[model][metric][key]["GAP"]) < 0) and (act(tab1_body_model[model][metric][key]["GLO"]) >= act(tab1_body_model[model][metric][key]["GAP"])) and (act(tab1_body_model[model][metric][key]["PER"]) >= act(tab1_body_model[model][metric][key]["GAP"])))}{act(tab1_body_model[model][metric][key]["GAP"])}{"</strong>" * int((act(tab1_body_model[model][metric][key]["GAP"]) < 0) and (act(tab1_body_model[model][metric][key]["GLO"]) >= act(tab1_body_model[model][metric][key]["GAP"])) and (act(tab1_body_model[model][metric][key]["PER"]) >= act(tab1_body_model[model][metric][key]["GAP"])))}</td></tr>')
-        tab1_body += f'<tr> <td colspan="2">Total</td>'
-        for y, metric in enumerate(metrics):
-            tab1_body += (
-                    f'<td></td><td>{"<strong>" * int((sum(total_impact[metric]["GLO"]) >= sum(total_impact[metric]["PER"])) and (sum(total_impact[metric]["GLO"]) >= sum(total_impact[metric]["GAP"])))}{sum(total_impact[metric]["GLO"])}{"</strong>" * int((sum(total_impact[metric]["GLO"]) >= sum(total_impact[metric]["PER"])) and (sum(total_impact[metric]["GLO"]) >= sum(total_impact[metric]["GAP"])))}</td>' +
-                    f'<td>{"<strong>" * int((sum(total_impact[metric]["GLO"]) <= sum(total_impact[metric]["PER"])) and (sum(total_impact[metric]["GAP"]) <= sum(total_impact[metric]["PER"])))}{sum(total_impact[metric]["PER"])}{"</strong>" * int((sum(total_impact[metric]["GLO"]) <= sum(total_impact[metric]["PER"])) and (sum(total_impact[metric]["GAP"]) <= sum(total_impact[metric]["PER"])))}</td>' +
-                    f'<td>{"<strong>" * int((sum(total_impact[metric]["GLO"]) <= sum(total_impact[metric]["GAP"])) and (sum(total_impact[metric]["GAP"]) >= sum(total_impact[metric]["PER"])))}{sum(total_impact[metric]["GAP"])}{"</strong>" * int((sum(total_impact[metric]["GLO"]) <= sum(total_impact[metric]["GAP"])) and (sum(total_impact[metric]["GAP"]) >= sum(total_impact[metric]["PER"])))}</td>'
-            ) if y != len(metrics) - 1 else (
-                    f'<td></td><td>{"<strong>" * int((sum(total_impact[metric]["GLO"]) >= sum(total_impact[metric]["PER"])) and (sum(total_impact[metric]["GLO"]) >= sum(total_impact[metric]["GAP"])))}{sum(total_impact[metric]["GLO"])}{"</strong>" * int((sum(total_impact[metric]["GLO"]) >= sum(total_impact[metric]["PER"])) and (sum(total_impact[metric]["GLO"]) >= sum(total_impact[metric]["GAP"])))}</td>' +
-                    f'<td>{"<strong>" * int((sum(total_impact[metric]["GLO"]) <= sum(total_impact[metric]["PER"])) and (sum(total_impact[metric]["GAP"]) <= sum(total_impact[metric]["PER"])))}{sum(total_impact[metric]["PER"])}{"</strong>" * int((sum(total_impact[metric]["GLO"]) <= sum(total_impact[metric]["PER"])) and (sum(total_impact[metric]["GAP"]) <= sum(total_impact[metric]["PER"])))}</td>' +
-                    f'<td>{"<strong>" * int((sum(total_impact[metric]["GLO"]) <= sum(total_impact[metric]["GAP"])) and (sum(total_impact[metric]["GAP"]) >= sum(total_impact[metric]["PER"])))}{sum(total_impact[metric]["GAP"])}{"</strong>" * int((sum(total_impact[metric]["GLO"]) <= sum(total_impact[metric]["GAP"])) and (sum(total_impact[metric]["GAP"]) >= sum(total_impact[metric]["PER"])))}</td></tr>')
+                            f'<td> {"<strong>" * int((act(tab1_body_model[model][metric][key]["GAP"]) < 0) and (act(tab1_body_model[model][metric][key]["GLO"]) >= act(tab1_body_model[model][metric][key]["GAP"])) and (act(tab1_body_model[model][metric][key]["PER"]) >= act(tab1_body_model[model][metric][key]["GAP"])))}{act(tab1_body_model[model][metric][key]["GAP"])}{"</strong>" * int((act(tab1_body_model[model][metric][key]["GAP"]) < 0) and (act(tab1_body_model[model][metric][key]["GLO"]) >= act(tab1_body_model[model][metric][key]["GAP"])) and (act(tab1_body_model[model][metric][key]["PER"]) >= act(tab1_body_model[model][metric][key]["GAP"])))}</td>')
+                ) if y != len(metrics) - 1 else (
+                    (
+                            f'<td>{round(files["classic"].loc[model, metric], 4)}</td><td>{"<strong>" * int((act(tab1_body_model[model][metric][key]["GLO"]) > 0) and (act(tab1_body_model[model][metric][key]["GLO"]) >= act(tab1_body_model[model][metric][key]["PER"])) and (act(tab1_body_model[model][metric][key]["GLO"]) >= act(tab1_body_model[model][metric][key]["GAP"])))}{act(tab1_body_model[model][metric][key]["GLO"])}{"</strong>" * int((act(tab1_body_model[model][metric][key]["GLO"]) > 0) and (act(tab1_body_model[model][metric][key]["GLO"]) >= act(tab1_body_model[model][metric][key]["PER"])) and (act(tab1_body_model[model][metric][key]["GLO"]) >= act(tab1_body_model[model][metric][key]["GAP"])))}</td>' +
+                            f'<td> {"<strong>" * int((act(tab1_body_model[model][metric][key]["PER"]) > 0) and (act(tab1_body_model[model][metric][key]["GLO"]) <= act(tab1_body_model[model][metric][key]["PER"])) and (act(tab1_body_model[model][metric][key]["GAP"]) <= act(tab1_body_model[model][metric][key]["PER"])))}{act(tab1_body_model[model][metric][key]["PER"])}{"</strong>" * int((act(tab1_body_model[model][metric][key]["PER"]) > 0) and (act(tab1_body_model[model][metric][key]["GLO"]) <= act(tab1_body_model[model][metric][key]["PER"])) and (act(tab1_body_model[model][metric][key]["GAP"]) <= act(tab1_body_model[model][metric][key]["PER"])))}</td>' +
+                            f'<td> {"<strong>" * int((act(tab1_body_model[model][metric][key]["GAP"]) > 0) and (act(tab1_body_model[model][metric][key]["GLO"]) <= act(tab1_body_model[model][metric][key]["GAP"])) and (act(tab1_body_model[model][metric][key]["PER"]) <= act(tab1_body_model[model][metric][key]["GAP"])))}{act(tab1_body_model[model][metric][key]["GAP"])}{"</strong>" * int((act(tab1_body_model[model][metric][key]["GAP"]) > 0) and (act(tab1_body_model[model][metric][key]["GLO"]) <= act(tab1_body_model[model][metric][key]["GAP"])) and (act(tab1_body_model[model][metric][key]["PER"]) <= act(tab1_body_model[model][metric][key]["GAP"])))}</td></tr>'
+                    ) if "financial-cost" != metric else (
+                            f'<td>{round(files["classic"].loc[model, metric], 4)}</td><td>{"<strong>" * int((act(tab1_body_model[model][metric][key]["GLO"]) < 0) and (act(tab1_body_model[model][metric][key]["GLO"]) <= act(tab1_body_model[model][metric][key]["PER"])) and (act(tab1_body_model[model][metric][key]["GLO"]) <= act(tab1_body_model[model][metric][key]["GAP"])))}{act(tab1_body_model[model][metric][key]["GLO"])}{"</strong>" * int((act(tab1_body_model[model][metric][key]["GLO"]) < 0) and (act(tab1_body_model[model][metric][key]["GLO"]) <= act(tab1_body_model[model][metric][key]["PER"])) and (act(tab1_body_model[model][metric][key]["GLO"]) <= act(tab1_body_model[model][metric][key]["GAP"])))}</td>' +
+                            f'<td> {"<strong>" * int((act(tab1_body_model[model][metric][key]["PER"]) < 0) and (act(tab1_body_model[model][metric][key]["GLO"]) >= act(tab1_body_model[model][metric][key]["PER"])) and (act(tab1_body_model[model][metric][key]["GAP"]) >= act(tab1_body_model[model][metric][key]["PER"])))}{act(tab1_body_model[model][metric][key]["PER"])}{"</strong>" * int((act(tab1_body_model[model][metric][key]["PER"]) < 0) and (act(tab1_body_model[model][metric][key]["GLO"]) >= act(tab1_body_model[model][metric][key]["PER"])) and (act(tab1_body_model[model][metric][key]["GAP"]) >= act(tab1_body_model[model][metric][key]["PER"])))}</td>' +
+                            f'<td> {"<strong>" * int((act(tab1_body_model[model][metric][key]["GAP"]) < 0) and (act(tab1_body_model[model][metric][key]["GLO"]) >= act(tab1_body_model[model][metric][key]["GAP"])) and (act(tab1_body_model[model][metric][key]["PER"]) >= act(tab1_body_model[model][metric][key]["GAP"])))}{act(tab1_body_model[model][metric][key]["GAP"])}{"</strong>" * int((act(tab1_body_model[model][metric][key]["GAP"]) < 0) and (act(tab1_body_model[model][metric][key]["GLO"]) >= act(tab1_body_model[model][metric][key]["GAP"])) and (act(tab1_body_model[model][metric][key]["PER"]) >= act(tab1_body_model[model][metric][key]["GAP"])))}</td></tr>'))
+    tab1_body += f'<tr> <td colspan="2">Total</td>'
+    for y, metric in enumerate(metrics):
+        tab1_body += (
+                f'<td></td><td>{"<strong>" * int((sum(total_impact[metric]["GLO"]) >= sum(total_impact[metric]["PER"])) and (sum(total_impact[metric]["GLO"]) >= sum(total_impact[metric]["GAP"])))}{sum(total_impact[metric]["GLO"])}{"</strong>" * int((sum(total_impact[metric]["GLO"]) >= sum(total_impact[metric]["PER"])) and (sum(total_impact[metric]["GLO"]) >= sum(total_impact[metric]["GAP"])))}</td>' +
+                f'<td>{"<strong>" * int((sum(total_impact[metric]["GLO"]) <= sum(total_impact[metric]["PER"])) and (sum(total_impact[metric]["GAP"]) <= sum(total_impact[metric]["PER"])))}{sum(total_impact[metric]["PER"])}{"</strong>" * int((sum(total_impact[metric]["GLO"]) <= sum(total_impact[metric]["PER"])) and (sum(total_impact[metric]["GAP"]) <= sum(total_impact[metric]["PER"])))}</td>' +
+                f'<td>{"<strong>" * int((sum(total_impact[metric]["GLO"]) <= sum(total_impact[metric]["GAP"])) and (sum(total_impact[metric]["GAP"]) >= sum(total_impact[metric]["PER"])))}{sum(total_impact[metric]["GAP"])}{"</strong>" * int((sum(total_impact[metric]["GLO"]) <= sum(total_impact[metric]["GAP"])) and (sum(total_impact[metric]["GAP"]) >= sum(total_impact[metric]["PER"])))}</td>'
+        ) if y != len(metrics) - 1 else (
+                f'<td></td><td>{"<strong>" * int((sum(total_impact[metric]["GLO"]) >= sum(total_impact[metric]["PER"])) and (sum(total_impact[metric]["GLO"]) >= sum(total_impact[metric]["GAP"])))}{sum(total_impact[metric]["GLO"])}{"</strong>" * int((sum(total_impact[metric]["GLO"]) >= sum(total_impact[metric]["PER"])) and (sum(total_impact[metric]["GLO"]) >= sum(total_impact[metric]["GAP"])))}</td>' +
+                f'<td>{"<strong>" * int((sum(total_impact[metric]["GLO"]) <= sum(total_impact[metric]["PER"])) and (sum(total_impact[metric]["GAP"]) <= sum(total_impact[metric]["PER"])))}{sum(total_impact[metric]["PER"])}{"</strong>" * int((sum(total_impact[metric]["GLO"]) <= sum(total_impact[metric]["PER"])) and (sum(total_impact[metric]["GAP"]) <= sum(total_impact[metric]["PER"])))}</td>' +
+                f'<td>{"<strong>" * int((sum(total_impact[metric]["GLO"]) <= sum(total_impact[metric]["GAP"])) and (sum(total_impact[metric]["GAP"]) >= sum(total_impact[metric]["PER"])))}{sum(total_impact[metric]["GAP"])}{"</strong>" * int((sum(total_impact[metric]["GLO"]) <= sum(total_impact[metric]["GAP"])) and (sum(total_impact[metric]["GAP"]) >= sum(total_impact[metric]["PER"])))}</td></tr>')
 
-        caption = f'<caption><h2>Legend</h2>{caption_content_lambda(metric)}</caption>'
-        table_html = f'<table style="border: 2px solid black; width: 100% !important; background-color: #FFFFFF; color:#000000;">{caption}{tab1_head}{tab1_body}</table>'
-        htm = f'<html><head>{style}<title> GLO vs PER vs GAP </title></head><body style="background-color: white;">{table_html}</body></html>'
+    caption = f'<caption><h2>Legend</h2>{caption_content_lambda(metric)}</caption>'
+    table_html = f'<table style="border: 2px solid black; width: 100% !important; background-color: #FFFFFF; color:#000000;">{caption}{tab1_head}{tab1_body}</table>'
+    htm = f'<html><head>{style}<title> GLO vs PER vs GAP </title></head><body style="background-color: white;">{table_html}</body></html>'
 
-        create_domain(f'{cwd}/analyze_{outputs_path.split("/")[-2]}_made_on_{day}H/{data_folder}/compare_MlC_MCA_for_GLO_PER_GAP')
-        timestr = time.strftime("%Y_%m_%d_%H_%M_%S")
-        filename1 = f'{cwd}/analyze_{outputs_path.split("/")[-2]}_made_on_{day}H/{data_folder}/compare_MlC_MCA_for_GLO_PER_GAP/Statistical comparaison of approachs in {data_folder} on global logic{alpha}.html'
-        _file = open(filename1, "w")
-        _file.write(htm)
-        _file.close()
-
+    create_domain(
+        f'{cwd}/analyze_{outputs_path.split("/")[-2]}_made_on_{day}H/{data_folder}/compare_MlC_MCA_for_GLO_PER_GAP')
+    timestr = time.strftime("%Y_%m_%d_%H_%M_%S")
+    filename1 = f'{cwd}/analyze_{outputs_path.split("/")[-2]}_made_on_{day}H/{data_folder}/compare_MlC_MCA_for_GLO_PER_GAP/Statistical comparaison of approachs in {data_folder} on global logic{alpha}.html'
+    _file = open(filename1, "w")
+    _file.write(htm)
+    _file.close()
 
 def compare_MlC_MCA_for_GLO_MX_PER_MX_PER_MY_GAP(
         outputs_path=None,
@@ -1132,18 +1455,18 @@ def Descriptors_comparison(
 
     # find out all best metric details
     descripteurs = {
-        'GLO_INTER': [],
-        'GLO_INTRA': [],
-        'GLO_COMBINE': [],
-        'PER_INTER': [],
-        'PER_INTRA': [],
-        'PER_COMBINE': [],
-        'GLO_INTER_M': [],
-        'GLO_INTRA_M': [],
-        'GLO_COMBINE_M': [],
-        'PER_INTER_M': [],
-        'PER_INTRA_M': [],
-        'PER_COMBINE_M': [],
+        'INTER_GLO': [],
+        'INTRA_GLO': [],
+        'COMBINE_GLO': [],
+        'INTER_PER': [],
+        'INTRA_PER': [],
+        'COMBINE_PER': [],
+        'INTER_M_GLO': [],
+        'INTRA_M_GLO': [],
+        'COMBINE_M_GLO': [],
+        'INTER_M_PER': [],
+        'INTRA_M_PER': [],
+        'COMBINE_M_PER': [],
         'DEGREE': []
 
     }
@@ -1165,7 +1488,9 @@ def Descriptors_comparison(
         if cols is not None:  # check if cols and classics metrics are filled
             ## analyse of k layer
             # fetch layers
-            for d, k in enumerate(layers):
+            exitingMLNB = [dirnames for _, dirnames, _ in os.walk(f'{outputs_path}/{alp}/{type}/')][0]
+            exitingMLNB = sorted([int(el.split("_")[1]) for el in exitingMLNB if 'mlna' in el])
+            for d, k in enumerate(list(set(layers) & set(exitingMLNB))):
                 ### get files for distincts logic
                 # print(f'{outputs_path}/{type}/{"mlna_" + str(k) if k == 1 else "mlna_" + str(k) + "_b"}/mixed/data_selection_storage')
                 # files = {
@@ -1186,7 +1511,7 @@ def Descriptors_comparison(
                         glo=False,
                         mix=True,
                     )
-                # print(files)
+                # print(k)
                 # outputs[logic] = files
                 ### transform and normalize
                 models_list = files['mixed']["MlC"][0].index.values.tolist()
@@ -1205,40 +1530,40 @@ def Descriptors_comparison(
                                     if not (att in ["accuracy", "precision", "recall", "f1-score","financial-cost"]):
                                         if GLO_INTER_F(att):
                                             tab1_body_model[model][f'MLN {k}'][
-                                                'GLO_INTER'].append(files[key][logic][p].loc[model, att])
+                                                'INTER_GLO'].append(files[key][logic][p].loc[model, att])
                                         elif GLO_INTRA_F(att):
                                             tab1_body_model[model][f'MLN {k}'][
-                                                'GLO_INTRA'].append(files[key][logic][p].loc[model, att])
+                                                'INTRA_GLO'].append(files[key][logic][p].loc[model, att])
                                         elif GLO_COMBINE_F(att):
                                             tab1_body_model[model][f'MLN {k}'][
-                                                'GLO_COMBINE'].append(files[key][logic][p].loc[model, att])
+                                                'COMBINE_GLO'].append(files[key][logic][p].loc[model, att])
                                         elif PER_INTER_F(att):
                                             tab1_body_model[model][f'MLN {k}'][
-                                                'PER_INTER'].append(files[key][logic][p].loc[model, att])
+                                                'INTER_PER'].append(files[key][logic][p].loc[model, att])
                                         elif PER_INTRA_F(att):
                                             tab1_body_model[model][f'MLN {k}'][
-                                                'PER_INTRA'].append(files[key][logic][p].loc[model, att])
+                                                'INTRA_PER'].append(files[key][logic][p].loc[model, att])
                                         elif PER_COMBINE_F(att):
                                             tab1_body_model[model][f'MLN {k}'][
-                                                'PER_COMBINE'].append(files[key][logic][p].loc[model, att])
+                                                'COMBINE_PER'].append(files[key][logic][p].loc[model, att])
                                         elif GLO_INTER_M_F(att):
                                             tab1_body_model[model][f'MLN {k}'][
-                                                'GLO_INTER_M'].append(files[key][logic][p].loc[model, att])
+                                                'INTER_M_GLO'].append(files[key][logic][p].loc[model, att])
                                         elif GLO_INTRA_M_F(att):
                                             tab1_body_model[model][f'MLN {k}'][
-                                                'GLO_INTRA_M'].append(files[key][logic][p].loc[model, att])
+                                                'INTRA_M_GLO'].append(files[key][logic][p].loc[model, att])
                                         elif GLO_COMBINE_M_F(att):
                                             tab1_body_model[model][f'MLN {k}'][
-                                                'GLO_COMBINE_M'].append(files[key][logic][p].loc[model, att])
+                                                'COMBINE_M_GLO'].append(files[key][logic][p].loc[model, att])
                                         elif PER_INTER_M_F(att):
                                             tab1_body_model[model][f'MLN {k}'][
-                                                'PER_INTER_M'].append(files[key][logic][p].loc[model, att])
+                                                'INTER_M_PER'].append(files[key][logic][p].loc[model, att])
                                         elif PER_INTRA_M_F(att):
                                             tab1_body_model[model][f'MLN {k}'][
-                                                'PER_INTRA_M'].append(files[key][logic][p].loc[model, att])
+                                                'INTRA_M_PER'].append(files[key][logic][p].loc[model, att])
                                         elif PER_COMBINE_M_F(att):
                                             tab1_body_model[model][f'MLN {k}'][
-                                                'PER_COMBINE_M'].append(files[key][logic][p].loc[model, att])
+                                                'COMBINE_M_PER'].append(files[key][logic][p].loc[model, att])
                                         elif DEGREE_F(att):
                                             tab1_body_model[model][f'MLN {k}'][
                                                 'DEGREE'].append(files[key][logic][p].loc[model, att])
@@ -1439,10 +1764,10 @@ def analyzer_launcher_for_descriptor_rank_plot(
         )
         # fetch result on dataset base on model
         for model in models_name.keys():
-            create_domain(f'{os.getcwd()}/analyze_{outputs_name}_made_on_{day}H/{"withClass/"*int(with_class)}descriptor/shap/{top}')
+            create_domain(f'{os.getcwd()}/analyze_{outputs_name}_made_on_{day}H/{"withClass/"*int(with_class)}descriptor/shap/{top}/{dataset_name}')
             # timestr = time.strftime("%Y_%m_%d_%H_%M_%S")
             # filename1 = f'{cwd}/analyze_{outputs_path.split("/")[-2]}_made_on_{day}H/{data_folder}/shap/{"_".join(approach)}_{data_folder}_{model}_shapley'
-            filename1 = f'{os.getcwd()}/analyze_{outputs_name}_made_on_{day}H/{"withClass/"*int(with_class)}descriptor/shap/{top}/{dataset_name}_{model}_{("-".join([str(el) for el in alphaConfig])).replace(".","_")}_shapley.png'
+            filename1 = f'{os.getcwd()}/analyze_{outputs_name}_made_on_{day}H/{"withClass/"*int(with_class)}descriptor/shap/{top}/{dataset_name}/{dataset_name}_{model}_{("-".join([str(el) for el in alphaConfig])).replace(".","_")}_shapley.png'
 
             # pl.show()
             # pl.savefig(filename1+".png", dpi=300)

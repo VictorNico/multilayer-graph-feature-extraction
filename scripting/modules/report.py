@@ -74,9 +74,9 @@ def custom_color(dataframe, graph_a=[]):
     cols= dataframe.tolist()
     colors= []
     for col in cols:
-        if 'PER_' in col:
+        if '_PER' in col:
             colors.append('green')
-        elif 'GLO_' in col:
+        elif '_GLO' in col:
             colors.append('yellow')
         else:
             colors.append('dodgerblue')

@@ -5407,7 +5407,7 @@ def mlnaPipeline(
                     financialOption=financialOption
                 )
                 outperformers = dict(sorted(outperformers.items(), key=lambda x: x[1], reverse=True))
-                bestK = bestThreshold(list(outperformers)) + 1
+                bestK = bestThreshold(list(outperformers)) + 1 if len(outperformers) > 2 else len(outperformers)
                 print(f"{outperformers}, {NbGood} Goods and the best top k is {bestK}")
                 save_model(
                     cwd=cwd + f'/outputs/{domain}{"/withClass" * int(graphWithClass)}/{alpha}/qualitative',
