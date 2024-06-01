@@ -123,6 +123,7 @@ double information_gain(const std::vector<std::variant<int, double, bool, std::s
             }
         }
         if (std::holds_alternative<int>(y[0]) || std::holds_alternative<double>(y[0])) {
+            // std::cout << "@";
             ig = variance(y) - (static_cast<double>(a) / (a + b) * variance(pos_data)) -
                  (static_cast<double>(b) / (a + b) * variance(neg_data));
         } else {
@@ -204,6 +205,18 @@ std::tuple<double, std::variant<int, double, bool, std::string>, bool, bool> max
     }
 }
 
+bool customComparator(double a, double b) {
+    if (std::isnan(a) && std::isnan(b)) {
+        return false; // Les NaN sont égaux
+    } else if (std::isnan(a)) {
+        return true; // Les NaN sont plus petits
+    } else if (std::isnan(b)) {
+        return false; // Les NaN sont plus petits
+    } else {
+        return a > b; // Comparaison numérique standard
+    }
+}
+
 std::tuple<std::string, std::variant<int, double, bool, std::string>, double, bool>
 get_best_split(const std::string& y,
                const std::unordered_map<std::string, std::vector<std::variant<int, double, bool, std::string>>>& data) {
@@ -234,7 +247,11 @@ get_best_split(const std::string& y,
             }
         }
         std::sort(valid_columns.begin(), valid_columns.end(),
-        [](const auto& a, const auto& b) { return a.second > b.second; });
+        [](const auto& a, const auto& b) { return customComparator(a.second, b.second); });
+
+        // for (const auto& [col, ig]:valid_columns){
+        //     std::cout << col << " " << ig << std::endl;
+        // }
 
         std::string split_variable = valid_columns[0].first;
         std::variant<int, double, bool, std::string> split_value = std::get<1>(masks[split_variable]);
@@ -368,14 +385,17 @@ std::variant<int, double, bool, std::string> makePrediction(const std::vector<st
 std::pair<bool, bool> checkConditionsDTree(int depth, const std::unordered_map<std::string, std::vector<std::variant<int, double, bool, std::string>>>& xy_current, int max_categories, int max_depth, int counter, int min_samples_split) {
     // Check for depth conditions
     bool depth_cond;
+    // std::cout << "here " << max_depth << std::endl;
     if (max_depth == -1) {
         depth_cond = true;
     } else {
-        if (counter < max_depth) {
+//        std::cout << "count " << counter << std::endl;
+        if (depth < max_depth) {
             depth_cond = true;
         } else {
             depth_cond = false;
         }
+        // std::cout << "count " << depth << " : " << depth_cond << std::endl;
     }
 
     // Check for sample conditions
@@ -435,9 +455,10 @@ void sub_tree(
 //    std::cout << "left right" << std::endl;
 
     // Push child nodes onto the stack
-//    std::cout << "pred stack" << std::endl;
-    stack.emplace_back(NodeData{std::move(left), depth + 1, current_node->left});
-    stack.emplace_back(NodeData{std::move(right), depth + 1, current_node->right});
+//    std::cout << "pred stack" << (depth + 1) << std::endl;
+    int next = depth + 1;
+    stack.emplace_back(NodeData{std::move(left), next, current_node->left});
+    stack.emplace_back(NodeData{std::move(right), next, current_node->right});
 //    std::cout << "stack" << std::endl;
 }
 
@@ -447,7 +468,18 @@ void leaf_tree(std::unordered_map<std::string, std::vector<std::variant<int, dou
                TreeNode* current_node) {
 //    std::cout << "pre pred" << std::endl;
     std::variant<int, double, bool, std::string> pred = makePrediction(xy_current[y], target_factor);
-//    std::cout << "pred" << std::endl;
+    // print(f'{col} - {val} - {cutoff} - condition: {pred}')
+   // std::cout << var << " - ";
+   // std::visit([](const auto& value) {
+   //      std::cout << value;
+   //  }, val);
+   // std::cout << " - " << ig << " - ";
+   // std::visit([](const auto& value) {
+   //      std::cout << value << std::endl;
+   //  }, pred);
+
+    // Utiliser std::visit() pour afficher le contenu du variant
+    
 //    std::cout << "pre leaf" << std::endl;
     current_node->col = std::move(var);
     current_node->cutoff = std::move(ig);
@@ -488,16 +520,22 @@ TreeNode* interativeTrainTree(
         NodeData current = std::move(stack.back());
         stack.pop_back();
         std::unordered_map<std::string, std::vector<std::variant<int, double, bool, std::string>>> xy_current = current.data;
-        int depth = current.depth;
+        int depthg = current.depth;
         TreeNode* current_node = std::move(current.node);
 
+//        std::cout << "depth" << depthg << std::endl;
 //        std::cout << "pre cond" << stack.size() << std::endl;
-        std::pair<bool, bool> conditions = checkConditionsDTree(depth, xy_current, max_categories, max_depth, counter, min_samples_split);
+        std::pair<bool, bool> conditions = checkConditionsDTree(depthg, xy_current, max_categories, max_depth, counter, min_samples_split);
 //        std::cout << "cond" << std::endl;
         if (conditions.first && conditions.second) {
 //            std::cout << "pre bs" << std::endl;
             auto [var, val, ig, is_num] = get_best_split(y, xy_current);
 //            std::cout << "bs " << var << std::endl;
+            // std::cout << var << " - ";
+            // std::visit([](const auto& value) {
+            // std::cout << value;
+            // }, val);
+            // std::cout << " - " << ig << " - " << is_num << std::endl;
 
             if (ig != std::numeric_limits<double>::infinity() && ig >= min_information_gain) {
 //                std::cout << "pre ms" << std::endl;
@@ -523,7 +561,7 @@ TreeNode* interativeTrainTree(
                 }
 
 //                std::cout << "pre Sub "<< std::endl ;
-                sub_tree(current_node, var, ig, question, depth, val, stack, left, right);
+                sub_tree(current_node, var, ig, question, depthg, val, stack, left, right);
 //                std::cout << "Sub " << (root == nullptr )<< std::endl;
             } else {
 //                std::cout << "pre leaf 1"<< std::endl;
@@ -535,6 +573,10 @@ TreeNode* interativeTrainTree(
             leaf_tree(xy_current, y, target_factor, std::string(), std::numeric_limits<double>::infinity(), std::variant<int, double, bool, std::string>(), current_node);
 //            std::cout << "leaf 2"<< std::endl;
         }
+        // std::cout << "ok"<< std::endl;
+        xy_current.clear();
+        // std::cout << "ok"<< std::endl;
+        current.data.clear();
     }
 //    std::cout << "end"<< std::endl;
     return std::move(root);

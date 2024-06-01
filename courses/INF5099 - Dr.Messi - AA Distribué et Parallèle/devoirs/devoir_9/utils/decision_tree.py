@@ -270,11 +270,13 @@ def check_conditions(depth,xy_current,max_categories,max_depth,counter,min_sampl
                     var_length) + ' unique values, which is more than the accepted ones: ' + str(max_categories))
 
     # Check for depth conditions
-    if max_depth == None:
+
+    if max_depth == None or max_depth == -1:
         depth_cond = True
 
     else:
-        if counter < max_depth:
+        print(f'here depth {depth} and max depth {max_depth}')
+        if depth < max_depth:
             depth_cond = True
 
         else:
@@ -392,6 +394,8 @@ def predict(observation, tree):
 
     # print(arbol.keys())
     question = tree['condition']
+    if not isinstance(question, str):
+        return question
 
     if question.split()[1] == '<=':
 

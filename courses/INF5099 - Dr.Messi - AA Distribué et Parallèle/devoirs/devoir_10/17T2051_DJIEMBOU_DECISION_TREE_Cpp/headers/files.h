@@ -54,6 +54,6 @@ TreeNode* loadTreeModel(const std::string&);
 void saveTreeNode(std::ofstream&, TreeNode*);
 void saveTreeModel(const std::string&, TreeNode*);
 
-void saveMetricsToCSV(const std::string&, const std::vector<std::string>&, const std::vector<double>&);
+void saveMetricsToCSV(const std::string&, const std::vector<std::string>&, const std::vector<double>&, const std::string&, const std::string&);
 
 #endif //DTREE_FILES_H

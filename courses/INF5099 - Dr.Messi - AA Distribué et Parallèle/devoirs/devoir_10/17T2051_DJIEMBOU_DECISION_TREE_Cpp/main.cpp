@@ -83,13 +83,13 @@ int main(int argc, char* argv[]) {
         }
         // load data
         train_data = process_file(train_file, delimiter, is_header);
-        for (const auto& [key, values] : train_data) {
-            std::cout << key << ":" << values.size() << std::endl;
-        }
+//        for (const auto& [key, values] : train_data) {
+//            std::cout << key << ":" << values.size() << std::endl;
+//        }
         test_data = process_file(test_file, delimiter, is_header);
-        for (const auto& [key, values] : test_data) {
-            std::cout << key << ":" << values.size() << std::endl;
-        }
+//        for (const auto& [key, values] : test_data) {
+//            std::cout << key << ":" << values.size() << std::endl;
+//        }
 
         // pretrait data
         y_test = test_data[className];
@@ -104,6 +104,7 @@ int main(int argc, char* argv[]) {
         std::string input_file = argv[1];
         className = argv[4];
         delimiter = argv[2];
+
         is_header = std::stoi(argv[3]);
 
         // check if input file is valid
@@ -116,6 +117,7 @@ int main(int argc, char* argv[]) {
 
         // load data
         std::unordered_map<std::string, std::vector<std::variant<int, double, bool, std::string>>> data = process_file(input_file, delimiter, is_header);
+//        std::cout << argv[3] << std::endl;
         // gen train and test dataset
         for (const auto& [key, values] : data) {
             std::cout << key << ":" << values.size() << std::endl;
@@ -131,11 +133,17 @@ int main(int argc, char* argv[]) {
         train_data[className] = y_train;
         std::cout << "train:" << train_data[className].size() << std::endl;
         std::cout << "test:" << y_test.size() << std::endl;
+        data.clear();
 
     }
 
     // build tree
+    auto start = std::chrono::high_resolution_clock::now();
     TreeNode* root = interativeTrainTree(train_data,className,is_classification,max_depth,min_samples_split,min_information_gain,counter,max_categories);
+    auto end = std::chrono::high_resolution_clock::now();
+
+    std::chrono::duration<double> duration = end - start;
+
     std::cout << "received " << typeid(root).name() << std::endl;
     if (root != nullptr) {
         if (std::holds_alternative<std::string>(root->condition)) {
@@ -174,12 +182,16 @@ int main(int argc, char* argv[]) {
     std::cout << "recall: " << recall(confusion_matrix) << std::endl;
     std::cout << "f1: " << f1_score(confusion_matrix) << std::endl;
     // save metrics
-    std::vector<std::string> metricNames = {"Precision", "Accuracy", "Recall","F1_Score"};
-    std::vector<double> metricValues = {precision(confusion_matrix), accuracy(confusion_matrix), recall(confusion_matrix), f1_score(confusion_matrix)};
-    saveMetricsToCSV("outputs/metrics.csv", metricNames, metricValues);
+    std::vector<std::string> metricNames = {"Precision", "Accuracy", "Recall","F1_Score","elapsed time (s)", "max depth", "rows", "cols"};
+    std::vector<double> metricValues = {precision(confusion_matrix), accuracy(confusion_matrix), recall(confusion_matrix), f1_score(confusion_matrix), duration.count(), static_cast<double>(max_depth), static_cast<double>(train_data[className].size()), static_cast<double>(train_data.size())};
+    saveMetricsToCSV("outputs/metrics.csv", metricNames, metricValues, className, "Sequential C++");
     // save model
-    saveTreeModel("outputs/dtc.bin", root);
+    std::string modelNamePath = "outputs/"+className+".bin";
+    saveTreeModel(modelNamePath, root);
     // delete model in memory
     destroyTree(root);
+    train_data.clear();
+    test_data.clear();
+
     return 0;
 }

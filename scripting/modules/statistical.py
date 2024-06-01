@@ -25,6 +25,7 @@ from matplotlib.font_manager import FontProperties
 import re
 import time
 from copy import deepcopy
+import tabulate
 
 ########### End Module
 ################################################
@@ -38,12 +39,15 @@ GAP_F = lambda x: (('GAP_' in x))  # where mln attribut were removed first and m
 C_F = lambda x: (('classic_' in x))  # classic metrics
 
 GLO_MX_F = lambda x: (('GLO_MX_' in x))
+GLO_CX_F = lambda x: (('GLO_CX_' in x))
 PER_MX_F = lambda x: (('PER_MX_' in x))
-PER_MY_F = lambda x: (('PER_MY_' in x))
-PER_MXY_F = lambda x: (('PER_MXY_' in x))
+PER_CX_F = lambda x: (('PER_CX_' in x))
+PER_CY_F = lambda x: (('PER_CY_' in x))
+PER_CXY_F = lambda x: (('PER_CXY_' in x))
 GAP_MX_F = lambda x: (('GAP_MX_' in x))
-GAP_MY_F = lambda x: (('GAP_MY_' in x))
-GAP_MXY_F = lambda x: (('GAP_MXY_' in x))
+GAP_CX_F = lambda x: (('GAP_CX_' in x))
+GAP_CY_F = lambda x: (('GAP_CY_' in x))
+GAP_CXY_F = lambda x: (('GAP_CXY_' in x))
 
 GLO_INTER_F = lambda x: (not ('_M_' in x) and ('INTER' in x) and ('GLO' in x))
 GLO_INTRA_F = lambda x: (not ('_M_' in x) and ('INTRA' in x) and ('GLO' in x))
@@ -95,6 +99,46 @@ style = """<style>
     text-align: center;
     }
     </style>"""
+
+header = """
+    \\documentclass[11pt, oneside]{article}      % use "amsart" instead of "article" for AMSLaTeX format
+    \\usepackage{geometry}                       % See geometry.pdf to learn the layout options. There are lots.
+    \\geometry{letterpaper}                          % ... or a4paper or a5paper or ... 
+    %\\geometry{landscape}                       % Activate for rotated page geometry
+    %\\usepackage[parfill]{parskip}          % Activate to begin paragraphs with an empty line rather than an indent
+    \\usepackage{graphicx}               % Use pdf, png, jpg, or eps§ with pdflatex; use eps in DVI mode
+                                    % TeX will automatically convert eps --> pdf in pdflatex        
+    \\usepackage{amssymb}
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Modules
+
+    \\usepackage{array}
+    \\usepackage{pgfplots}
+    \\usepackage[utf8]{inputenc}
+    \\usepackage[T1]{fontenc}
+    \\usepackage{fancyhdr}
+    \\pagestyle{fancy}
+    \\usepackage{multirow}
+    \\usepackage{hyperref}
+    \\usepackage[babel]{csquotes}
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %SetFonts
+
+    %SetFonts
+
+
+    \\title{Prediction du risque de credit bancaire sensible aux coûts financiers en intégrant des descripteurs extraits des graphes \\ Tableaux récapitulatifs}
+    \\author{The Author}
+    %\\date{}                            % Activate to display a given date or no date
+
+    \\begin{document}
+    \\maketitle
+    \\newpage
+    """
+
+footer = """
+\\end{document}  """
 
 ############# End declaration
 ########################################################
@@ -180,370 +224,147 @@ get_quantitative_from_cols = lambda x: (list(set([
 )))
 
 
-def analyzer_launcher(outputs_name=None, analytical_func=None, layers=None, approach=None, aggregation_f=None,
-                      logics=None, alphaConfig=[0.1]):
-    """
-    Analyzer Launcher
-        Args:
-            outputs_name (string): Name of output file
-            analytical_func (function): Function that takes one argument
-            layers (list): List of layers to analyse
-            approach (function): Function that takes one argument
-            aggregation_f (function): Function that takes one argument
-            logics (list): List of logics to analyse
-            alphaConfig (list): List of alpha configs to analyse
-        Returns
-            None
-    """
-    # get all directories names
-    result_folders = [dirnames for _, dirnames, _ in os.walk(f'{os.getcwd()}/{outputs_name}')][0]
-    # iterate on different configuration of alpha
 
-    # fetch each datasets directories
-    for dataset_name in result_folders:
-        # load the classic results
-        classic_f = [
-            load_data_set_from_url(path=file, sep='\t', encoding='utf-8', index_col=0, na_values=None)
-            for file in get_filenames(
-                root_dir=f'{os.getcwd()}/{outputs_name}/{dataset_name}/data_selection_storage',
-                func=C_F,
-                verbose=False
-            )
-        ][-1]
-        # from this, extract quantitative and qualitative features
-        quali_col = get_qualitative_from_cols(classic_f.columns.to_list())
-        # quant_col = get_quantitative_from_cols(classic_f.columns.to_list())
-        # get model list on classic results
-        models_list = classic_f.index.values.tolist()
-        # get model dictionary
-        models = model_desc()
-        # save only the ones use suring the classic learning
-        models_name = {key: models[key] for key in models.keys() if key in models_list}
-        # check whether a verison of training has been made using classe variable along graph modeling
-        with_class = [dirnames for _, dirnames, _ in
-                     os.walk(f'{os.getcwd()}/{outputs_name}/{dataset_name}')][0].__contains__("withClass")
-        # if, launch a part analysis on this folder
-        metrics = {
-            'accuracy': {
-                'MlC': {
-                    'PER': [],
-                    'GAP': [],
-                    'GLO': []
-                },
-                'MCA': {
-                    'PER': [],
-                    'GAP': [],
-                    'GLO': []
-                }
-            },
-            # 'precision': {
-            #     'MlC': {
-            #         'PER': [],
-            #         'GAP': [],
-            #         'GLO': []
-            #     },
-            #     'MCA': {
-            #         'PER': [],
-            #         'GAP': [],
-            #         'GLO': []
-            #     }
-            # },
-            # 'recall': {
-            #     'MlC': {
-            #         'PER': [],
-            #         'GAP': [],
-            #         'GLO': []
-            #     },
-            #     'MCA': {
-            #         'PER': [],
-            #         'GAP': [],
-            #         'GLO': []
-            #     }
-            # },
-            'f1-score': {
-                'MlC': {
-                    'PER': [],
-                    'GAP': [],
-                    'GLO': []
-                },
-                'MCA': {
-                    'PER': [],
-                    'GAP': [],
-                    'GLO': []
-                }
-            },
-            'financial-cost': {
-                'MlC': {
-                    'PER': [],
-                    'GAP': [],
-                    'GLO': []
-                },
-                'MCA': {
-                    'PER': [],
-                    'GAP': [],
-                    'GLO': []
-                }
-            }
-        }
 
-        total_impact = {
-            'accuracy': {
-                'PER': [],
-                'GAP': [],
-                'GLO': []
-            },
-            # 'precision': {
-            #     'PER': [],
-            #     'GAP': [],
-            #     'GLO': []
-            # },
-            # 'recall': {
-            #     'PER': [],
-            #     'GAP': [],
-            #     'GLO': []
-            # },
-            'f1-score': {
-                'PER': [],
-                'GAP': [],
-                'GLO': []
-            },
-            'financial-cost': {
-                'PER': [],
-                'GAP': [],
-                'GLO': []
-            }
-        }
+def print_compare(
+    store,
+    output_path,
+    alpha
+):
+    # fetch model name
+    tables = {model:'' for model in list(store.keys())}
+    for model in list(store.keys()):
+        # add the resize box to ensure the scale of the table will be contain's inside the width space avalable.
+        # start setting up the tabular dimensions setting
+        table_header = """
+        \\resizebox{\\textwidth}{!}{
 
-        dictio = {
-            'MlC': 'MlC',
-            'MCA': 'MCA',
-            'classic': 'Classic'
-        }
-        day = time.strftime("%Y_%m_%d_%H")
-        hasFinancialCost = sum(['finan' in el for el in classic_f.columns.values.tolist()])
-        if hasFinancialCost == 0:
-            del total_impact['financial-cost']
-            del metrics['financial-cost']
+        \\begin{tabular}{|c|c|c|"""
+        # identify folder with none financial details
+        none_financial_folder = [folder for folder in list(store[model].keys()) if sum(['finan' in mec for mec in list(store[model][folder].keys())]) != 1]
+        financial_folder = [folder for folder in list(store[model].keys()) if sum(['finan' in mec for mec in list(store[model][folder].keys())]) == 1]
+        # print(none_financial_folder, financial_folder)
+        # add cols for financial folders
+        for folder in financial_folder:
+            table_header+= "r|r|r|"
+        # add cols for non financial folder
+        for folder in financial_folder:
+            table_header+= "r|r|"
+        # add col for total results
+        table_header+= "r|} "
+        # add separator clines
+        nb_cols = (3+(3*len(financial_folder))+(2*len(none_financial_folder))+1)
+        table_header+= " \\cline{1-"+str(nb_cols)+"}" # corresponding to the number of columns
 
-        tab_body_model = {key: deepcopy(metrics) for key in models_name.keys()}
-        print(with_class)
-        for i in alphaConfig:
-            for typ2 in [dirnames for _, dirnames, _ in
-                        os.walk(f'{os.getcwd()}/{outputs_name}/{dataset_name}/{i}')][0]:
-                print(typ2)
-                res, files, approach, models_name = analytical_func(
-                    outputs_path=f'{os.getcwd()}/{outputs_name}/{dataset_name}/{i}',
-                    cwd=os.getcwd(),
-                    data_folder=dataset_name,
-                    classic_metrics=classic_f,
-                    models_name=models_name,
-                    layers=layers,
-                    approach=approach,
-                    alpha=i,
-                    type=typ2
-                ) if aggregation_f is None else analytical_func(
-                    outputs_path=f'{os.getcwd()}/{outputs_name}/{dataset_name}/{i}',
-                    cwd=os.getcwd(),
-                    data_folder=dataset_name,
-                    classic_metrics=classic_f,
-                    models_name=models_name,
-                    layers=layers if not (layers is None) else (
-                        list({1, 2, len(quali_col)}) if ('qualitative' in typ2) else list(
-                            {1, 2, len(quant_col)})),
-                    approach=approach,
-                    aggregation_f=aggregation_f,
-                    alpha=i,
-                    logics=logics,
-                    type=typ2
-                )
 
-                for model in list(res.keys()):
-                    # fetch evaluation metric
-                    for metric in list(res[model].keys()):
-                        # fetch approach
-                        for key in list(res[model][metric].keys()):
-                            # add metric in the vector
-                            for logic in list(res[model][metric][key].keys()):
-                                tab_body_model[model][metric][key][logic].extend(res[model][metric][key][logic])
-        # print(tab_body_model)
-        print_compare(
-            f'{os.getcwd()}/{outputs_name}/{dataset_name}/{i}',
-            dataset_name,
-            models_list,
-            approach,
-            files,
-            dictio,
-            metrics,
-            hasFinancialCost,
-            total_impact,
-            tab_body_model,
-            os.getcwd(),
-            day,
-            'all',
-            models_name
-        )
-        if with_class:
-            metrics = {
-                'accuracy': {
-                    'MlC': {
-                        'PER': [],
-                        'GAP': [],
-                        'GLO': []
-                    },
-                    'MCA': {
-                        'PER': [],
-                        'GAP': [],
-                        'GLO': []
-                    }
-                },
-                # 'precision': {
-                #     'MlC': {
-                #         'PER': [],
-                #         'GAP': [],
-                #         'GLO': []
-                #     },
-                #     'MCA': {
-                #         'PER': [],
-                #         'GAP': [],
-                #         'GLO': []
-                #     }
-                # },
-                # 'recall': {
-                #     'MlC': {
-                #         'PER': [],
-                #         'GAP': [],
-                #         'GLO': []
-                #     },
-                #     'MCA': {
-                #         'PER': [],
-                #         'GAP': [],
-                #         'GLO': []
-                #     }
-                # },
-                'f1-score': {
-                    'MlC': {
-                        'PER': [],
-                        'GAP': [],
-                        'GLO': []
-                    },
-                    'MCA': {
-                        'PER': [],
-                        'GAP': [],
-                        'GLO': []
-                    }
-                },
-                'financial-cost': {
-                    'MlC': {
-                        'PER': [],
-                        'GAP': [],
-                        'GLO': []
-                    },
-                    'MCA': {
-                        'PER': [],
-                        'GAP': [],
-                        'GLO': []
-                    }
-                }
-            }
+        # build the first line
+        lines = ''
+        # add the model block
+        lines += """
+        
+        \\multicolumn{3}{|c|}{"""+model+"("+str(alpha).replace('.','_')+""")}"""
+        # add cols for financial folders
+        for folder in financial_folder:
+            lines+= "& \\multicolumn{3}{|c|}{"+folder+"}"
+        # add cols for non financial folder
+        for folder in none_financial_folder:
+            lines+=  "& \\multicolumn{2}{|c|}{"+folder+"}"
+        # add the total name
+        lines+= " & \\multirow{2}{*}{Total} \\\\ "
+        lines+= " \\cline{4-"+str(nb_cols-1)+"}"
 
-            total_impact = {
-                'accuracy': {
-                    'PER': [],
-                    'GAP': [],
-                    'GLO': []
-                },
-                # 'precision': {
-                #     'PER': [],
-                #     'GAP': [],
-                #     'GLO': []
-                # },
-                # 'recall': {
-                #     'PER': [],
-                #     'GAP': [],
-                #     'GLO': []
-                # },
-                'f1-score': {
-                    'PER': [],
-                    'GAP': [],
-                    'GLO': []
-                },
-                'financial-cost': {
-                    'PER': [],
-                    'GAP': [],
-                    'GLO': []
-                }
-            }
+        # build metrics' lines
+        lines+= """
+         \\multicolumn{3}{|c|}{}
 
-            dictio = {
-                'MlC': 'MlC',
-                'MCA': 'MCA',
-                'classic': 'Classic'
-            }
-            if hasFinancialCost == 0:
-                del total_impact['financial-cost']
-                del metrics['financial-cost']
-            for i in alphaConfig:
-                for typ1 in [dirnames for _, dirnames, _ in
-                            os.walk(f'{os.getcwd()}/{outputs_name}/{dataset_name}/withClass/{i}')][0]:
+        """
+        # add metrics for financial folders
+        for folder in financial_folder:
+            lines+= "& Accuracy & F1-Score & Financial-cost"
+        # add metrics' for non financial folder
+        for folder in financial_folder:
+            lines+=  "& Accuracy & F1-Score"
+        # add the total name
+        lines+= " & \\\\ "
+        lines+= " \\cline{1-"+str(nb_cols)+"}"
 
-                    print(typ1)
-                    res, files, approach, models_name = analytical_func(
-                        # cols=quali_col if ('qualitative' in typ1) else quant_col,
-                        outputs_path=f'{os.getcwd()}/{outputs_name}/{dataset_name}/withClass/{i}',
-                        cwd=os.getcwd(),
-                        data_folder=dataset_name,
-                        classic_metrics=classic_f,
-                        models_name=models_name,
-                        layers=layers,
-                        approach=approach,
-                        alpha=i,
-                        type=typ1
-                    ) if aggregation_f is None else analytical_func(
-                        # cols=quali_col if ('qualitative' in typ1) else quant_col,
-                        outputs_path=f'{os.getcwd()}/{outputs_name}/{dataset_name}/withClass/{i}',
-                        cwd=os.getcwd(),
-                        data_folder=dataset_name,
-                        classic_metrics=classic_f,
-                        models_name=models_name,
-                        layers=layers if not (layers is None) else (
-                            list({1, 2, len(quali_col)}) if ('qualitative' in typ1) else list(
-                                {1, 2, len(quant_col)})),
-                        approach=approach,
-                        aggregation_f=aggregation_f,
-                        alpha=i,
-                        logics=logics,
-                        type=typ1
-                    )
+        # add classic metrics
+        lines+="""
+        \\multicolumn{3}{|c|}{Classic} 
 
-                    for model in list(res.keys()):
-                        # fetch evaluation metric
-                        for metric in list(res[model].keys()):
-                            # fetch approach
-                            for key in list(res[model][metric].keys()):
-                                # add metric in the vector
-                                for logic in list(res[model][metric][key].keys()):
-                                    tab_body_model[model][metric][key][logic].extend(res[model][metric][key][logic])
-            print_compare(
-                f'{os.getcwd()}/{outputs_name}/{dataset_name}/withClass/{i}',
-                dataset_name,
-                models_list,
-                approach,
-                files,
-                dictio,
-                metrics,
-                hasFinancialCost,
-                total_impact,
-                tab_body_model,
-                os.getcwd(),
-                day,
-                'all',
-                models_name
-            )
+        """
+        for folder in financial_folder:
+            for metric in ['accuracy','f1-score','financial-cost']:
+                # print(model, folder, metric)
+                lines+= "& "+str(round(store[model][folder]['classic'].loc[model, metric],1))+""
+        # add cols for non financial folder
+        for folder in none_financial_folder:
+            for metric in ['accuracy','f1-score']:
+                lines+= "& "+str(round(store[model][folder]['classic'].loc[model, metric],1))+""
+        # add an empty cell for Total
+        lines+= "& \\\\ \\cline{1-"+str(nb_cols)+"""}
+
+        """
+
+        is_best = lambda mag,current: (max([max(mag[el]) for el in list(mag.keys())]) == current) and (current != 0)
+        # fetch store to fullfil the tables with content
+        for ai, approach in enumerate(list(store[model][financial_folder[0]]['accuracy'].keys())): # Mlc or MCA
+            lines+= """
+            \\multirow{10}{*}{"""+approach+"""}&
+
+            """
+            for li, logic in enumerate(list(store[model][financial_folder[0]]['accuracy'][approach].keys())): # GLO, PER or GAP
+                total_counter = {}
+                lines+= f"{'&'*(li != 0)}"+"""
+                    \\multirow{"""+str(len(list(store[model][financial_folder[0]]['accuracy'][approach][logic].keys())))+"""}{*}{"""+logic+"""}
+
+                    """
+                for ci,config in enumerate(list(store[model][financial_folder[0]]['accuracy'][approach][logic].keys())): # MX, CX, CY, CXY 
+                    lines+= f"{'&'*(ci != 0)}  & {config}"
+                    for fi, folder in enumerate(list(store[model].keys())):
+                        if (ci == 0) and (fi == 0):
+                            total_counter = {key:[] for key in list(store[model][folder]['accuracy'][approach][logic].keys())}
+                        metrics = (['accuracy','f1-score','financial-cost'] if (folder in financial_folder) else ['accuracy','f1-score'])
+                        # metrics = list(set(metrics)-set(['classic']))
+                        # print(folder, metrics, config, approach, logic)
+                        for metric in metrics:
+                            # print(store[model][folder].keys(), folder, model)
+                            is_sup = is_best(store[model][folder][metric][approach][logic], max(store[model][folder][metric][approach][logic][config]))
+                            val = "\\textbf{"+str(max(store[model][folder][metric][approach][logic][config]))+"}" if is_sup else str(max(store[model][folder][metric][approach][logic][config]))
+                            lines+= f"& {val}"
+                            total_counter[config].append(is_sup)
+                    start = (3 if ci != len(list(store[model][financial_folder[0]]['accuracy'][approach][logic].keys()))-1 else (1 if li == len(list(store[model][financial_folder[0]]['accuracy'][approach].keys()))-1 else 2))
+                    # print(start)
+                    lines+= f"""& {sum(total_counter[config])} \\\\ """+ """ \\cline{"""+str(start)+"""-"""+str(nb_cols)+"""}
+
+                    
+                    """
+
+        lines+= """
+
+        \\end{tabular}
+        }"""
+
+        table = table_header + lines
+        tables[model] = table
+        create_domain(f"{output_path}/tableaux/{str(alpha).replace('.','_')}")
+        filename1 = f"{output_path}/tableaux/{str(alpha).replace('.','_')}/tab_alpha_{str(alpha).replace('.','_')}_{model}.tex"
+        _file = open(filename1, "w")
+        _file.write(table)
+        _file.close()
+    return tables
+
+
+
+"""
+    Here we start the code of new type of result table structures.
+"""
 
 def load_results(
         outputs_path,
-        type,
+        _type,
         k,
+        alpha,
         per=True,
         glo=True,
         mix=True,
@@ -565,1269 +386,601 @@ def load_results(
 
     """
     files = {
-        'global': {
-            'MlC': [
-                load_data_set_from_url(path=file, sep='\t', encoding='utf-8', index_col=0, na_values=None)
-                for file in get_filenames(
-                    root_dir=f'{outputs_path}/{type}/{"mlna_" + str(k) if k == 1 else "mlna_" + str(k) + "_b"}/global/data_selection_storage',
-                    func=lambda x: (MlC_F(x)),
-                    verbose=False
-                )
-            ],
-            'MCA': [
-                load_data_set_from_url(path=file, sep='\t', encoding='utf-8', index_col=0, na_values=None)
-                for file in get_filenames(
-                    root_dir=f'{outputs_path}/{type}/{"mlna_" + str(k) if k == 1 else "mlna_" + str(k) + "_b"}/global/data_selection_storage',
-                    func=lambda x: (MCA_F(x)),
-                    verbose=False
-                )
-            ]
-        } if glo is True else None,
-        'mixed': {
-            'MlC': [
-                load_data_set_from_url(path=file, sep='\t', encoding='utf-8', index_col=0, na_values=None)
-                for file in get_filenames(
-                    root_dir=f'{outputs_path}/{type}/{"mlna_" + str(k) if k == 1 else "mlna_" + str(k) + "_b"}/mixed/data_selection_storage',
-                    func=lambda x: (MlC_F(x)),
-                    verbose=False
-                )
-            ],
-            'MCA': [
-                load_data_set_from_url(path=file, sep='\t', encoding='utf-8', index_col=0, na_values=None)
-                for file in get_filenames(
-                    root_dir=f'{outputs_path}/{type}/{"mlna_" + str(k) if k == 1 else "mlna_" + str(k) + "_b"}/mixed/data_selection_storage',
-                    func=lambda x: (MCA_F(x)),
-                    verbose=False
-                )
-            ]
-        } if mix is True else None,
-        "personalized": {
-            'MlC': [
-                load_data_set_from_url(path=file, sep='\t', encoding='utf-8', index_col=0, na_values=None)
-                for file in get_filenames(
-                    root_dir=f'{outputs_path}/{type}/{"mlna_" + str(k) if k == 1 else "mlna_" + str(k) + "_b"}/personalized/data_selection_storage',
-                    func=lambda x: (MlC_F(x)),
-                    verbose=False
-                )
-            ],
-            'MCA': [
-                load_data_set_from_url(path=file, sep='\t', encoding='utf-8', index_col=0, na_values=None)
-                for file in get_filenames(
-                    root_dir=f'{outputs_path}/{type}/{"mlna_" + str(k) if k == 1 else "mlna_" + str(k) + "_b"}/personalized/data_selection_storage',
-                    func=lambda x: (MCA_F(x)),
-                    verbose=False
-                )
-            ]
-        } if per is True else None
+        'MlC':{
+            'GLO':{
+                'MX': [
+                    load_data_set_from_url(path=file, sep='\t', encoding='utf-8', index_col=0, na_values=None)
+                    for file in get_filenames(
+                        root_dir=f'{outputs_path}/{alpha}/{_type}/{"mlna_" + str(k) if k == 1 else "mlna_" + str(k) + "_b"}/global/data_selection_storage',
+                        func=lambda x: (MlC_F(x)),
+                        verbose=False
+                    )
+                ],
+                'CX': [
+                    load_data_set_from_url(path=file, sep='\t', encoding='utf-8', index_col=0, na_values=None)
+                    for file in get_filenames(
+                        root_dir=f'{outputs_path}/withClass/{alpha}/{_type}/{"mlna_" + str(k) if k == 1 else "mlna_" + str(k) + "_b"}/global/data_selection_storage',
+                        func=lambda x: (MlC_F(x)),
+                        verbose=False
+                    )
+                ]
+            },
+            'PER':{
+                'MX': [
+                    load_data_set_from_url(path=file, sep='\t', encoding='utf-8', index_col=0, na_values=None)
+                    for file in get_filenames(
+                        root_dir=f'{outputs_path}/{alpha}/{_type}/{"mlna_" + str(k) if k == 1 else "mlna_" + str(k) + "_b"}/personalized/data_selection_storage',
+                        func=lambda x: (MlC_F(x)),
+                        verbose=False
+                    )
+                ],
+                'CX': [
+                    load_data_set_from_url(path=file, sep='\t', encoding='utf-8', index_col=0, na_values=None)
+                    for file in get_filenames(
+                        root_dir=f'{outputs_path}/withClass/{alpha}/{_type}/{"mlna_" + str(k) if k == 1 else "mlna_" + str(k) + "_b"}/personalized/data_selection_storage',
+                        func=lambda x: (MlC_F(x)),
+                        verbose=False
+                    )
+                ],
+                'CY': [
+                    load_data_set_from_url(path=file, sep='\t', encoding='utf-8', index_col=0, na_values=None)
+                    for file in get_filenames(
+                        root_dir=f'{outputs_path}/withClass/{alpha}/{_type}/{"mlna_" + str(k) if k == 1 else "mlna_" + str(k) + "_b"}/personalized/data_selection_storage',
+                        func=lambda x: (MlC_F(x)),
+                        verbose=False
+                    )
+                ],
+                'CXY': [
+                    load_data_set_from_url(path=file, sep='\t', encoding='utf-8', index_col=0, na_values=None)
+                    for file in get_filenames(
+                        root_dir=f'{outputs_path}/withClass/{alpha}/{_type}/{"mlna_" + str(k) if k == 1 else "mlna_" + str(k) + "_b"}/personalized/data_selection_storage',
+                        func=lambda x: (MlC_F(x)),
+                        verbose=False
+                    )
+                ]
+            },
+            'GAP':{
+                'MX': [
+                    load_data_set_from_url(path=file, sep='\t', encoding='utf-8', index_col=0, na_values=None)
+                    for file in get_filenames(
+                        root_dir=f'{outputs_path}/{alpha}/{_type}/{"mlna_" + str(k) if k == 1 else "mlna_" + str(k) + "_b"}/mixed/data_selection_storage',
+                        func=lambda x: (MlC_F(x)),
+                        verbose=False
+                    )
+                ],
+                'CX': [
+                    load_data_set_from_url(path=file, sep='\t', encoding='utf-8', index_col=0, na_values=None)
+                    for file in get_filenames(
+                        root_dir=f'{outputs_path}/withClass/{alpha}/{_type}/{"mlna_" + str(k) if k == 1 else "mlna_" + str(k) + "_b"}/mixed/data_selection_storage',
+                        func=lambda x: (MlC_F(x)),
+                        verbose=False
+                    )
+                ],
+                'CY': [
+                    load_data_set_from_url(path=file, sep='\t', encoding='utf-8', index_col=0, na_values=None)
+                    for file in get_filenames(
+                        root_dir=f'{outputs_path}/withClass/{alpha}/{_type}/{"mlna_" + str(k) if k == 1 else "mlna_" + str(k) + "_b"}/mixed/data_selection_storage',
+                        func=lambda x: (MlC_F(x)),
+                        verbose=False
+                    )
+                ],
+                'CXY': [
+                    load_data_set_from_url(path=file, sep='\t', encoding='utf-8', index_col=0, na_values=None)
+                    for file in get_filenames(
+                        root_dir=f'{outputs_path}/withClass/{alpha}/{_type}/{"mlna_" + str(k) if k == 1 else "mlna_" + str(k) + "_b"}/mixed/data_selection_storage',
+                        func=lambda x: (MlC_F(x)),
+                        verbose=False
+                    )
+                ]
+            }
+        },
+        'MCA':{
+            'GLO':{
+                'MX': [
+                    load_data_set_from_url(path=file, sep='\t', encoding='utf-8', index_col=0, na_values=None)
+                    for file in get_filenames(
+                        root_dir=f'{outputs_path}/{alpha}/{_type}/{"mlna_" + str(k) if k == 1 else "mlna_" + str(k) + "_b"}/global/data_selection_storage',
+                        func=lambda x: (MCA_F(x)),
+                        verbose=False
+                    )
+                ],
+                'CX': [
+                    load_data_set_from_url(path=file, sep='\t', encoding='utf-8', index_col=0, na_values=None)
+                    for file in get_filenames(
+                        root_dir=f'{outputs_path}/withClass/{alpha}/{_type}/{"mlna_" + str(k) if k == 1 else "mlna_" + str(k) + "_b"}/global/data_selection_storage',
+                        func=lambda x: (MCA_F(x)),
+                        verbose=False
+                    )
+                ]
+            } if glo is True else None,
+            'PER':{
+                'MX': [
+                    load_data_set_from_url(path=file, sep='\t', encoding='utf-8', index_col=0, na_values=None)
+                    for file in get_filenames(
+                        root_dir=f'{outputs_path}/{alpha}/{_type}/{"mlna_" + str(k) if k == 1 else "mlna_" + str(k) + "_b"}/personalized/data_selection_storage',
+                        func=lambda x: (MCA_F(x)),
+                        verbose=False
+                    )
+                ],
+                'CX': [
+                    load_data_set_from_url(path=file, sep='\t', encoding='utf-8', index_col=0, na_values=None)
+                    for file in get_filenames(
+                        root_dir=f'{outputs_path}/withClass/{alpha}/{_type}/{"mlna_" + str(k) if k == 1 else "mlna_" + str(k) + "_b"}/personalized/data_selection_storage',
+                        func=lambda x: (MCA_F(x)),
+                        verbose=False
+                    )
+                ],
+                'CY': [
+                    load_data_set_from_url(path=file, sep='\t', encoding='utf-8', index_col=0, na_values=None)
+                    for file in get_filenames(
+                        root_dir=f'{outputs_path}/withClass/{alpha}/{_type}/{"mlna_" + str(k) if k == 1 else "mlna_" + str(k) + "_b"}/personalized/data_selection_storage',
+                        func=lambda x: (MCA_F(x)),
+                        verbose=False
+                    )
+                ],
+                'CXY': [
+                    load_data_set_from_url(path=file, sep='\t', encoding='utf-8', index_col=0, na_values=None)
+                    for file in get_filenames(
+                        root_dir=f'{outputs_path}/withClass/{alpha}/{_type}/{"mlna_" + str(k) if k == 1 else "mlna_" + str(k) + "_b"}/personalized/data_selection_storage',
+                        func=lambda x: (MCA_F(x)),
+                        verbose=False
+                    )
+                ]
+            } if per is True else None,
+            'GAP':{
+                'MX': [
+                    load_data_set_from_url(path=file, sep='\t', encoding='utf-8', index_col=0, na_values=None)
+                    for file in get_filenames(
+                        root_dir=f'{outputs_path}/{alpha}/{_type}/{"mlna_" + str(k) if k == 1 else "mlna_" + str(k) + "_b"}/mixed/data_selection_storage',
+                        func=lambda x: (MCA_F(x)),
+                        verbose=False
+                    )
+                ],
+                'CX': [
+                    load_data_set_from_url(path=file, sep='\t', encoding='utf-8', index_col=0, na_values=None)
+                    for file in get_filenames(
+                        root_dir=f'{outputs_path}/withClass/{alpha}/{_type}/{"mlna_" + str(k) if k == 1 else "mlna_" + str(k) + "_b"}/mixed/data_selection_storage',
+                        func=lambda x: (MCA_F(x)),
+                        verbose=False
+                    )
+                ],
+                'CY': [
+                    load_data_set_from_url(path=file, sep='\t', encoding='utf-8', index_col=0, na_values=None)
+                    for file in get_filenames(
+                        root_dir=f'{outputs_path}/withClass/{alpha}/{_type}/{"mlna_" + str(k) if k == 1 else "mlna_" + str(k) + "_b"}/mixed/data_selection_storage',
+                        func=lambda x: (MCA_F(x)),
+                        verbose=False
+                    )
+                ],
+                'CXY': [
+                    load_data_set_from_url(path=file, sep='\t', encoding='utf-8', index_col=0, na_values=None)
+                    for file in get_filenames(
+                        root_dir=f'{outputs_path}/withClass/{alpha}/{_type}/{"mlna_" + str(k) if k == 1 else "mlna_" + str(k) + "_b"}/mixed/data_selection_storage',
+                        func=lambda x: (MCA_F(x)),
+                        verbose=False
+                    )
+                ]
+            } if mix is True else None,
+        }
     }
     return files
 
 
-def compare_MlC_MCA_for_GLO_PER_GAP(outputs_path=None, cwd=None, data_folder=None, classic_metrics=None,
-                                        models_name=None, layers=[1], approach=None, alpha=0.85, type='qualitative'):
+def generate_report_tables(
+    outputs_name=None, 
+    cwd=None, 
+    layers=[1], 
+    _type='qualitative',
+    alphas=[0.85]
+):
     """
     Analyzer Launcher
     Parameters
     ----------
-    cols
     outputs_path
     cwd
-    data_folder
-    classic_metrics
-    models_name
     layers
-    approach
-    alpha
     type
 
     Returns
     -------
 
     """
-    # print(f'{outputs_path}/{type}/model_storage')
-    # name = \
-    #     [file for _, _, files in os.walk(
-    #         f'{outputs_path}/{type}/model_storage')
-    #      for file in files if
-    #      '_best_features' in file][0]
-    # backup = read_model(
-    #     f'{outputs_path}/{type}/model_storage/{name}')
-    # columns = backup["model"].keys()
-    # cols = backup['name']
-    # bestK = backup["bestK"]
-    # print(f"bestK: {bestK}, serialized objects: {backup}")
     day = time.strftime("%Y_%m_%d_%H")
-    if classic_metrics is not None:  # check if cols and classics metrics are filled
-        ## analyse of k layer
-
-        # find out all best metric details
-        """
-        
-                <td colspan='4'>Precision</td>
-                <td colspan='4'>Recall</td>
-                <td colspan='4'>Financial-Cost</td>
-        """
-
-        metrics = {
-            'accuracy': {
-                'MlC': {
-                    'PER': [],
-                    'GAP': [],
-                    'GLO': []
-                },
-                'MCA': {
-                    'PER': [],
-                    'GAP': [],
-                    'GLO': []
-                }
-            },
-            # 'precision': {
-            #     'MlC': {
-            #         'PER': [],
-            #         'GAP': [],
-            #         'GLO': []
-            #     },
-            #     'MCA': {
-            #         'PER': [],
-            #         'GAP': [],
-            #         'GLO': []
-            #     }
-            # },
-            # 'recall': {
-            #     'MlC': {
-            #         'PER': [],
-            #         'GAP': [],
-            #         'GLO': []
-            #     },
-            #     'MCA': {
-            #         'PER': [],
-            #         'GAP': [],
-            #         'GLO': []
-            #     }
-            # },
-            'f1-score': {
-                'MlC': {
-                    'PER': [],
-                    'GAP': [],
-                    'GLO': []
-                },
-                'MCA': {
-                    'PER': [],
-                    'GAP': [],
-                    'GLO': []
-                }
-            },
-            'financial-cost': {
-                'MlC': {
-                    'PER': [],
-                    'GAP': [],
-                    'GLO': []
-                },
-                'MCA': {
-                    'PER': [],
-                    'GAP': [],
-                    'GLO': []
-                }
-            }
-        }
-
-        total_impact = {
-            'accuracy': {
-                'PER': [],
-                'GAP': [],
-                'GLO': []
-            },
-            # 'precision': {
-            #     'PER': [],
-            #     'GAP': [],
-            #     'GLO': []
-            # },
-            # 'recall': {
-            #     'PER': [],
-            #     'GAP': [],
-            #     'GLO': []
-            # },
-            'f1-score': {
-                'PER': [],
-                'GAP': [],
-                'GLO': []
-            },
-            'financial-cost': {
-                'PER': [],
-                'GAP': [],
-                'GLO': []
-            }
-        }
-
-        dictio = {
-            'MlC': 'MlC',
-            'MCA': 'MCA',
-            'classic': 'Classic'
-        }
-
-        hasFinancialCost = sum(['finan' in el for el in classic_metrics.columns.values.tolist()])
-        if hasFinancialCost == 0:
-            del total_impact['financial-cost']
-            del metrics['financial-cost']
-
-
-
-        tab1_body_model = {key: deepcopy(metrics) for key in models_name.keys()}
-
-
-        # fetch layers
-        exitingMLNB = [dirnames for _, dirnames, _ in os.walk(f'{outputs_path}/{type}/')][0]
-        exitingMLNB = sorted([int(el.split("_")[1]) for el in exitingMLNB if 'mlna' in el] )
-        for k in list(set(layers) & set(exitingMLNB)):
-            # fetch each combinantion of atributs in layers
-            # if k == 1:
-            #     config = get_combinations(range(len(cols)), k)
-            # else:
-            #     config = [columns[:k]]
-            # for layer_config in config:  # create subsets of k index of OHE and fetch it
-            #     col_targeted = [f'{cols[i]}' for i in layer_config]
-            #     case_k = '±'.join(col_targeted) if len(layer_config) > 1 else col_targeted[0]
-            #
-            #     ### get files for distincts logic
-            #     match = lambda x: (
-            #         sum(
-            #             [
-            #                 re.sub(r'[^\w\s]', '', unidecode(partern)) in re.sub(r'[^\w\s]', '', unidecode(x))
-            #                 for partern in case_k.split("±")
-            #             ]
-            #         ) == k if k > 1 else re.sub(r'[^\w\s]', '', unidecode(case_k)) in re.sub(r'[^\w\s]', '',
-            #                                                                                  unidecode(x))
-            #     )
-
-            files = load_results(
-                        outputs_path,
-                        type,
-                        k,
-                        per=True,
-                        glo=True,
-                        mix=True
-                )
-            files['classic'] = classic_metrics
-            # print(files)
-            # outputs[logic] = files
-            ### transform and normalize
-            models_list = files['classic'].index.values.tolist()
-            print(models_list)
-            metrics = [
-                "accuracy",
-                # "precision",
-                # "recall",
-                "f1-score",
-                "financial-cost"
-            ] if hasFinancialCost == 1 else [
-                "accuracy",
-                # "precision",
-                # "recall",
-                "f1-score",
-            ]
-
-            # fetch models
-            for p in range(len(files['global']["MCA"])):
-                for model in models_list:
-                    # fetch evaluation metric
-                    for metric in metrics:
-                        # fetch approach
-                        for i, key in enumerate(approach):
-                            # add metric in the vector
-                            tab1_body_model[model][metric][key]['GLO'].append(round(((round(
-                                files['global'][key][p].loc[model, metric], 4) - round(
-                                files['classic'].loc[model, metric], 4)) / round(
-                                files['classic'].loc[model, metric], 4)) * 100, 1)
-                                #                                               if round(((round(
-                                # files['global'][key][0].loc[model, metric], 4) - round(
-                                # files['global']['classic'].loc[model, metric], 4)) / round(
-                                # files['global']['classic'].loc[model, metric], 4)) * 100, 4) >= 0 else 0.0
-                                                                              )
-
-                            tab1_body_model[model][metric][key]['PER'].append(round(((round(
-                                files['personalized'][key][p].loc[model, metric], 4) - round(
-                                files['classic'].loc[model, metric], 4)) / round(
-                                files['classic'].loc[model, metric], 4)) * 100, 1)
-                                #                                               if round(((round(
-                                # files['personalized'][key][0].loc[model, metric], 4) - round(
-                                # files['personalized']['classic'].loc[model, metric], 4)) / round(
-                                # files['personalized']['classic'].loc[model, metric], 4)) * 100, 4) >= 0 else 0.0
-                                                                              )
-
-                            tab1_body_model[model][metric][key]['GAP'].append(round(((round(
-                                files['mixed'][key][p].loc[model, metric], 4) - round(
-                                files['classic'].loc[model, metric], 4)) / round(
-                                files['classic'].loc[model, metric], 4)) * 100, 1)
-                                #                                               if round(((round(
-                                # files['mixed'][key][0].loc[model, metric], 4) - round(
-                                # files['mixed']['classic'].loc[model, metric], 4)) / round(
-                                # files['mixed']['classic'].loc[model, metric], 4)) * 100, 4) >= 0 else 0.0
-                                                                              )
-
-                            # total_impact[metric]["PER"].append(tab1_body_model[model][metric][key]['P'] >= tab1_body_model[model][metric][key]['G'])
-                            # total_impact[metric]["GLO"].append(tab1_body_model[model][metric][key]['P'] <= tab1_body_model[model][metric][key]['P'])
-
-        # fetch each model
-        print_compare(
-            outputs_path,
-            data_folder,
-            models_list,
-            approach,
-            files,
-            dictio,
-            metrics,
-            hasFinancialCost,
-            total_impact,
-            tab1_body_model,
-            cwd,
-            day,
-            alpha,
-            models_name
-        )
-
-    return tab1_body_model, files, approach, models_name
-
-
-def print_compare(
-        outputs_path,
-        data_folder,
-        models_list,
-        approach,
-        files,
-        dictio,
-        metrics,
-        hasFinancialCost,
-        total_impact,
-        tab1_body_model,
-        cwd,
-        day,
-        alpha,
-        models_name
-):
-    # find out all best metric details
-    """
-
-            <td colspan='4'>Precision</td>
-            <td colspan='4'>Recall</td>
-            <td colspan='4'>Financial-Cost</td>
-    """
-
-    head_lambda = lambda \
-            x, finance: f"""
-                    <tr>
-                    <td colspan='2' rowspan='2'>{x}</td>
-                    <td colspan='4'>Accuracy</td>
-                    <td colspan='4'>F1-score</td>
-                    {'<td colspan=4>Financial-Cost</td>' * int(finance == 1)}
-                    </tr>
-                    <tr>{('<td>Classic</td><td>GLO' + svg + '</td><td>PER' + svg + '</td><td>GAP' + svg + '</td>') * (2 if finance == 0 else 3)}</tr>
-                    """
-    tab1_body = ""
-
-
-    tab1_head = head_lambda(data_folder, hasFinancialCost)
-    caption_content_lambda = lambda x: ''.join(
-        [f'<span><strong>{key}</strong>: {value}</span><br>' for key, value in {
-            **models_name,
-            'GLO': f'Learning from classic dataset of {data_folder} where just Global MLN had been added',
-            'PER': f'Learning from classic dataset of {data_folder} where just Personalised MLN had been added',
-            'GAP': f'DLearning from classic dataset of {data_folder} where both Global and Personalised MLN had been added',
-            'Classic': f'Learning from classic dataset',
-            'MlC': f'Learning from classic dataset where MLN had been added',
-            'MCA': f'Learning from classic dataset where MLN had been added and Att removed'
-        }.items()])
-
-    for model in models_list:
-        tab1_body += f'<tr> <td rowspan="{len(approach)}">{model}</td>'
-        # fetch approach
-        for i, key in enumerate(files['global'].keys() if approach == None else approach):
-            # fetch evaluation metric
-            tab1_body += f'<tr> <td>{dictio[key]}</td>' if i != 0 else f'<td>{dictio[key]}</td>'
-            for y, metric in enumerate(metrics):
-
-                act = min if (y == len(metrics) - 1 and hasFinancialCost == 1) else max
-                if y != len(metrics) - 1 or hasFinancialCost == 0:
-                    # add metric in the vector
-                    total_impact[metric]["PER"].append(
-                        (act(tab1_body_model[model][metric][key]["PER"]) > 0.0)
-                        and (act(tab1_body_model[model][metric][key]["GLO"]) <= act(
-                            tab1_body_model[model][metric][key]["PER"]))
-                        and (
-                                act(tab1_body_model[model][metric][key]["GAP"]) <= act(
-                            tab1_body_model[model][metric][key]["PER"]))
-                    )
-
-                    total_impact[metric]["GLO"].append(
-                        (act(tab1_body_model[model][metric][key]["GLO"]) > 0.0)
-                        and (act(tab1_body_model[model][metric][key]["GLO"]) >= act(
-                            tab1_body_model[model][metric][key]["PER"]))
-                        and (
-                                act(tab1_body_model[model][metric][key]["GLO"]) >= act(
-                            tab1_body_model[model][metric][key]["GAP"]))
-                    )
-
-                    total_impact[metric]["GAP"].append(
-                        (act(tab1_body_model[model][metric][key]["GAP"]) > 0.0)
-                        and (act(tab1_body_model[model][metric][key]["GAP"]) >= act(
-                            tab1_body_model[model][metric][key]["PER"]))
-                        and (
-                                act(tab1_body_model[model][metric][key]["GAP"]) >= act(
-                            tab1_body_model[model][metric][key]["GLO"]))
-                    )
-                else:
-                    # add metric in the vector
-                    total_impact[metric]["PER"].append(
-                        (act(tab1_body_model[model][metric][key]["PER"]) < 0.0)
-                        and (act(tab1_body_model[model][metric][key]["GLO"]) >= act(
-                            tab1_body_model[model][metric][key]["PER"]))
-                        and (
-                                act(tab1_body_model[model][metric][key]["GAP"]) >= act(
-                            tab1_body_model[model][metric][key]["PER"]))
-                    )
-
-                    total_impact[metric]["GLO"].append(
-                        (act(tab1_body_model[model][metric][key]["GLO"]) < 0.0)
-                        and (act(tab1_body_model[model][metric][key]["GLO"]) <= act(
-                            tab1_body_model[model][metric][key]["PER"]))
-                        and (
-                                act(tab1_body_model[model][metric][key]["GLO"]) <= act(
-                            tab1_body_model[model][metric][key]["GAP"]))
-                    )
-
-                    total_impact[metric]["GAP"].append(
-                        (act(tab1_body_model[model][metric][key]["GAP"]) < 0.0)
-                        and (act(tab1_body_model[model][metric][key]["GAP"]) <= act(
-                            tab1_body_model[model][metric][key]["PER"]))
-                        and (
-                                act(tab1_body_model[model][metric][key]["GAP"]) <= act(
-                            tab1_body_model[model][metric][key]["GLO"]))
-                    )
-
-                tab1_body += (
-                    (
-                            f'<td>{round(files["classic"].loc[model, metric], 4)}</td><td>{"<strong>" * int((act(tab1_body_model[model][metric][key]["GLO"]) > 0) and (act(tab1_body_model[model][metric][key]["GLO"]) >= act(tab1_body_model[model][metric][key]["PER"])) and (act(tab1_body_model[model][metric][key]["GLO"]) >= act(tab1_body_model[model][metric][key]["GAP"])))}{act(tab1_body_model[model][metric][key]["GLO"])}{"</strong>" * int((act(tab1_body_model[model][metric][key]["GLO"]) > 0) and (act(tab1_body_model[model][metric][key]["GLO"]) >= act(tab1_body_model[model][metric][key]["PER"])) and (act(tab1_body_model[model][metric][key]["GLO"]) >= act(tab1_body_model[model][metric][key]["GAP"])))}</td>' +
-                            f'<td> {"<strong>" * int((act(tab1_body_model[model][metric][key]["PER"]) > 0) and (act(tab1_body_model[model][metric][key]["GLO"]) <= act(tab1_body_model[model][metric][key]["PER"])) and (act(tab1_body_model[model][metric][key]["GAP"]) <= act(tab1_body_model[model][metric][key]["PER"])))}{act(tab1_body_model[model][metric][key]["PER"])}{"</strong>" * int((act(tab1_body_model[model][metric][key]["PER"]) > 0) and (act(tab1_body_model[model][metric][key]["GLO"]) <= act(tab1_body_model[model][metric][key]["PER"])) and (act(tab1_body_model[model][metric][key]["GAP"]) <= act(tab1_body_model[model][metric][key]["PER"])))}</td>' +
-                            f'<td> {"<strong>" * int((act(tab1_body_model[model][metric][key]["GAP"]) > 0) and (act(tab1_body_model[model][metric][key]["GLO"]) <= act(tab1_body_model[model][metric][key]["GAP"])) and (act(tab1_body_model[model][metric][key]["PER"]) <= act(tab1_body_model[model][metric][key]["GAP"])))}{act(tab1_body_model[model][metric][key]["GAP"])}{"</strong>" * int((act(tab1_body_model[model][metric][key]["GAP"]) > 0) and (act(tab1_body_model[model][metric][key]["GLO"]) <= act(tab1_body_model[model][metric][key]["GAP"])) and (act(tab1_body_model[model][metric][key]["PER"]) <= act(tab1_body_model[model][metric][key]["GAP"])))}</td>'
-                    ) if "financial-cost" != metric else (
-                            f'<td>{round(files["classic"].loc[model, metric], 4)}</td><td>{"<strong>" * int((act(tab1_body_model[model][metric][key]["GLO"]) < 0) and (act(tab1_body_model[model][metric][key]["GLO"]) <= act(tab1_body_model[model][metric][key]["PER"])) and (act(tab1_body_model[model][metric][key]["GLO"]) <= act(tab1_body_model[model][metric][key]["GAP"])))}{act(tab1_body_model[model][metric][key]["GLO"])}{"</strong>" * int((act(tab1_body_model[model][metric][key]["GLO"]) < 0) and (act(tab1_body_model[model][metric][key]["GLO"]) <= act(tab1_body_model[model][metric][key]["PER"])) and (act(tab1_body_model[model][metric][key]["GLO"]) <= act(tab1_body_model[model][metric][key]["GAP"])))}</td>' +
-                            f'<td> {"<strong>" * int((act(tab1_body_model[model][metric][key]["PER"]) < 0) and (act(tab1_body_model[model][metric][key]["GLO"]) >= act(tab1_body_model[model][metric][key]["PER"])) and (act(tab1_body_model[model][metric][key]["GAP"]) >= act(tab1_body_model[model][metric][key]["PER"])))}{act(tab1_body_model[model][metric][key]["PER"])}{"</strong>" * int((act(tab1_body_model[model][metric][key]["PER"]) < 0) and (act(tab1_body_model[model][metric][key]["GLO"]) >= act(tab1_body_model[model][metric][key]["PER"])) and (act(tab1_body_model[model][metric][key]["GAP"]) >= act(tab1_body_model[model][metric][key]["PER"])))}</td>' +
-                            f'<td> {"<strong>" * int((act(tab1_body_model[model][metric][key]["GAP"]) < 0) and (act(tab1_body_model[model][metric][key]["GLO"]) >= act(tab1_body_model[model][metric][key]["GAP"])) and (act(tab1_body_model[model][metric][key]["PER"]) >= act(tab1_body_model[model][metric][key]["GAP"])))}{act(tab1_body_model[model][metric][key]["GAP"])}{"</strong>" * int((act(tab1_body_model[model][metric][key]["GAP"]) < 0) and (act(tab1_body_model[model][metric][key]["GLO"]) >= act(tab1_body_model[model][metric][key]["GAP"])) and (act(tab1_body_model[model][metric][key]["PER"]) >= act(tab1_body_model[model][metric][key]["GAP"])))}</td>')
-                ) if y != len(metrics) - 1 else (
-                    (
-                            f'<td>{round(files["classic"].loc[model, metric], 4)}</td><td>{"<strong>" * int((act(tab1_body_model[model][metric][key]["GLO"]) > 0) and (act(tab1_body_model[model][metric][key]["GLO"]) >= act(tab1_body_model[model][metric][key]["PER"])) and (act(tab1_body_model[model][metric][key]["GLO"]) >= act(tab1_body_model[model][metric][key]["GAP"])))}{act(tab1_body_model[model][metric][key]["GLO"])}{"</strong>" * int((act(tab1_body_model[model][metric][key]["GLO"]) > 0) and (act(tab1_body_model[model][metric][key]["GLO"]) >= act(tab1_body_model[model][metric][key]["PER"])) and (act(tab1_body_model[model][metric][key]["GLO"]) >= act(tab1_body_model[model][metric][key]["GAP"])))}</td>' +
-                            f'<td> {"<strong>" * int((act(tab1_body_model[model][metric][key]["PER"]) > 0) and (act(tab1_body_model[model][metric][key]["GLO"]) <= act(tab1_body_model[model][metric][key]["PER"])) and (act(tab1_body_model[model][metric][key]["GAP"]) <= act(tab1_body_model[model][metric][key]["PER"])))}{act(tab1_body_model[model][metric][key]["PER"])}{"</strong>" * int((act(tab1_body_model[model][metric][key]["PER"]) > 0) and (act(tab1_body_model[model][metric][key]["GLO"]) <= act(tab1_body_model[model][metric][key]["PER"])) and (act(tab1_body_model[model][metric][key]["GAP"]) <= act(tab1_body_model[model][metric][key]["PER"])))}</td>' +
-                            f'<td> {"<strong>" * int((act(tab1_body_model[model][metric][key]["GAP"]) > 0) and (act(tab1_body_model[model][metric][key]["GLO"]) <= act(tab1_body_model[model][metric][key]["GAP"])) and (act(tab1_body_model[model][metric][key]["PER"]) <= act(tab1_body_model[model][metric][key]["GAP"])))}{act(tab1_body_model[model][metric][key]["GAP"])}{"</strong>" * int((act(tab1_body_model[model][metric][key]["GAP"]) > 0) and (act(tab1_body_model[model][metric][key]["GLO"]) <= act(tab1_body_model[model][metric][key]["GAP"])) and (act(tab1_body_model[model][metric][key]["PER"]) <= act(tab1_body_model[model][metric][key]["GAP"])))}</td></tr>'
-                    ) if "financial-cost" != metric else (
-                            f'<td>{round(files["classic"].loc[model, metric], 4)}</td><td>{"<strong>" * int((act(tab1_body_model[model][metric][key]["GLO"]) < 0) and (act(tab1_body_model[model][metric][key]["GLO"]) <= act(tab1_body_model[model][metric][key]["PER"])) and (act(tab1_body_model[model][metric][key]["GLO"]) <= act(tab1_body_model[model][metric][key]["GAP"])))}{act(tab1_body_model[model][metric][key]["GLO"])}{"</strong>" * int((act(tab1_body_model[model][metric][key]["GLO"]) < 0) and (act(tab1_body_model[model][metric][key]["GLO"]) <= act(tab1_body_model[model][metric][key]["PER"])) and (act(tab1_body_model[model][metric][key]["GLO"]) <= act(tab1_body_model[model][metric][key]["GAP"])))}</td>' +
-                            f'<td> {"<strong>" * int((act(tab1_body_model[model][metric][key]["PER"]) < 0) and (act(tab1_body_model[model][metric][key]["GLO"]) >= act(tab1_body_model[model][metric][key]["PER"])) and (act(tab1_body_model[model][metric][key]["GAP"]) >= act(tab1_body_model[model][metric][key]["PER"])))}{act(tab1_body_model[model][metric][key]["PER"])}{"</strong>" * int((act(tab1_body_model[model][metric][key]["PER"]) < 0) and (act(tab1_body_model[model][metric][key]["GLO"]) >= act(tab1_body_model[model][metric][key]["PER"])) and (act(tab1_body_model[model][metric][key]["GAP"]) >= act(tab1_body_model[model][metric][key]["PER"])))}</td>' +
-                            f'<td> {"<strong>" * int((act(tab1_body_model[model][metric][key]["GAP"]) < 0) and (act(tab1_body_model[model][metric][key]["GLO"]) >= act(tab1_body_model[model][metric][key]["GAP"])) and (act(tab1_body_model[model][metric][key]["PER"]) >= act(tab1_body_model[model][metric][key]["GAP"])))}{act(tab1_body_model[model][metric][key]["GAP"])}{"</strong>" * int((act(tab1_body_model[model][metric][key]["GAP"]) < 0) and (act(tab1_body_model[model][metric][key]["GLO"]) >= act(tab1_body_model[model][metric][key]["GAP"])) and (act(tab1_body_model[model][metric][key]["PER"]) >= act(tab1_body_model[model][metric][key]["GAP"])))}</td></tr>'))
-    tab1_body += f'<tr> <td colspan="2">Total</td>'
-    for y, metric in enumerate(metrics):
-        tab1_body += (
-                f'<td></td><td>{"<strong>" * int((sum(total_impact[metric]["GLO"]) >= sum(total_impact[metric]["PER"])) and (sum(total_impact[metric]["GLO"]) >= sum(total_impact[metric]["GAP"])))}{sum(total_impact[metric]["GLO"])}{"</strong>" * int((sum(total_impact[metric]["GLO"]) >= sum(total_impact[metric]["PER"])) and (sum(total_impact[metric]["GLO"]) >= sum(total_impact[metric]["GAP"])))}</td>' +
-                f'<td>{"<strong>" * int((sum(total_impact[metric]["GLO"]) <= sum(total_impact[metric]["PER"])) and (sum(total_impact[metric]["GAP"]) <= sum(total_impact[metric]["PER"])))}{sum(total_impact[metric]["PER"])}{"</strong>" * int((sum(total_impact[metric]["GLO"]) <= sum(total_impact[metric]["PER"])) and (sum(total_impact[metric]["GAP"]) <= sum(total_impact[metric]["PER"])))}</td>' +
-                f'<td>{"<strong>" * int((sum(total_impact[metric]["GLO"]) <= sum(total_impact[metric]["GAP"])) and (sum(total_impact[metric]["GAP"]) >= sum(total_impact[metric]["PER"])))}{sum(total_impact[metric]["GAP"])}{"</strong>" * int((sum(total_impact[metric]["GLO"]) <= sum(total_impact[metric]["GAP"])) and (sum(total_impact[metric]["GAP"]) >= sum(total_impact[metric]["PER"])))}</td>'
-        ) if y != len(metrics) - 1 else (
-                f'<td></td><td>{"<strong>" * int((sum(total_impact[metric]["GLO"]) >= sum(total_impact[metric]["PER"])) and (sum(total_impact[metric]["GLO"]) >= sum(total_impact[metric]["GAP"])))}{sum(total_impact[metric]["GLO"])}{"</strong>" * int((sum(total_impact[metric]["GLO"]) >= sum(total_impact[metric]["PER"])) and (sum(total_impact[metric]["GLO"]) >= sum(total_impact[metric]["GAP"])))}</td>' +
-                f'<td>{"<strong>" * int((sum(total_impact[metric]["GLO"]) <= sum(total_impact[metric]["PER"])) and (sum(total_impact[metric]["GAP"]) <= sum(total_impact[metric]["PER"])))}{sum(total_impact[metric]["PER"])}{"</strong>" * int((sum(total_impact[metric]["GLO"]) <= sum(total_impact[metric]["PER"])) and (sum(total_impact[metric]["GAP"]) <= sum(total_impact[metric]["PER"])))}</td>' +
-                f'<td>{"<strong>" * int((sum(total_impact[metric]["GLO"]) <= sum(total_impact[metric]["GAP"])) and (sum(total_impact[metric]["GAP"]) >= sum(total_impact[metric]["PER"])))}{sum(total_impact[metric]["GAP"])}{"</strong>" * int((sum(total_impact[metric]["GLO"]) <= sum(total_impact[metric]["GAP"])) and (sum(total_impact[metric]["GAP"]) >= sum(total_impact[metric]["PER"])))}</td></tr>')
-
-    caption = f'<caption><h2>Legend</h2>{caption_content_lambda(metric)}</caption>'
-    table_html = f'<table style="border: 2px solid black; width: 100% !important; background-color: #FFFFFF; color:#000000;">{caption}{tab1_head}{tab1_body}</table>'
-    htm = f'<html><head>{style}<title> GLO vs PER vs GAP </title></head><body style="background-color: white;">{table_html}</body></html>'
-
-    create_domain(
-        f'{cwd}/analyze_{outputs_path.split("/")[-2]}_made_on_{day}H/{data_folder}/compare_MlC_MCA_for_GLO_PER_GAP')
-    timestr = time.strftime("%Y_%m_%d_%H_%M_%S")
-    filename1 = f'{cwd}/analyze_{outputs_path.split("/")[-2]}_made_on_{day}H/{data_folder}/compare_MlC_MCA_for_GLO_PER_GAP/Statistical comparaison of approachs in {data_folder} on global logic{alpha}.html'
-    _file = open(filename1, "w")
-    _file.write(htm)
-    _file.close()
-
-def compare_MlC_MCA_for_GLO_MX_PER_MX_PER_MY_GAP(
-        outputs_path=None,
-        cwd=None,
-        data_folder=None,
-        classic_metrics=None,
-        models_name=None,
-        layers=[1],
-        approach=None,
-        alpha=0.85,
-        type='qualitative'
-):
-    """
-    Analyzer Launcher
-    Parameters
-    ----------
-    cols
-    outputs_path
-    cwd
-    data_folder
-    classic_metrics
-    models_name
-    layers
-    approach
-    alpha
-    type
-
-    Returns
-    -------
-
-    """
-    print(f'{outputs_path}/{type}/model_storage')
-    name = \
-        [file for _, _, files in os.walk(
-            f'{outputs_path}/{type}/model_storage')
-         for file in files if
-         '_best_features' in file][0]
-    backup = read_model(
-        f'{outputs_path}/{type}/model_storage/{name}')
-    columns = backup["model"].keys()
-    cols = backup['name']
-    bestK = backup["bestK"]
-
-    day = time.strftime("%Y_%m_%d_%H")
-    if cols is not None or classic_metrics is not None:  # check if cols and classics metrics are filled
-        ## analyse of k layer
-
-        # find out all best metric details
-        head_lambda = lambda \
-                x: f"""
-                <tr>
-                <td colspan='2' rowspan='2'>{x}</td>
-                <td colspan='4'>Accuracy</td>
-                <td colspan='4'>Precision</td>
-                <td colspan='4'>Recall</td>
-                <td colspan='4'>F1-score</td>
-                </tr>
-                <tr>{('<td>Classic</td><td>GLO' + svg + '</td><td>PER' + svg + '</td><td>GAP' + svg + '</td>') * 4}</tr>
-                """
-        tab1_head = head_lambda(data_folder)
-        tab1_body = ""
-        metrics = {
-            'accuracy': {
-                'MlC': {
-                    'PER': [],
-                    'GAP': [],
-                    'GLO': []
-                },
-                'MCA': {
-                    'PER': [],
-                    'GAP': [],
-                    'GLO': []
-                }
-            },
-            'precision': {
-                'MlC': {
-                    'PER': [],
-                    'GAP': [],
-                    'GLO': []
-                },
-                'MCA': {
-                    'PER': [],
-                    'GAP': [],
-                    'GLO': []
-                }
-            },
-            'recall': {
-                'MlC': {
-                    'PER': [],
-                    'GAP': [],
-                    'GLO': []
-                },
-                'MCA': {
-                    'PER': [],
-                    'GAP': [],
-                    'GLO': []
-                }
-            },
-            'f1-score': {
-                'MlC': {
-                    'PER': [],
-                    'GAP': [],
-                    'GLO': []
-                },
-                'MCA': {
-                    'PER': [],
-                    'GAP': [],
-                    'GLO': []
-                }
-            },
-            'financial-cost': {
-                'MlC': {
-                    'PER': [],
-                    'GAP': [],
-                    'GLO': []
-                },
-                'MCA': {
-                    'PER': [],
-                    'GAP': [],
-                    'GLO': []
-                }
-            }
-        }
-
-        total_impact = {
-            'accuracy': {
-                'PER': [],
-                'GAP': [],
-                'GLO': []
-            },
-            'precision': {
-                'PER': [],
-                'GAP': [],
-                'GLO': []
-            },
-            'recall': {
-                'PER': [],
-                'GAP': [],
-                'GLO': []
-            },
-            'f1-score': {
-                'PER': [],
-                'GAP': [],
-                'GLO': []
-            },
-            'financial-cost': {
-                'PER': [],
-                'GAP': [],
-                'GLO': []
-            }
-        }
-
-        dictio = {
-            'MlC': 'MlC',
-            'MCA': 'MCA',
-            'classic': 'Classic'
-        }
-
-        style = """<style> 
-        table, th, td {
-        border: 1px solid black;
-        border-collapse: collapse;
-        } 
-        .wrap-text {
-        word-wrap: break-word;
-        } 
-        .wrap-text {
-        overflow-wrap: break-word;
-        } 
-        .limited-column {
-        width: 100px;
-        } 
-        .dashed-border {
-        border: 1px dashed black;
-        }
-        .dotted-border {
-        border: 1px dotted black;
-        } 
-        td {
-        text-align: center;
-        } 
-        caption {
-        margin:0; 
-        margin-bottom: 2px; 
-        text-align: start; 
-        border: 1px dashed black;
-        } 
-        caption > h2 {
-        text-align: center;
-        }
-        </style>"""
-
-        caption_content_lambda = lambda x: ''.join(
-            [f'<span><strong>{key}</strong>: {value}</span><br>' for key, value in {
-                **models_name,
-                'GLO': 'Learning from classic dataset of {data_folder} where just Global MLN had been added',
-                'PER': 'Learning from classic dataset of {data_folder} where just Personalised MLN had been added',
-                'GAP': 'DLearning from classic dataset of {data_folder} where both Global and Personalised MLN had been added',
-                'Classic': f'Learning from classic dataset of {data_folder}',
-                'MlC': f'Learning from classic dataset of {data_folder} where MLN had been added',
-                'MCA': f'Learning from classic dataset of {data_folder} where MLN had been added and Att removed'
-            }.items()])
-
-        tab1_body_model = {key: deepcopy(metrics) for key in models_name.keys()}
-
-
-        # fetch layers
-        for k in layers:
-            # fetch each combinantion of atributs in layers
-            # if k == 1:
-            #     config = get_combinations(range(len(cols)), k)
-            # else:
-            #     config = [columns[:k]]
-            # for layer_config in config:  # create subsets of k index of OHE and fetch it
-            #     col_targeted = [f'{cols[i]}' for i in layer_config]
-            #     case_k = '±'.join(col_targeted) if len(layer_config) > 1 else col_targeted[0]
-            #
-            #     ### get files for distincts logic
-            #     match = lambda x: (
-            #         sum(
-            #             [
-            #                 re.sub(r'[^\w\s]', '', unidecode(partern)) in re.sub(r'[^\w\s]', '', unidecode(x))
-            #                 for partern in case_k.split("±")
-            #             ]
-            #         ) == k if k > 1 else re.sub(r'[^\w\s]', '', unidecode(case_k)) in re.sub(r'[^\w\s]', '',
-            #                                                                                  unidecode(x))
-            #     )
-
-            files = {
-                'global': {
-                    'classic': classic_metrics,
-                    'MlC': [
-                        load_data_set_from_url(path=file, sep='\t', encoding='utf-8', index_col=0, na_values=None)
-                        for file in get_filenames(
-                            root_dir=f'{outputs_path}/{type}/{"mlna_"+str(k) if k == 1 else "mlna_"+str(k)+"_b"}/global/data_selection_storage',
-                            func=lambda x: (MlC_F(x)),
-                            verbose=False
-                        )
-                    ],
-                    'MCA': [
-                        load_data_set_from_url(path=file, sep='\t', encoding='utf-8', index_col=0, na_values=None)
-                        for file in get_filenames(
-                            root_dir=f'{outputs_path}/{type}/{"mlna_"+str(k) if k == 1 else "mlna_"+str(k)+"_b"}/global/data_selection_storage',
-                            func=lambda x: (MCA_F(x)),
-                            verbose=False
-                        )
-                    ]
-                },
-                'mixed': {
-                    'classic': classic_metrics,
-                    'MlC': [
-                        load_data_set_from_url(path=file, sep='\t', encoding='utf-8', index_col=0, na_values=None)
-                        for file in get_filenames(
-                            root_dir=f'{outputs_path}/{type}/{"mlna_"+str(k) if k == 1 else "mlna_"+str(k)+"_b"}/mixed/data_selection_storage',
-                            func=lambda x: (MlC_F(x)),
-                            verbose=False
-                        )
-                    ],
-                    'MCA': [
-                        load_data_set_from_url(path=file, sep='\t', encoding='utf-8', index_col=0, na_values=None)
-                        for file in get_filenames(
-                            root_dir=f'{outputs_path}/{type}/{"mlna_"+str(k) if k == 1 else "mlna_"+str(k)+"_b"}/mixed/data_selection_storage',
-                            func=lambda x: (MCA_F(x)),
-                            verbose=False
-                        )
-                    ]
-                },
-                "personalized": {
-                    'classic': classic_metrics,
-                    'MlC': [
-                        load_data_set_from_url(path=file, sep='\t', encoding='utf-8', index_col=0, na_values=None)
-                        for file in get_filenames(
-                            root_dir=f'{outputs_path}/{type}/{"mlna_"+str(k) if k == 1 else "mlna_"+str(k)+"_b"}/personalized/data_selection_storage',
-                            func=lambda x: (MlC_F(x)),
-                            verbose=False
-                        )
-                    ],
-                    'MCA': [
-                        load_data_set_from_url(path=file, sep='\t', encoding='utf-8', index_col=0, na_values=None)
-                        for file in get_filenames(
-                            root_dir=f'{outputs_path}/{type}/{"mlna_"+str(k) if k == 1 else "mlna_"+str(k)+"_b"}/personalized/data_selection_storage',
-                            func=lambda x: (MCA_F(x)),
-                            verbose=False
-                        )
-                    ]
-                }
-            }
-            # print(files)
-            # outputs[logic] = files
-            ### transform and normalize
-            models_list = files['personalized']['classic'].index.values.tolist()
-            print(models_list)
-            metrics = ["accuracy", "precision", "recall", "f1-score"]
-
-            # fetch models
-            for i in range(len(files['global']["MCA"])):
-                for model in models_list:
-                    # fetch evaluation metric
-                    for metric in metrics:
-                        # fetch approach
-                        for i, key in enumerate(approach):
-                            # add metric in the vector
-                            tab1_body_model[model][metric][key]['GLO'].append(round(((round(
-                                files['global'][key][0].loc[model, metric], 4) - round(
-                                files['global']['classic'].loc[model, metric], 4)) / round(
-                                files['global']['classic'].loc[model, metric], 4)) * 100, 4) if round(((round(
-                                files['global'][key][0].loc[model, metric], 4) - round(
-                                files['global']['classic'].loc[model, metric], 4)) / round(
-                                files['global']['classic'].loc[model, metric], 4)) * 100, 4) >= 0 else 0.0)
-
-                            tab1_body_model[model][metric][key]['PER'].append(round(((round(
-                                files['personalized'][key][0].loc[model, metric], 4) - round(
-                                files['personalized']['classic'].loc[model, metric], 4)) / round(
-                                files['personalized']['classic'].loc[model, metric], 4)) * 100, 4) if round(((round(
-                                files['personalized'][key][0].loc[model, metric], 4) - round(
-                                files['personalized']['classic'].loc[model, metric], 4)) / round(
-                                files['personalized']['classic'].loc[model, metric], 4)) * 100, 4) >= 0 else 0.0)
-
-                            tab1_body_model[model][metric][key]['GAP'].append(round(((round(
-                                files['mixed'][key][0].loc[model, metric], 4) - round(
-                                files['mixed']['classic'].loc[model, metric], 4)) / round(
-                                files['mixed']['classic'].loc[model, metric], 4)) * 100, 4) if round(((round(
-                                files['mixed'][key][0].loc[model, metric], 4) - round(
-                                files['mixed']['classic'].loc[model, metric], 4)) / round(
-                                files['mixed']['classic'].loc[model, metric], 4)) * 100, 4) >= 0 else 0.0)
-
-                            # total_impact[metric]["PER"].append(tab1_body_model[model][metric][key]['P'] >= tab1_body_model[model][metric][key]['G'])
-                            # total_impact[metric]["GLO"].append(tab1_body_model[model][metric][key]['P'] <= tab1_body_model[model][metric][key]['P'])
-
-        # fetch each model
-        for model in models_list:
-            tab1_body += f'<tr> <td rowspan="{len(approach)}">{model}</td>'
-            # fetch approach
-            for i, key in enumerate(files['global'].keys() if approach == None else approach):
-                # fetch evaluation metric
-                tab1_body += f'<tr> <td>{dictio[key]}</td>' if i != 0 else f'<td>{dictio[key]}</td>'
-                for y, metric in enumerate(metrics):
-                    # add metric in the vector
-                    total_impact[metric]["PER"].append((max(tab1_body_model[model][metric][key]["GLO"]) <= max(
-                        tab1_body_model[model][metric][key]["PER"])) and (
-                                                            max(tab1_body_model[model][metric][key]["GAP"]) <= max(
-                                                        tab1_body_model[model][metric][key]["PER"])))
-
-                    total_impact[metric]["GLO"].append((max(tab1_body_model[model][metric][key]["GLO"]) >= max(
-                        tab1_body_model[model][metric][key]["PER"])) and (
-                                                            max(tab1_body_model[model][metric][key]["GLO"]) >= max(
-                                                        tab1_body_model[model][metric][key]["GAP"])))
-
-                    total_impact[metric]["GAP"].append((max(tab1_body_model[model][metric][key]["GAP"]) >= max(
-                        tab1_body_model[model][metric][key]["PER"])) and (
-                                                            max(tab1_body_model[model][metric][key]["GAP"]) >= max(
-                                                        tab1_body_model[model][metric][key]["PER"])))
-
-                    tab1_body += (
-                            f'<td>{round(files["global"]["classic"].loc[model, metric], 4)}</td><td>{"<strong>" * int((max(tab1_body_model[model][metric][key]["GLO"]) >= max(tab1_body_model[model][metric][key]["PER"])) and (max(tab1_body_model[model][metric][key]["GLO"]) >= max(tab1_body_model[model][metric][key]["GAP"])))}{max(tab1_body_model[model][metric][key]["GLO"])}{"</strong>" * int((max(tab1_body_model[model][metric][key]["GLO"]) >= max(tab1_body_model[model][metric][key]["PER"])) and (max(tab1_body_model[model][metric][key]["GLO"]) >= max(tab1_body_model[model][metric][key]["GAP"])))}</td>' +
-                            f'<td> {"<strong>" * int((max(tab1_body_model[model][metric][key]["GLO"]) <= max(tab1_body_model[model][metric][key]["PER"])) and (max(tab1_body_model[model][metric][key]["GAP"]) <= max(tab1_body_model[model][metric][key]["PER"])))}{max(tab1_body_model[model][metric][key]["PER"])}{"</strong>" * int((max(tab1_body_model[model][metric][key]["GLO"]) <= max(tab1_body_model[model][metric][key]["PER"])) and (max(tab1_body_model[model][metric][key]["GAP"]) <= max(tab1_body_model[model][metric][key]["PER"])))}</td>' +
-                            f'<td> {"<strong>" * int((max(tab1_body_model[model][metric][key]["GLO"]) <= max(tab1_body_model[model][metric][key]["GAP"])) and (max(tab1_body_model[model][metric][key]["PER"]) <= max(tab1_body_model[model][metric][key]["GAP"])))}{max(tab1_body_model[model][metric][key]["GAP"])}{"</strong>" * int((max(tab1_body_model[model][metric][key]["GLO"]) <= max(tab1_body_model[model][metric][key]["GAP"])) and (max(tab1_body_model[model][metric][key]["PER"]) <= max(tab1_body_model[model][metric][key]["GAP"])))}</td>'
-                    ) if y != len(metrics) - 1 else (
-                            f'<td>{round(files["global"]["classic"].loc[model, metric], 4)}</td><td>{"<strong>" * int((max(tab1_body_model[model][metric][key]["GLO"]) >= max(tab1_body_model[model][metric][key]["PER"])) and (max(tab1_body_model[model][metric][key]["GLO"]) >= max(tab1_body_model[model][metric][key]["GAP"])))}{max(tab1_body_model[model][metric][key]["GLO"])}{"</strong>" * int((max(tab1_body_model[model][metric][key]["GLO"]) >= max(tab1_body_model[model][metric][key]["PER"])) and (max(tab1_body_model[model][metric][key]["GLO"]) >= max(tab1_body_model[model][metric][key]["GAP"])))}</td>' +
-                            f'<td> {"<strong>" * int((max(tab1_body_model[model][metric][key]["GLO"]) <= max(tab1_body_model[model][metric][key]["PER"])) and (max(tab1_body_model[model][metric][key]["GAP"]) <= max(tab1_body_model[model][metric][key]["PER"])))}{max(tab1_body_model[model][metric][key]["PER"])}{"</strong>" * int((max(tab1_body_model[model][metric][key]["GLO"]) <= max(tab1_body_model[model][metric][key]["PER"])) and (max(tab1_body_model[model][metric][key]["GAP"]) <= max(tab1_body_model[model][metric][key]["PER"])))}</td>' +
-                            f'<td> {"<strong>" * int((max(tab1_body_model[model][metric][key]["GLO"]) <= max(tab1_body_model[model][metric][key]["GAP"])) and (max(tab1_body_model[model][metric][key]["PER"]) <= max(tab1_body_model[model][metric][key]["GAP"])))}{max(tab1_body_model[model][metric][key]["GAP"])}{"</strong>" * int((max(tab1_body_model[model][metric][key]["GLO"]) <= max(tab1_body_model[model][metric][key]["GAP"])) and (max(tab1_body_model[model][metric][key]["PER"]) <= max(tab1_body_model[model][metric][key]["GAP"])))}</td></tr>')
-        tab1_body += f'<tr> <td colspan="2">Total</td>'
-        for y, metric in enumerate(metrics):
-            tab1_body += (
-                    f'<td></td><td>{"<strong>" * int((sum(total_impact[metric]["GLO"]) >= sum(total_impact[metric]["PER"])) and (sum(total_impact[metric]["GLO"]) >= sum(total_impact[metric]["GAP"])))}{sum(total_impact[metric]["GLO"])}{"</strong>" * int((sum(total_impact[metric]["GLO"]) >= sum(total_impact[metric]["PER"])) and (sum(total_impact[metric]["GLO"]) >= sum(total_impact[metric]["GAP"])))}</td>' +
-                    f'<td>{"<strong>" * int((sum(total_impact[metric]["GLO"]) <= sum(total_impact[metric]["PER"])) and (sum(total_impact[metric]["GAP"]) <= sum(total_impact[metric]["PER"])))}{sum(total_impact[metric]["PER"])}{"</strong>" * int((sum(total_impact[metric]["GLO"]) <= sum(total_impact[metric]["PER"])) and (sum(total_impact[metric]["GAP"]) <= sum(total_impact[metric]["PER"])))}</td>' +
-                    f'<td>{"<strong>" * int((sum(total_impact[metric]["GLO"]) <= sum(total_impact[metric]["GAP"])) and (sum(total_impact[metric]["GAP"]) >= sum(total_impact[metric]["PER"])))}{sum(total_impact[metric]["GAP"])}{"</strong>" * int((sum(total_impact[metric]["GLO"]) <= sum(total_impact[metric]["GAP"])) and (sum(total_impact[metric]["GAP"]) >= sum(total_impact[metric]["PER"])))}</td>'
-            ) if y != len(metrics) - 1 else (
-                    f'<td></td><td>{"<strong>" * int((sum(total_impact[metric]["GLO"]) >= sum(total_impact[metric]["PER"])) and (sum(total_impact[metric]["GLO"]) >= sum(total_impact[metric]["GAP"])))}{sum(total_impact[metric]["GLO"])}{"</strong>" * int((sum(total_impact[metric]["GLO"]) >= sum(total_impact[metric]["PER"])) and (sum(total_impact[metric]["GLO"]) >= sum(total_impact[metric]["GAP"])))}</td>' +
-                    f'<td>{"<strong>" * int((sum(total_impact[metric]["GLO"]) <= sum(total_impact[metric]["PER"])) and (sum(total_impact[metric]["GAP"]) <= sum(total_impact[metric]["PER"])))}{sum(total_impact[metric]["PER"])}{"</strong>" * int((sum(total_impact[metric]["GLO"]) <= sum(total_impact[metric]["PER"])) and (sum(total_impact[metric]["GAP"]) <= sum(total_impact[metric]["PER"])))}</td>' +
-                    f'<td>{"<strong>" * int((sum(total_impact[metric]["GLO"]) <= sum(total_impact[metric]["GAP"])) and (sum(total_impact[metric]["GAP"]) >= sum(total_impact[metric]["PER"])))}{sum(total_impact[metric]["GAP"])}{"</strong>" * int((sum(total_impact[metric]["GLO"]) <= sum(total_impact[metric]["GAP"])) and (sum(total_impact[metric]["GAP"]) >= sum(total_impact[metric]["PER"])))}</td></tr>')
-
-        caption = f'<caption><h2>Legend</h2>{caption_content_lambda(metric)}</caption>'
-        table_html = f'<table style="border: 2px solid black; width: 100% !important; background-color: #FFFFFF; color:#000000;">{caption}{tab1_head}{tab1_body}</table>'
-        htm = f'<html><head>{style}<title> GLO vs PER vs GAP </title></head><body style="background-color: white;">{table_html}</body></html>'
-
-        create_domain(f'{cwd}/analyze_{outputs_path.split("/")[-2]}_made_on_{day}H/{data_folder}/plots/fnTab/tab3')
-        timestr = time.strftime("%Y_%m_%d_%H_%M_%S")
-        filename1 = f'{cwd}/analyze_{outputs_path.split("/")[-2]}_made_on_{day}H/{data_folder}/plots/fnTab/tab3/Statistical comparaison of approachs in {data_folder} on global logic{alpha}.html'
-        _file = open(filename1, "w")
-        _file.write(htm)
-        _file.close()
-
-
-def Descriptors_comparison(
-        outputs_path=None,
-        models_name=None,
-        layers=[1],
-        approach=None,
-        aggregation_f=None,
-        alphas=[0.85],
-        type='qualitative'
-):
-    """
-
-    Parameters
-    ----------
-    outputs_path
-    models_name
-    layers
-    approach
-    aggregation_f
-
-    Returns
-    -------
-    tab1_body_model_f: dictionary of descriptors arrays values
-    """
-
-
-
-    # find out all best metric details
-    descripteurs = {
-        'INTER_GLO': [],
-        'INTRA_GLO': [],
-        'COMBINE_GLO': [],
-        'INTER_PER': [],
-        'INTRA_PER': [],
-        'COMBINE_PER': [],
-        'INTER_M_GLO': [],
-        'INTRA_M_GLO': [],
-        'COMBINE_M_GLO': [],
-        'INTER_M_PER': [],
-        'INTRA_M_PER': [],
-        'COMBINE_M_PER': [],
-        'DEGREE': []
-
-    }
-    mlnL = {f'MLN {key}': descripteurs for i, key in enumerate(layers)}
-
-    tab1_body_model_f = {key: deepcopy(descripteurs) for key in models_name.keys()}
-    tab1_body_model = {key: deepcopy(mlnL) for key in models_name.keys()}
-
-    for alp in alphas:
-        print(f'{outputs_path}/{alp}/{type}/model_storage')
-        name = \
-            [file for _, _, files in os.walk(
-                f'{outputs_path}/{alp}/{type}/model_storage')
-             for file in files if
-             '_best_features' in file][0]
-        backup = read_model(
-            f'{outputs_path}/{alp}/{type}/model_storage/{name}')
-        cols = backup['name']
-        if cols is not None:  # check if cols and classics metrics are filled
-            ## analyse of k layer
-            # fetch layers
-            exitingMLNB = [dirnames for _, dirnames, _ in os.walk(f'{outputs_path}/{alp}/{type}/')][0]
-            exitingMLNB = sorted([int(el.split("_")[1]) for el in exitingMLNB if 'mlna' in el])
-            for d, k in enumerate(list(set(layers) & set(exitingMLNB))):
-                ### get files for distincts logic
-                # print(f'{outputs_path}/{type}/{"mlna_" + str(k) if k == 1 else "mlna_" + str(k) + "_b"}/mixed/data_selection_storage')
-                # files = {
-                #     'mixed':  [
-                #         load_data_set_from_url(path=file, sep='\t', encoding='utf-8', index_col=0, na_values=None)
-                #         for file in get_filenames(
-                #             root_dir=f'{outputs_path}/{type}/{"mlna_" + str(k) if k == 1 else "mlna_" + str(k) + "_b"}/mixed/data_selection_storage',
-                #             func=lambda x: (MCA_F(x) or MlC_F(x)),
-                #             verbose=False
-                #         )
-                #     ]
-                # }
-                files = load_results(
-                        f'{outputs_path}/{alp}',
-                        type,
-                        k,
-                        per=False,
-                        glo=False,
-                        mix=True,
-                    )
-                # print(k)
-                # outputs[logic] = files
-                ### transform and normalize
-                models_list = files['mixed']["MlC"][0].index.values.tolist()
-                # print(models_list)
-                logics = ["MlC","MCA"]
-
-                # fetch models
-                for model in models_list:
-                    # fetch evaluation metric
-                    for i, key in enumerate(files['mixed'].keys() if approach is None else approach):
-                        # fetch on column or attributs
-                        for logic in logics:
-                            for p in range(len(files[key][logic])):
-                                colo = files[key][logic][p].columns
-                                for att in colo:
-                                    if not (att in ["accuracy", "precision", "recall", "f1-score","financial-cost"]):
-                                        if GLO_INTER_F(att):
-                                            tab1_body_model[model][f'MLN {k}'][
-                                                'INTER_GLO'].append(files[key][logic][p].loc[model, att])
-                                        elif GLO_INTRA_F(att):
-                                            tab1_body_model[model][f'MLN {k}'][
-                                                'INTRA_GLO'].append(files[key][logic][p].loc[model, att])
-                                        elif GLO_COMBINE_F(att):
-                                            tab1_body_model[model][f'MLN {k}'][
-                                                'COMBINE_GLO'].append(files[key][logic][p].loc[model, att])
-                                        elif PER_INTER_F(att):
-                                            tab1_body_model[model][f'MLN {k}'][
-                                                'INTER_PER'].append(files[key][logic][p].loc[model, att])
-                                        elif PER_INTRA_F(att):
-                                            tab1_body_model[model][f'MLN {k}'][
-                                                'INTRA_PER'].append(files[key][logic][p].loc[model, att])
-                                        elif PER_COMBINE_F(att):
-                                            tab1_body_model[model][f'MLN {k}'][
-                                                'COMBINE_PER'].append(files[key][logic][p].loc[model, att])
-                                        elif GLO_INTER_M_F(att):
-                                            tab1_body_model[model][f'MLN {k}'][
-                                                'INTER_M_GLO'].append(files[key][logic][p].loc[model, att])
-                                        elif GLO_INTRA_M_F(att):
-                                            tab1_body_model[model][f'MLN {k}'][
-                                                'INTRA_M_GLO'].append(files[key][logic][p].loc[model, att])
-                                        elif GLO_COMBINE_M_F(att):
-                                            tab1_body_model[model][f'MLN {k}'][
-                                                'COMBINE_M_GLO'].append(files[key][logic][p].loc[model, att])
-                                        elif PER_INTER_M_F(att):
-                                            tab1_body_model[model][f'MLN {k}'][
-                                                'INTER_M_PER'].append(files[key][logic][p].loc[model, att])
-                                        elif PER_INTRA_M_F(att):
-                                            tab1_body_model[model][f'MLN {k}'][
-                                                'INTRA_M_PER'].append(files[key][logic][p].loc[model, att])
-                                        elif PER_COMBINE_M_F(att):
-                                            tab1_body_model[model][f'MLN {k}'][
-                                                'COMBINE_M_PER'].append(files[key][logic][p].loc[model, att])
-                                        elif DEGREE_F(att):
-                                            tab1_body_model[model][f'MLN {k}'][
-                                                'DEGREE'].append(files[key][logic][p].loc[model, att])
-                                        else:
-                                            if not (att in tab1_body_model[model][
-                                                f'MLN {k}'].keys()):
-                                                tab1_body_model[model][f'MLN {k}'][
-                                                    att] = []
-                                                tab1_body_model_f[model][att] = []
-                                                descripteurs[att] = []
-                                                # print(tab1_body_model[model][f'MLN {k}'])
-                                            tab1_body_model[model][f'MLN {k}'][
-                                                att].append(files[key][logic][p].loc[model, att])
-
-        # fetch each model
-    for model in models_list:
-        # fetch layers
-        for z, layer in enumerate(mlnL.keys()):
-            # fetch attributs
-            for att in tab1_body_model[model][layer].keys():
-                # print(att)
-                # print(tab1_body_model[model][layer][att])
-                tab1_body_model_f[model][att] = [*tab1_body_model_f[model][att],
-                                                 *tab1_body_model[model][layer][att]]
-                descripteurs[att] = [*descripteurs[att], *tab1_body_model[model][layer][att]]
-        for att in tab1_body_model_f[model].keys():
-            tab1_body_model_f[model][att] = aggregation_f(tab1_body_model_f[model][att])
-    # data = dict(sorted(tab1_body_model_f[model].items(), key=lambda x: abs(x[1]), reverse=False)[-25:])
-    return tab1_body_model_f, tab1_body_model
-
-
-def analyzer_launcher_for_descriptor_rank(
-        outputs_name=None,
-        analytical_func=None,
-        approach=None,
-        layers=None,
-        aggregation_f=None,
-        top=None,
-        alphaConfig=None,
-        with_class=False
-):
-    result_folders = [dirnames for _, dirnames, _ in os.walk(f'{os.getcwd()}/{outputs_name}')][0]
-    # for i in alphaConfig:
-    head_lambda = None
-    day = time.strftime("%Y_%m_%d_%H")
-    model_lines = {dataset: None for dataset in result_folders}
-
-    result_content = {
-        "nb": "<tr>",
-        "pos": "<tr>"
-    }
-    style = '<style> table, th, td {border: 1px solid black;border-collapse: collapse;} .wrap-text {word-wrap: break-word;} .wrap-text {overflow-wrap: break-word;} .limited-column {width: 100px;} .dashed-border {border: 1px dashed black;}.dotted-border {border: 1px dotted black;} td {text-align: center;} .data {text-align: left;} caption {margin:0; margin-bottom: 2px; text-align: start; border: 1px dashed black;} caption > h2 {text-align: center;}</style>'
-
-    for dataset_name in result_folders:
-        print(dataset_name)
-        classic_f = [
-            load_data_set_from_url(path=file, sep='\t', encoding='utf-8', index_col=0, na_values=None)
-            for file in get_filenames(
-                root_dir=f'{os.getcwd()}/{outputs_name}/{dataset_name}/data_selection_storage',
-                func=C_F,
-                verbose=False
-            )
-        ][-1]
-        # quali_col = get_qualitative_from_cols(classic_f.columns.to_list())
-        models_list = classic_f.index.values.tolist()
-        models = model_desc()
-        models_name = {key: models[key] for key in models.keys() if key in models_list}
-
-
-        if model_lines[dataset_name] is None:
-            model_lines[dataset_name] = {
-                model: {
-                'GLO': {
-                    'nb': {},
-                    'pos': {}
-                },
+    ## identify the name of results folder
+    data_result_folder_name = [dirnames for _, dirnames, _ in os.walk(f'{cwd}/{outputs_name}')][0]
+    print(data_result_folder_name)
+    ## init a global container for containing the results of all results folder
+    template_details_metrics_depth_1 = {
+        'accuracy': {
+            'MlC': {
                 'PER': {
-                    'nb': {},
-                    'pos': {}
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
                 },
-                'var': 0
-            } for model in models_name}
-        if head_lambda == None:
-            head_lambda = lambda \
-                x: f'<tr><td colspan="2">{x}</td>{"".join(["<td>" + modeli + "</td>" for modeli in models_name.keys()])}</tr>'
+                'GAP': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                },
+                'GLO': {
+                    'MX': [],
+                    'CX': [],
+                }
+            },
+            'MCA': {
+                'PER': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                },
+                'GAP': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                },
+                'GLO': {
+                    'MX': [],
+                    'CX': [],
+                }
+            }
+        },
+        'f1-score': {
+            'MlC': {
+                'PER': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                },
+                'GAP': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                },
+                'GLO': {
+                    'MX': [],
+                    'CX': [],
+                }
+            },
+            'MCA': {
+                'PER': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                },
+                'GAP': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                },
+                'GLO': {
+                    'MX': [],
+                    'CX': [],
+                }
+            }
+        },
+        'financial-cost': {
+            'MlC': {
+                'PER': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                },
+                'GAP': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                },
+                'GLO': {
+                    'MX': [],
+                    'CX': [],
+                }
+            },
+            'MCA': {
+                'PER': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                },
+                'GAP': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                },
+                'GLO': {
+                    'MX': [],
+                    'CX': [],
+                }
+            }
+        }
+    }
 
-        rank,_ = analytical_func(
-            outputs_path=f'{os.getcwd()}/{outputs_name}/{dataset_name}{"/withClass"*int(with_class)}',
-            models_name=models_name,
-            approach=approach,
-            aggregation_f=aggregation_f,
-            layers=layers,
-            alphas=alphaConfig,
-            type='qualitative',
-        #
-        #     cols=quali_col,
-        #     cwd=os.getcwd(),
-        #     data_folder=dataset_name,
-        #
-        # outputs_path = None, models_name = None, layers = [1], approach = None,
-        # aggregation_f = None, alpha = 0.85, type = 'qualitative'
-        )
-        # fetch result on dataset base on model
-        for model in models_name.keys():
-            # compute the number time that MLN attribut appear in the top list
-            data = dict(sorted(rank[model].items(), key=lambda x: abs(x[1]), reverse=False)[-top:])
-            data1 = dict(sorted(rank[model].items(), key=lambda x: abs(x[1]), reverse=False))
-            nb = sum([('GLO' in key) for key in data.keys()])
-            vec_id = [i for i, key in enumerate(data1.keys()) if ('GLO' in key)]
-            nb1 = sum([('PER' in key) for key in data.keys()])
-            vec_id1 = [i for i, key in enumerate(data1.keys()) if ('PER' in key)]
-            # print(f"{dataset_name} {model} {data}")
-            pos = (len(data1.keys()) - vec_id[len(vec_id) - 1]) if len(vec_id) != 0 else 'NA'
-            pos1 = (len(data1.keys()) - vec_id[len(vec_id1) - 1]) if len(vec_id1) != 0 else 'NA'
-            model_lines[dataset_name][model]['GLO']["nb"] = f"<td>{nb}</td>"
-            model_lines[dataset_name][model]['GLO']["pos"] = f"<td>{pos}</td>"
-            model_lines[dataset_name][model]['PER']["nb"] = f"<td>{nb1}</td>"
-            model_lines[dataset_name][model]['PER']["pos"] = f"<td>{pos1}</td>"
-            model_lines[dataset_name][model]["var"] = len(data1.keys())
-    # print(model_lines)
-    for dataset_name in result_folders:
-        for p in result_content.keys():
-            result_content[
-                p] += f'<td class="data" rowspan="2">{dataset_name} ({model_lines[dataset_name][model]["var"] - 14} + 14)</td>'
-            for j,logic in enumerate(['GLO', 'PER']):
-                result_content[p] += f'{"" if j == 0 else "<tr>"}<td>{logic}</td>'
-                for _,model in enumerate(models_name.keys()):
-                    result_content[p] += (f'{model_lines[dataset_name][model][logic][p]}')
-                result_content[p] += "</tr>"
+    template_details_metrics_depth_2 = {
+        'accuracy': {
+            'MlC': {
+                'PER': [],
+                'GAP': [],
+                'GLO': []
+            },
+            'MCA': {
+                'PER': [],
+                'GAP': [],
+                'GLO': []
+            }
 
-    # for dataset_name in result_folders:
-    #     for p in result_content.keys():
-    #         for e in result_content[p].keys():
-    #             result_content[
-    #                 p][e] += f'<td class="data">{dataset_name} ({model_lines[dataset_name][model]["var"] - 9} + 9)</td>'
-    #             for i, model in enumerate(models_name.keys()):
-    #                 result_content[p][e] += (f'{model_lines[dataset_name][model][p][e]}')
-    #             result_content[p][e] += "</tr>"
-    for p in result_content.keys():
-        tab3_head_g = head_lambda(f'TOP {top} {p.upper()}')
-        # comparaison
-        tabs = f'<table style="border: 2px solid black; width: 100% !important; background-color: #FFFFFF; color:#000000;">{tab3_head_g}{result_content[p]}</table>'
+        },
+        'f1-score': {
+            'MlC': {
+                'PER': [],
+                'GAP': [],
+                'GLO': []
+            },
+            'MCA': {
+                'PER': [],
+                'GAP': [],
+                'GLO': []
+            }
+        },
+        'financial-cost': {
+            'MlC': {
+                'PER': [],
+                'GAP': [],
+                'GLO': []
+            },
+            'MCA': {
+                'PER': [],
+                'GAP': [],
+                'GLO': []
+            }
+        }
+    }
 
-        # caption = f'<caption><h2>Legend</h2>{caption_content_lambda(metric)}</caption>'
-        # table_html = f'<table style="border: 2px solid black; width: 100% !important; background-color: #FFFFFF; color:#000000;">{tab3_head_g[metric]}{tab3_body_g1[metric]}</table>'
-        htm = f'<html><head>{style}<title> Top {top} {p.upper()} MLN attributs ranking </title></head><body style="background-color: white;">{tabs}</body></html>'
+    ######################################
+    ig_global_details_metrics_depth_1 = {
+    }
+    val_global_details_metrics_depth_1 = {
+    }
 
-        create_domain(f'{os.getcwd()}/analyze_{outputs_name}_made_on_{day}H/descriptor/{p}/{("-".join([str(el) for el in alphaConfig])).replace(".","_")}')
-        timestr = time.strftime("%Y_%m_%d_%H_%M_%S")
-        filename1 = f'{os.getcwd()}/analyze_{outputs_name}_made_on_{day}H/descriptor/{p}/{("-".join([str(el) for el in alphaConfig])).replace(".","_")}/Top {top} {p.upper()} MLN attributs ranking.html'
-        _file = open(filename1, "w")
-        _file.write(htm)
-        _file.close()
+    ig_global_details_metrics_depth_2 = {
+    }
+    val_global_details_metrics_depth_2 = {
+    }
+
+    best_mlna_k_per_alpha = {
+        folder: {key: {'real_best_k': [], 'predicted_best_k':[], 'value':[], 'model':[]} for key in alphas} for folder in data_result_folder_name
+    }
+    #####################################
+    ig_global_tables = ""
+    val_global_tables = ""
+    ig_local_tables = {}
+    val_local_tables = {}
+    ## fetch on alpha values
+    for index, alpha in enumerate(alphas):
+        ## for each alpha, store a local container 
+        ig_local_details_metrics_depth_1 = {
+        }
+        val_local_details_metrics_depth_1 = {
+        }
+        ig_local_details_metrics_depth_2 = {
+        }
+        val_local_details_metrics_depth_2 = {
+        }
+
+        local_best_mlna_k_per_alpha = {
+            key: deepcopy(best_mlna_k_per_alpha) for key in data_result_folder_name
+        }
+
+        
+        ## fetch on name of folders
+        for index2, result_folder in enumerate(data_result_folder_name):
+            # load predicted best mlnk
+            print(result_folder)
+            name = \
+                [file for _, _, files in os.walk(
+                    f'{cwd}/{outputs_name}/{result_folder}/{alpha}/{_type}/model_storage')
+                 for file in files if
+                 '_best_features' in file][0]
+            best_mlna_k_per_alpha[result_folder][alpha]['predicted_best_k'].append(read_model(f'{cwd}/{outputs_name}/{result_folder}/{alpha}/{_type}/model_storage/{name}')["bestK"])
+            ## get classic model
+            classic_f = [
+                load_data_set_from_url(path=file, sep='\t', encoding='utf-8', index_col=0, na_values=None)
+                for file in get_filenames(
+                    root_dir=f'{os.getcwd()}/{outputs_name}/{result_folder}/data_selection_storage',
+                    func=C_F,
+                    verbose=False
+                )
+            ][-1]
+            # define a list which will receive all possible value of accuracy for each layer in aims tp sorted it later and extra, the best best layer and model
+            list_of_accuracy = []
+            ## get model list on classic results
+            models_list = classic_f.index.values.tolist()
+            ## get model dictionary
+            models = model_desc()
+            ## save only the ones use suring the classic learning
+            models_name = {key: models[key] for key in models.keys() if key in models_list}
+            print(models_name)
+            ## identify the number of existing layer storage
+            mlna_folders_names = [dirnames for _, dirnames, _ in os.walk(f'{cwd}/{outputs_name}/{result_folder}/{alpha}/{_type}')][0]
+            mlna_folders_names = sorted([int(el.split("_")[1]) for el in mlna_folders_names if "mlna" in el])
+            print(result_folder, mlna_folders_names,"//", alpha, list(set(mlna_folders_names)&set(layers)))
+
+            ## fetch on each mlna layer resultts
+            for index3, layer in enumerate(list(set(mlna_folders_names)&set(layers))):
+                ## get files results of alpha
+                files = load_results(
+                    f'{outputs_name}/{result_folder}',
+                    _type,
+                    layer,
+                    alpha,
+                    per=True,
+                    glo=True,
+                    mix=True
+                )
+                ## aggregate results belong to metrics specific to the current results
+                for index4, model in enumerate(models_name):
+                    # print(model)  
+                    # append contains structured to our store
+                    if (index2 == index3) and (index2 == 0): # if first alpha, first folder result, and first layer
+
+                        # local ones
+                        ig_local_details_metrics_depth_1[model] = {key: deepcopy(template_details_metrics_depth_1) for key in data_result_folder_name}
+                        val_local_details_metrics_depth_1[model] = {key: deepcopy(template_details_metrics_depth_1) for key in data_result_folder_name}
+
+                        ig_local_details_metrics_depth_2[model] = {key: deepcopy(template_details_metrics_depth_2) for key in data_result_folder_name}
+                        val_local_details_metrics_depth_2[model] = {key: deepcopy(template_details_metrics_depth_2) for key in data_result_folder_name}
+                    if (index2 == index3) and (index2 == 0) and (index == 0):
+                        ig_local_tables[model] = ""
+                        val_local_tables[model] = ""
+                        print('here')
+                        # global one
+                        ig_global_details_metrics_depth_1[model] = {key: deepcopy(template_details_metrics_depth_1) for key in data_result_folder_name}
+                        val_global_details_metrics_depth_1[model] = {key: deepcopy(template_details_metrics_depth_1) for key in data_result_folder_name}
+
+                        ig_global_details_metrics_depth_2[model] = {key: deepcopy(template_details_metrics_depth_2) for key in data_result_folder_name}
+                        val_global_details_metrics_depth_2[model] = {key: deepcopy(template_details_metrics_depth_2) for key in data_result_folder_name}
+                        # print(ig_local_details_metrics_depth_1)
+
+                    # assuming that our store structore now have a financial metric section, we need to ensure that the current result folder
+                    # has a financial dimension
+                    hasFinancialCost = sum(['finan' in el for el in classic_f.columns.values.tolist()])
+                    if hasFinancialCost == 0:
+                        # if there is not financial details, remove the section in ours store
+                        # for mod in list(ig_local_details_metrics_depth_1.keys()): 
+                        # print(index, index2, index3, index4)
+                        if 'financial-cost' in list(ig_local_details_metrics_depth_1[model][result_folder].keys()):
+                            # local
+                            del ig_local_details_metrics_depth_1[model][result_folder]['financial-cost'] 
+                            del val_local_details_metrics_depth_1[model][result_folder]['financial-cost']
+                            del ig_local_details_metrics_depth_2[model][result_folder]['financial-cost']
+                            del val_local_details_metrics_depth_2[model][result_folder]['financial-cost']
+                            if (index3 == 0) and (index == 0):
+                                # global
+                                del ig_global_details_metrics_depth_1[model][result_folder]['financial-cost']
+                                del val_global_details_metrics_depth_1[model][result_folder]['financial-cost']
+                                del ig_global_details_metrics_depth_2[model][result_folder]['financial-cost']
+                                del val_global_details_metrics_depth_2[model][result_folder]['financial-cost']
+
+                    val_local_details_metrics_depth_1[model][result_folder]['classic'] = classic_f
+                    ig_local_details_metrics_depth_1[model][result_folder]['classic'] = classic_f
+                    val_local_details_metrics_depth_2[model][result_folder]['classic'] = classic_f
+                    ig_local_details_metrics_depth_2[model][result_folder]['classic'] = classic_f
+
+                    val_global_details_metrics_depth_1[model][result_folder]['classic'] = classic_f
+                    ig_global_details_metrics_depth_1[model][result_folder]['classic'] = classic_f
+                    val_global_details_metrics_depth_2[model][result_folder]['classic'] = classic_f
+                    ig_global_details_metrics_depth_2[model][result_folder]['classic'] = classic_f
+                    # now fetch ours results to store
+                    for metric in list(set(list(ig_local_details_metrics_depth_1[model][result_folder].keys())) - set(['classic'])): # accuracy and f1-score and/or financial cost
+                        for approach in list(files.keys()): # Mlc or MCA
+                            # print(metric, approach)
+                            for logic in list(files[approach].keys()): # GLO, PER or GAP
+                                for config in list(files[approach][logic].keys()): # MX, CX, CY, CXY
+                                    for result in list(range(len(files[approach][logic][config]))): # each result file's containing evaluation metrics
+                                        # save exact metric values
+                                        val_local_details_metrics_depth_1[model][result_folder][metric][approach][logic][config].append(round(files[approach][logic][config][result].loc[model, metric],1))
+                                        val_global_details_metrics_depth_1[model][result_folder][metric][approach][logic][config].append(round(files[approach][logic][config][result].loc[model, metric],1))
+
+                                        val_local_details_metrics_depth_2[model][result_folder][metric][approach][logic].append(round(files[approach][logic][config][result].loc[model, metric],1))
+                                        val_global_details_metrics_depth_2[model][result_folder][metric][approach][logic].append(round(files[approach][logic][config][result].loc[model, metric],1))
+
+                                        valu = round(
+                                                (
+                                                    (
+                                                        round(
+                                                            files[approach][logic][config][result].loc[model, metric], 
+                                                            4
+                                                            ) 
+                                                        - 
+                                                        round(
+                                                            classic_f.loc[model, metric], 
+                                                            4
+                                                            )
+                                                        ) 
+                                                    / 
+                                                    round(
+                                                        classic_f.loc[model, metric], 
+                                                        4
+                                                        )
+                                                    ) * 100, 
+                                                1
+                                                )
+                                        ig =  valu if 'finan' not in metric else  (valu if valu ==0 else -1*valu) 
+                                        # save just gain information
+                                        ig_local_details_metrics_depth_1[model][result_folder][metric][approach][logic][config].append(ig)
+                                        ig_global_details_metrics_depth_1[model][result_folder][metric][approach][logic][config].append(ig)
+
+                                        ig_local_details_metrics_depth_2[model][result_folder][metric][approach][logic].append(ig)
+                                        ig_global_details_metrics_depth_2[model][result_folder][metric][approach][logic].append(ig)
+                            
+                                        if 'accu' in metric:
+                                            list_of_accuracy.append((layer, model,files[approach][logic][config][result].loc[model, metric]))
+
+            # analyse impact of layers and identify the best mlna as k
+            list_of_accuracy = sorted(list_of_accuracy, key=lambda x: abs(x[2]), reverse=False) # best will be at position 0
+            best_mlna_k_per_alpha[result_folder][alpha]['real_best_k'].append(list_of_accuracy[0][0])
+            best_mlna_k_per_alpha[result_folder][alpha]['model'].append(list_of_accuracy[0][1])
+            best_mlna_k_per_alpha[result_folder][alpha]['value'].append(list_of_accuracy[0][2])
+
+        ## on store, call a print table function (gain, metric)
+        ig_local_tables = {key: ig_local_tables[key] + "\n" + mod for key, mod in print_compare(
+            ig_local_details_metrics_depth_1,
+            f'{cwd}/analyze/ig',
+            alpha
+        ).items()}
+        val_local_tables = {key: val_local_tables[key] + "\n" + mod for key, mod in print_compare(
+            val_local_details_metrics_depth_1,
+            f'{cwd}/analyze/val',
+            alpha
+        ).items()}
+
+    ## print the global container (gain, metric)
+    ig_global_tables = "\n".join([ mod for _, mod in print_compare(
+        ig_global_details_metrics_depth_1,
+        f'{cwd}/analyze/ig',
+        'all'
+    ).items()])
+    val_global_tables = "\n".join([ mod for _, mod in print_compare(
+        val_global_details_metrics_depth_1,
+        f'{cwd}/analyze/val',
+        'all'
+    ).items()])
+    create_domain(f'{cwd}/analyze/ig/all_ig/')
+    with open(f'{cwd}/analyze/ig/all_ig/ig_all.tex', "a") as fichier:
+        fichier.write(header+ig_global_tables+footer)
+    create_domain(f'{cwd}/analyze/val/val_all/')
+    with open(f'{cwd}/analyze/val/val_all/val_all.tex', "a") as fichier:
+        fichier.write(header+val_global_tables+footer)
+
+    for key in list(ig_local_tables.keys()):
+        create_domain(f'{cwd}/analyze/ig/{key}/')
+        with open(f'{cwd}/analyze/ig/{key}/{key}.tex', "a") as fichier:
+            fichier.write(header+ig_local_tables[key]+footer)
+        create_domain(f'{cwd}/analyze/val/{key}/')
+        with open(f'{cwd}/analyze/val/{key}/{key}.tex', "a") as fichier:
+            fichier.write(header+val_local_tables[key]+footer)
+
+    joblib.dump(best_mlna_k_per_alpha, f'{cwd}/analyze/best.tex')
+
+        
 
 
-def analyzer_launcher_for_descriptor_rank_plot(
-        outputs_name=None,
-        analytical_func=None,
-        approach=None,
-        layers=None,
-        aggregation_f=None,
-        top=None,
-        alphaConfig=None,
-        with_class=False
-):
-    result_folders = [dirnames for _, dirnames, _ in os.walk(f'{os.getcwd()}/{outputs_name}')][0]
-    day = time.strftime("%Y_%m_%d_%H")
-    for dataset_name in result_folders:
-        print(dataset_name)
-        classic_f = [
-            load_data_set_from_url(path=file, sep='\t', encoding='utf-8', index_col=0, na_values=None)
-            for file in get_filenames(
-                root_dir=f'{os.getcwd()}/{outputs_name}/{dataset_name}/data_selection_storage',
-                func=C_F,
-                verbose=False
-            )
-        ][-1]
-        # quali_col = get_qualitative_from_cols(classic_f.columns.to_list())
-        models_list = classic_f.index.values.tolist()
-        models = model_desc()
-        models_name = {key: models[key] for key in models.keys() if key in models_list}
 
-        rank,_ = analytical_func(
-            outputs_path=f'{os.getcwd()}/{outputs_name}/{dataset_name}{"/withClass"*int(with_class)}',
-            models_name=models_name,
-            approach=approach,
-            aggregation_f=aggregation_f,
-            layers=layers,
-            alphas=alphaConfig,
-            type='qualitative',
-        #
-        #     cols=quali_col,
-        #     cwd=os.getcwd(),
-        #     data_folder=dataset_name,
-        #
-        # outputs_path = None, models_name = None, layers = [1], approach = None,
-        # aggregation_f = None, alpha = 0.85, type = 'qualitative'
-        )
-        # fetch result on dataset base on model
-        for model in models_name.keys():
-            create_domain(f'{os.getcwd()}/analyze_{outputs_name}_made_on_{day}H/{"withClass/"*int(with_class)}descriptor/shap/{top}/{dataset_name}')
-            # timestr = time.strftime("%Y_%m_%d_%H_%M_%S")
-            # filename1 = f'{cwd}/analyze_{outputs_path.split("/")[-2]}_made_on_{day}H/{data_folder}/shap/{"_".join(approach)}_{data_folder}_{model}_shapley'
-            filename1 = f'{os.getcwd()}/analyze_{outputs_name}_made_on_{day}H/{"withClass/"*int(with_class)}descriptor/shap/{top}/{dataset_name}/{dataset_name}_{model}_{("-".join([str(el) for el in alphaConfig])).replace(".","_")}_shapley.png'
 
-            # pl.show()
-            # pl.savefig(filename1+".png", dpi=300)
 
-            # fig setup
-            width = 15
-            height = int(len(np.unique(rank[model].keys())) * 1.5)
-            # Set a larger figure size
-            pl.figure(figsize=(width, height))
-            data = dict(sorted(rank[model].items(), key=lambda x: abs(x[1]), reverse=False)[-top:])
-            df = pd.DataFrame({'features': data.keys(), 'importances': data.values()})
-            # print(custom_color(df.features, [])[0],df.features)
-            bars = df.plot.barh(x='features', y='importances', color=custom_color(df.features, [])[0])
 
-            pl.title(f"{model}")
-            # Custom colors for the legend
-            mln_color = 'green'
-            classic_color = 'dodgerblue'
 
-            # Add custom colors to the legend
-            legend_elements = [
-                Patch(facecolor=mln_color, edgecolor='black', label='MLN'),
-                Patch(facecolor=classic_color, edgecolor='black', label='Classic')
-            ]
 
-            # Reduce the font size of x-axis label
-            pl.xlabel('Importances', fontsize=8)
 
-            # Reduce the font size of y-axis label
-            pl.ylabel('Features', fontsize=8)
-
-            # Reduce the font size of tick labels on x-axis
-            pl.xticks(fontsize=6)
-
-            # Reduce the font size of tick labels on y-axis
-            pl.yticks(fontsize=5)
-
-            # Reduce the font size of the plot title
-            pl.title(f'{models_name[model]} - {dataset_name}', fontsize=10)
-
-            # Reduce the font size of the legend
-            pl.legend(fontsize=8)
-            # Add values on top of the bars
-            for i, bar in enumerate(bars.containers[0]):
-                width = bar.get_width()
-                pl.annotate(f'{width:.2f}', xy=(width, bar.get_y() + bar.get_height() / 2), xytext=(3, 0),
-                            textcoords='offset points', ha='left', va='center', fontsize=8)
-            pl.legend(handles=legend_elements, facecolor='white', framealpha=1, bbox_to_anchor=(1, 1), loc='upper left',
-                      title='Legend Title')
-
-            # pl.axvline(x=0, color=".5")
-            # pl.subplots_adjust(left=0.3)
-            # pl.tight_layout()
-
-            # Mise en gras des xticks
-            font = FontProperties(weight='bold')
-            pl.xticks(fontproperties=font, fontsize=8)
-            pl.yticks(fontproperties=font, fontsize=6)
-
-            # Suppression de la légende
-            pl.legend().remove()
-            pl.savefig(filename1, dpi=300)  # .png,.pdf will also support here
-            pl.close()  # close the plot windows

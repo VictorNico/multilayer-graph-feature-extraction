@@ -13,5 +13,6 @@
 #include <mutex>
 #include <fstream>
 #include <string>
+#include <chrono>
 
 #endif //DTREE_MAIN_H

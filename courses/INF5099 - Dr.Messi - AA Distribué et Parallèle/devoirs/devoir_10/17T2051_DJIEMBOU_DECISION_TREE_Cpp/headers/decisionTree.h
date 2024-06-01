@@ -76,6 +76,8 @@ void generate_combinations(const std::vector<int>&, int, std::vector<int>&, std:
 
 std::vector<std::vector<int>> categorical_options(const std::vector<int>&);
 
+bool customComparator(double, double);
+
 std::tuple<double, std::variant<int, double, bool, std::string>, bool, bool> max_information_gain_split(
         const std::vector<std::variant<int, double, bool, std::string>>&,
         const std::vector<std::variant<int, double, bool, std::string>>&,

@@ -1,3 +1,5 @@
+import sys
+
 def precision(confusion_matrix):
     """
     Computes the precision metric.
@@ -6,7 +8,10 @@ def precision(confusion_matrix):
     """
     precision_v = None
     if confusion_matrix is not None and (len(confusion_matrix) == 2 and len(confusion_matrix[0]) == 2):
-        precision_v = confusion_matrix[0][0] / (confusion_matrix[0][1] + confusion_matrix[0][0])
+        try:
+            precision_v = confusion_matrix[0][0] / (confusion_matrix[0][1] + confusion_matrix[0][0])
+        except ZeroDivisionError:
+            precision_v = confusion_matrix[0][0] / (confusion_matrix[0][1] + confusion_matrix[0][0] + sys.float_info.epsilon)
     return precision_v
 
 
@@ -18,10 +23,16 @@ def accuracy(confusion_matrix):
     """
     accuracy_v = None
     if confusion_matrix is not None and (len(confusion_matrix) == 2 and len(confusion_matrix[0]) == 2):
-        accuracy_v = (
-                (confusion_matrix[0][0] + confusion_matrix[1][1]) /
-                (confusion_matrix[0][1] + confusion_matrix[0][0] + confusion_matrix[1][1] + confusion_matrix[1][0])
-        )
+        try:
+            accuracy_v = (
+                    (confusion_matrix[0][0] + confusion_matrix[1][1]) /
+                    (confusion_matrix[0][1] + confusion_matrix[0][0] + confusion_matrix[1][1] + confusion_matrix[1][0])
+            )
+        except ZeroDivisionError:
+            accuracy_v = (
+                    (confusion_matrix[0][0] + confusion_matrix[1][1]) /
+                    (confusion_matrix[0][1] + confusion_matrix[0][0] + confusion_matrix[1][1] + confusion_matrix[1][0] + sys.float_info.epsilon)
+            )
     return accuracy_v
 
 
@@ -33,7 +44,10 @@ def f1_score(confusion_matrix):
     """
     precision_val = precision(confusion_matrix)
     recall_val = recall(confusion_matrix)
-    f1 = 2 * ((precision_val * recall_val) / (precision_val + recall_val))
+    try:
+        f1 = 2 * ((precision_val * recall_val) / (precision_val + recall_val))
+    except ZeroDivisionError:
+        f1 = 2 * ((precision_val * recall_val) / (precision_val + recall_val + sys.float_info.epsilon))
     return f1
 
 
@@ -45,7 +59,10 @@ def recall(confusion_matrix):
     """
     recall_v = None
     if confusion_matrix is not None and (len(confusion_matrix) == 2 and len(confusion_matrix[0]) == 2):
-        recall_v = confusion_matrix[0][0] / (confusion_matrix[0][0] + confusion_matrix[1][0])
+        try:
+            recall_v = confusion_matrix[0][0] / (confusion_matrix[0][0] + confusion_matrix[1][0])
+        except ZeroDivisionError:
+            recall_v = confusion_matrix[0][0] / (confusion_matrix[0][0] + confusion_matrix[1][0] + sys.float_info.epsilon) 
     return recall_v
 
 

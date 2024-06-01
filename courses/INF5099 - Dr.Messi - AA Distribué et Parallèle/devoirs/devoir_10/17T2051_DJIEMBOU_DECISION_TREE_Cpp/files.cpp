@@ -316,7 +316,7 @@ TreeNode* loadTreeNode(std::ifstream& infile) {
     return node;
 }
 
-void saveMetricsToCSV(const std::string& filename, const std::vector<std::string>& metricNames, const std::vector<double>& metricValues) {
+void saveMetricsToCSV(const std::string& filename, const std::vector<std::string>& metricNames, const std::vector<double>& metricValues, const std::string& className, const std::string& version) {
     // Vérifier que le nombre de métriques correspond
     if (metricNames.size() != metricValues.size()) {
         std::cerr << "Nombre de noms de métriques et de valeurs de métriques différents." << std::endl;
@@ -335,6 +335,8 @@ void saveMetricsToCSV(const std::string& filename, const std::vector<std::string
         // Écrire l'en-tête s'il n'existe pas déjà
         if (file.tellp() == 0) {
             file << "Temps";
+            file << ",ClassName";
+            file << ",Version";
             for (const auto& name : metricNames) {
                 file << "," << name;
             }
@@ -343,6 +345,8 @@ void saveMetricsToCSV(const std::string& filename, const std::vector<std::string
 
         // Écrire les données de métriques
         file << timestamp;
+        file << "," << className;
+        file << "," << version;
         for (const auto& value : metricValues) {
             file << "," << value;
         }

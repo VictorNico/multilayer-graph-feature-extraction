@@ -4,6 +4,7 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Modules
+
 \usepackage{array}
 \usepackage{pgfplots}
 \usepackage{graphicx}
@@ -11,6 +12,7 @@
 \usepackage[T1]{fontenc}
 \usepackage{fancyhdr}
 \pagestyle{fancy}
+\usepackage{multirow}
 \usepackage{hyperref}
 \usepackage[babel]{csquotes}
 
@@ -142,13 +144,6 @@ Ce document comporte trois contributions principales. Premièrement, nous prése
 cadre pour créer un réseau bipartite multicouche à partir d'un ensemble de données tabulaires avec deux ou plusieurs variables de connexion. Ces variables ne sont pas nécessairement des variables de réseau explicites, mais peuvent être une propriété partagée ou une caractéristique. Ensuite, nous développons une nouvelle approche pour la prédiction du risque de crédit avec une mesure de centralité PageRank multicouche personnalisée qui classe les nœuds du réseau multicouche par rapport à un ensemble de nœuds sources qui peuvent être utilisés pour comprendre le risque corrélé et également pour améliorer les systèmes d'évaluation du crédit. Enfin, nous montrons que les scores d'influence des réseaux multicouches contribuent à l'amélioration des modèles d'évaluation du crédit. Bien que nos résultats soient généraux et applicables à n'importe quel ensemble de données de prêt (et à n'importe quel problème dans lequel des effets corrélés sont suspectés), nous motivons le travail dans un environnement dans lequel le risque de crédit est le plus élevé.
 motivons notre travail dans un environnement où la corrélation des défaillances est évidente.
 est évidente. Nous concentrons notre attention sur les réseaux multicouches dans les prêts agricoles et présentons des algorithmes généraux pour les inclure dans tout modèle prédictif où ils apparaissent. Si les réseaux multicouches ont été étudiés dans le secteur bancaire, jusqu'à présent - et à notre connaissance - leurs effets sur les prêts de détail (prêts à la consommation traditionnels et prêts de gré à gré aux petites et moyennes entreprises) n'ont pas fait l'objet du même niveau d'attention. Cela n'est pas surprenant compte tenu de sa structure : les prêts aux particuliers sont beaucoup plus nombreux, de sorte que toute interaction entre les réseaux nécessite une analyse complexe qui n'est devenue réalisable qu'au cours de la dernière décennie. Cela dit, il est également naturel de s'attendre à ce que les emprunteurs soient connectés de nombreuses manières complexes, de sorte que l'analyse utilisée pour mesurer leur comportement devrait également suivre ce niveau de complexité. 
-
-
-
-
-
-
-
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

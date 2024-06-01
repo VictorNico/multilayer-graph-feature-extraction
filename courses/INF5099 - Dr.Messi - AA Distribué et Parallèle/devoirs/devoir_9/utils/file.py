@@ -1,6 +1,7 @@
 import random
 from collections import defaultdict
 import time
+import os
 def process_file(file_path, details_separator, header_flag):
     """
 
@@ -106,7 +107,6 @@ def train_test_split(data, labels, test_size=0.2, random_state=None):
 def write_file(file_path, line):
     with open(file_path, 'a') as file:
         file.write(line)
-
 
 def save_metrics_to_csv(filename, metric_names, metric_values):
     # Vérifier que le nombre de métriques correspond

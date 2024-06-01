@@ -1,0 +1,946 @@
+
+    \documentclass[11pt, oneside]{article}      % use "amsart" instead of "article" for AMSLaTeX format
+    \usepackage{geometry}                       % See geometry.pdf to learn the layout options. There are lots.
+    \geometry{letterpaper}                          % ... or a4paper or a5paper or ... 
+    %\geometry{landscape}                       % Activate for rotated page geometry
+    %\usepackage[parfill]{parskip}          % Activate to begin paragraphs with an empty line rather than an indent
+    \usepackage{graphicx}               % Use pdf, png, jpg, or eps§ with pdflatex; use eps in DVI mode
+                                    % TeX will automatically convert eps --> pdf in pdflatex        
+    \usepackage{amssymb}
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Modules
+
+    \usepackage{array}
+    \usepackage{pgfplots}
+    \usepackage[utf8]{inputenc}
+    \usepackage[T1]{fontenc}
+    \usepackage{fancyhdr}
+    \pagestyle{fancy}
+    \usepackage{multirow}
+    \usepackage{hyperref}
+    \usepackage[babel]{csquotes}
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %SetFonts
+
+    %SetFonts
+
+
+    \title{Prediction du risque de credit bancaire sensible aux coûts financiers en intégrant des descripteurs extraits des graphes \ Tableaux récapitulatifs}
+    \author{The Author}
+    %\date{}                            % Activate to display a given date or no date
+
+    \begin{document}
+    \maketitle
+    \newpage
+    
+
+        \resizebox{\textwidth}{!}{
+
+        \begin{tabular}{|c|c|c|r|r|r|r|r|r|}  \cline{1-9}
+        
+        \multicolumn{3}{|c|}{RF(0_1)}& \multicolumn{3}{|c|}{GERMAN}& \multicolumn{2}{|c|}{JAPAN} & \multirow{2}{*}{Total} \\  \cline{4-8}
+         \multicolumn{3}{|c|}{}
+
+        & Accuracy & F1-Score & Financial-cost& Accuracy & F1-Score & \\  \cline{1-9}
+        \multicolumn{3}{|c|}{Classic} 
+
+        & 0.7& 0.6& 1.2& 0.9& 0.9& \\ \cline{1-9}
+
+        
+            \multirow{10}{*}{MlC}&
+
+            
+                    \multirow{4}{*}{PER}
+
+                      & MX& \textbf{0.8}& \textbf{0.7}& 1.1& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CX& \textbf{0.8}& \textbf{0.7}& \textbf{1.5}& \textbf{0.9}& \textbf{0.9}& 5 \\  \cline{3-9}
+
+                    
+                    &  & CY& \textbf{0.8}& \textbf{0.7}& \textbf{1.5}& \textbf{0.9}& \textbf{0.9}& 5 \\  \cline{3-9}
+
+                    
+                    &  & CXY& \textbf{0.8}& \textbf{0.7}& \textbf{1.5}& \textbf{0.9}& \textbf{0.9}& 5 \\  \cline{2-9}
+
+                    
+                    &
+                    \multirow{4}{*}{GAP}
+
+                      & MX& \textbf{0.8}& \textbf{0.7}& 1.4& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CX& 0.7& \textbf{0.7}& \textbf{1.5}& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CY& 0.7& \textbf{0.7}& \textbf{1.5}& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CXY& 0.7& \textbf{0.7}& \textbf{1.5}& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{2-9}
+
+                    
+                    &
+                    \multirow{2}{*}{GLO}
+
+                      & MX& \textbf{0.8}& \textbf{0.7}& 1.4& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CX& 0.7& \textbf{0.7}& \textbf{1.6}& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{1-9}
+
+                    
+                    
+            \multirow{10}{*}{MCA}&
+
+            
+                    \multirow{4}{*}{PER}
+
+                      & MX& \textbf{0.8}& \textbf{0.7}& \textbf{1.5}& \textbf{0.9}& \textbf{0.9}& 5 \\  \cline{3-9}
+
+                    
+                    &  & CX& 0.7& \textbf{0.7}& \textbf{1.5}& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CY& 0.7& \textbf{0.7}& \textbf{1.5}& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CXY& 0.7& \textbf{0.7}& \textbf{1.5}& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{2-9}
+
+                    
+                    &
+                    \multirow{4}{*}{GAP}
+
+                      & MX& \textbf{0.8}& \textbf{0.7}& 1.5& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CX& \textbf{0.8}& \textbf{0.7}& \textbf{1.6}& \textbf{0.9}& \textbf{0.9}& 5 \\  \cline{3-9}
+
+                    
+                    &  & CY& \textbf{0.8}& \textbf{0.7}& \textbf{1.6}& \textbf{0.9}& \textbf{0.9}& 5 \\  \cline{3-9}
+
+                    
+                    &  & CXY& \textbf{0.8}& \textbf{0.7}& \textbf{1.6}& \textbf{0.9}& \textbf{0.9}& 5 \\  \cline{2-9}
+
+                    
+                    &
+                    \multirow{2}{*}{GLO}
+
+                      & MX& \textbf{0.8}& \textbf{0.7}& 1.3& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CX& 0.7& \textbf{0.7}& \textbf{1.5}& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{1-9}
+
+                    
+                    
+
+        \end{tabular}
+        }
+
+        \resizebox{\textwidth}{!}{
+
+        \begin{tabular}{|c|c|c|r|r|r|r|r|r|}  \cline{1-9}
+        
+        \multicolumn{3}{|c|}{RF(0_2)}& \multicolumn{3}{|c|}{GERMAN}& \multicolumn{2}{|c|}{JAPAN} & \multirow{2}{*}{Total} \\  \cline{4-8}
+         \multicolumn{3}{|c|}{}
+
+        & Accuracy & F1-Score & Financial-cost& Accuracy & F1-Score & \\  \cline{1-9}
+        \multicolumn{3}{|c|}{Classic} 
+
+        & 0.7& 0.6& 1.2& 0.9& 0.9& \\ \cline{1-9}
+
+        
+            \multirow{10}{*}{MlC}&
+
+            
+                    \multirow{4}{*}{PER}
+
+                      & MX& \textbf{0.8}& \textbf{0.7}& 1.3& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CX& \textbf{0.8}& \textbf{0.7}& \textbf{1.7}& \textbf{0.9}& \textbf{0.9}& 5 \\  \cline{3-9}
+
+                    
+                    &  & CY& \textbf{0.8}& \textbf{0.7}& \textbf{1.7}& \textbf{0.9}& \textbf{0.9}& 5 \\  \cline{3-9}
+
+                    
+                    &  & CXY& \textbf{0.8}& \textbf{0.7}& \textbf{1.7}& \textbf{0.9}& \textbf{0.9}& 5 \\  \cline{2-9}
+
+                    
+                    &
+                    \multirow{4}{*}{GAP}
+
+                      & MX& \textbf{0.8}& \textbf{0.7}& 1.4& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CX& 0.7& \textbf{0.7}& \textbf{1.8}& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CY& 0.7& \textbf{0.7}& \textbf{1.8}& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CXY& 0.7& \textbf{0.7}& \textbf{1.8}& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{2-9}
+
+                    
+                    &
+                    \multirow{2}{*}{GLO}
+
+                      & MX& \textbf{0.8}& \textbf{0.7}& 1.5& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CX& 0.7& \textbf{0.7}& \textbf{2.0}& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{1-9}
+
+                    
+                    
+            \multirow{10}{*}{MCA}&
+
+            
+                    \multirow{4}{*}{PER}
+
+                      & MX& \textbf{0.8}& \textbf{0.7}& 1.4& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CX& \textbf{0.8}& \textbf{0.7}& \textbf{1.7}& \textbf{0.9}& \textbf{0.9}& 5 \\  \cline{3-9}
+
+                    
+                    &  & CY& \textbf{0.8}& \textbf{0.7}& \textbf{1.7}& \textbf{0.9}& \textbf{0.9}& 5 \\  \cline{3-9}
+
+                    
+                    &  & CXY& \textbf{0.8}& \textbf{0.7}& \textbf{1.7}& \textbf{0.9}& \textbf{0.9}& 5 \\  \cline{2-9}
+
+                    
+                    &
+                    \multirow{4}{*}{GAP}
+
+                      & MX& \textbf{0.8}& \textbf{0.7}& 1.4& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CX& 0.7& 0.6& \textbf{1.9}& \textbf{0.9}& \textbf{0.9}& 3 \\  \cline{3-9}
+
+                    
+                    &  & CY& 0.7& 0.6& \textbf{1.9}& \textbf{0.9}& \textbf{0.9}& 3 \\  \cline{3-9}
+
+                    
+                    &  & CXY& 0.7& 0.6& \textbf{1.9}& \textbf{0.9}& \textbf{0.9}& 3 \\  \cline{2-9}
+
+                    
+                    &
+                    \multirow{2}{*}{GLO}
+
+                      & MX& \textbf{0.8}& \textbf{0.7}& 1.4& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CX& 0.7& 0.6& \textbf{1.9}& \textbf{0.9}& \textbf{0.9}& 3 \\  \cline{1-9}
+
+                    
+                    
+
+        \end{tabular}
+        }
+
+        \resizebox{\textwidth}{!}{
+
+        \begin{tabular}{|c|c|c|r|r|r|r|r|r|}  \cline{1-9}
+        
+        \multicolumn{3}{|c|}{RF(0_3)}& \multicolumn{3}{|c|}{GERMAN}& \multicolumn{2}{|c|}{JAPAN} & \multirow{2}{*}{Total} \\  \cline{4-8}
+         \multicolumn{3}{|c|}{}
+
+        & Accuracy & F1-Score & Financial-cost& Accuracy & F1-Score & \\  \cline{1-9}
+        \multicolumn{3}{|c|}{Classic} 
+
+        & 0.7& 0.6& 1.2& 0.9& 0.9& \\ \cline{1-9}
+
+        
+            \multirow{10}{*}{MlC}&
+
+            
+                    \multirow{4}{*}{PER}
+
+                      & MX& \textbf{0.8}& \textbf{0.7}& 1.2& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CX& \textbf{0.8}& \textbf{0.7}& \textbf{1.7}& \textbf{0.9}& \textbf{0.9}& 5 \\  \cline{3-9}
+
+                    
+                    &  & CY& \textbf{0.8}& \textbf{0.7}& \textbf{1.7}& \textbf{0.9}& \textbf{0.9}& 5 \\  \cline{3-9}
+
+                    
+                    &  & CXY& \textbf{0.8}& \textbf{0.7}& \textbf{1.7}& \textbf{0.9}& \textbf{0.9}& 5 \\  \cline{2-9}
+
+                    
+                    &
+                    \multirow{4}{*}{GAP}
+
+                      & MX& \textbf{0.8}& \textbf{0.7}& 1.5& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CX& 0.7& \textbf{0.7}& \textbf{1.7}& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CY& 0.7& \textbf{0.7}& \textbf{1.7}& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CXY& 0.7& \textbf{0.7}& \textbf{1.7}& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{2-9}
+
+                    
+                    &
+                    \multirow{2}{*}{GLO}
+
+                      & MX& \textbf{0.8}& \textbf{0.7}& 1.5& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CX& 0.7& 0.6& \textbf{1.7}& \textbf{0.9}& \textbf{0.9}& 3 \\  \cline{1-9}
+
+                    
+                    
+            \multirow{10}{*}{MCA}&
+
+            
+                    \multirow{4}{*}{PER}
+
+                      & MX& \textbf{0.8}& \textbf{0.7}& 1.6& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CX& 0.7& \textbf{0.7}& \textbf{1.7}& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CY& 0.7& \textbf{0.7}& \textbf{1.7}& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CXY& 0.7& \textbf{0.7}& \textbf{1.7}& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{2-9}
+
+                    
+                    &
+                    \multirow{4}{*}{GAP}
+
+                      & MX& \textbf{0.8}& \textbf{0.7}& 1.5& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CX& 0.7& 0.6& \textbf{1.7}& \textbf{0.9}& \textbf{0.9}& 3 \\  \cline{3-9}
+
+                    
+                    &  & CY& 0.7& 0.6& \textbf{1.7}& \textbf{0.9}& \textbf{0.9}& 3 \\  \cline{3-9}
+
+                    
+                    &  & CXY& 0.7& 0.6& \textbf{1.7}& \textbf{0.9}& \textbf{0.9}& 3 \\  \cline{2-9}
+
+                    
+                    &
+                    \multirow{2}{*}{GLO}
+
+                      & MX& \textbf{0.8}& \textbf{0.7}& 1.4& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CX& 0.7& 0.6& \textbf{1.7}& \textbf{0.9}& \textbf{0.9}& 3 \\  \cline{1-9}
+
+                    
+                    
+
+        \end{tabular}
+        }
+
+        \resizebox{\textwidth}{!}{
+
+        \begin{tabular}{|c|c|c|r|r|r|r|r|r|}  \cline{1-9}
+        
+        \multicolumn{3}{|c|}{RF(0_4)}& \multicolumn{3}{|c|}{GERMAN}& \multicolumn{2}{|c|}{JAPAN} & \multirow{2}{*}{Total} \\  \cline{4-8}
+         \multicolumn{3}{|c|}{}
+
+        & Accuracy & F1-Score & Financial-cost& Accuracy & F1-Score & \\  \cline{1-9}
+        \multicolumn{3}{|c|}{Classic} 
+
+        & 0.7& 0.6& 1.2& 0.9& 0.9& \\ \cline{1-9}
+
+        
+            \multirow{10}{*}{MlC}&
+
+            
+                    \multirow{4}{*}{PER}
+
+                      & MX& \textbf{0.8}& \textbf{0.7}& 1.2& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CX& \textbf{0.8}& \textbf{0.7}& \textbf{1.7}& \textbf{0.9}& \textbf{0.9}& 5 \\  \cline{3-9}
+
+                    
+                    &  & CY& \textbf{0.8}& \textbf{0.7}& \textbf{1.7}& \textbf{0.9}& \textbf{0.9}& 5 \\  \cline{3-9}
+
+                    
+                    &  & CXY& \textbf{0.8}& \textbf{0.7}& \textbf{1.7}& \textbf{0.9}& \textbf{0.9}& 5 \\  \cline{2-9}
+
+                    
+                    &
+                    \multirow{4}{*}{GAP}
+
+                      & MX& \textbf{0.8}& \textbf{0.7}& 1.4& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CX& 0.7& \textbf{0.7}& \textbf{1.9}& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CY& 0.7& \textbf{0.7}& \textbf{1.9}& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CXY& 0.7& \textbf{0.7}& \textbf{1.9}& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{2-9}
+
+                    
+                    &
+                    \multirow{2}{*}{GLO}
+
+                      & MX& \textbf{0.8}& \textbf{0.7}& 1.4& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CX& 0.7& \textbf{0.7}& \textbf{1.7}& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{1-9}
+
+                    
+                    
+            \multirow{10}{*}{MCA}&
+
+            
+                    \multirow{4}{*}{PER}
+
+                      & MX& \textbf{0.8}& \textbf{0.7}& 1.4& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CX& \textbf{0.8}& \textbf{0.7}& \textbf{1.7}& \textbf{0.9}& \textbf{0.9}& 5 \\  \cline{3-9}
+
+                    
+                    &  & CY& \textbf{0.8}& \textbf{0.7}& \textbf{1.7}& \textbf{0.9}& \textbf{0.9}& 5 \\  \cline{3-9}
+
+                    
+                    &  & CXY& \textbf{0.8}& \textbf{0.7}& \textbf{1.7}& \textbf{0.9}& \textbf{0.9}& 5 \\  \cline{2-9}
+
+                    
+                    &
+                    \multirow{4}{*}{GAP}
+
+                      & MX& \textbf{0.8}& \textbf{0.7}& 1.4& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CX& 0.7& 0.6& \textbf{1.7}& \textbf{0.9}& \textbf{0.9}& 3 \\  \cline{3-9}
+
+                    
+                    &  & CY& 0.7& 0.6& \textbf{1.7}& \textbf{0.9}& \textbf{0.9}& 3 \\  \cline{3-9}
+
+                    
+                    &  & CXY& 0.7& 0.6& \textbf{1.7}& \textbf{0.9}& \textbf{0.9}& 3 \\  \cline{2-9}
+
+                    
+                    &
+                    \multirow{2}{*}{GLO}
+
+                      & MX& 0.7& \textbf{0.7}& 1.5& \textbf{0.9}& \textbf{0.9}& 3 \\  \cline{3-9}
+
+                    
+                    &  & CX& \textbf{0.8}& \textbf{0.7}& \textbf{1.7}& \textbf{0.9}& \textbf{0.9}& 5 \\  \cline{1-9}
+
+                    
+                    
+
+        \end{tabular}
+        }
+
+        \resizebox{\textwidth}{!}{
+
+        \begin{tabular}{|c|c|c|r|r|r|r|r|r|}  \cline{1-9}
+        
+        \multicolumn{3}{|c|}{RF(0_5)}& \multicolumn{3}{|c|}{GERMAN}& \multicolumn{2}{|c|}{JAPAN} & \multirow{2}{*}{Total} \\  \cline{4-8}
+         \multicolumn{3}{|c|}{}
+
+        & Accuracy & F1-Score & Financial-cost& Accuracy & F1-Score & \\  \cline{1-9}
+        \multicolumn{3}{|c|}{Classic} 
+
+        & 0.7& 0.6& 1.2& 0.9& 0.9& \\ \cline{1-9}
+
+        
+            \multirow{10}{*}{MlC}&
+
+            
+                    \multirow{4}{*}{PER}
+
+                      & MX& \textbf{0.8}& \textbf{0.7}& 1.2& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CX& \textbf{0.8}& \textbf{0.7}& \textbf{1.7}& \textbf{0.9}& \textbf{0.9}& 5 \\  \cline{3-9}
+
+                    
+                    &  & CY& \textbf{0.8}& \textbf{0.7}& \textbf{1.7}& \textbf{0.9}& \textbf{0.9}& 5 \\  \cline{3-9}
+
+                    
+                    &  & CXY& \textbf{0.8}& \textbf{0.7}& \textbf{1.7}& \textbf{0.9}& \textbf{0.9}& 5 \\  \cline{2-9}
+
+                    
+                    &
+                    \multirow{4}{*}{GAP}
+
+                      & MX& \textbf{0.8}& \textbf{0.7}& 1.2& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CX& 0.7& \textbf{0.7}& \textbf{1.7}& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CY& 0.7& \textbf{0.7}& \textbf{1.7}& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CXY& 0.7& \textbf{0.7}& \textbf{1.7}& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{2-9}
+
+                    
+                    &
+                    \multirow{2}{*}{GLO}
+
+                      & MX& \textbf{0.8}& \textbf{0.7}& 1.5& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CX& 0.7& \textbf{0.7}& \textbf{2.1}& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{1-9}
+
+                    
+                    
+            \multirow{10}{*}{MCA}&
+
+            
+                    \multirow{4}{*}{PER}
+
+                      & MX& \textbf{0.8}& \textbf{0.7}& 1.2& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CX& \textbf{0.8}& \textbf{0.7}& \textbf{1.7}& \textbf{0.9}& \textbf{0.9}& 5 \\  \cline{3-9}
+
+                    
+                    &  & CY& \textbf{0.8}& \textbf{0.7}& \textbf{1.7}& \textbf{0.9}& \textbf{0.9}& 5 \\  \cline{3-9}
+
+                    
+                    &  & CXY& \textbf{0.8}& \textbf{0.7}& \textbf{1.7}& \textbf{0.9}& \textbf{0.9}& 5 \\  \cline{2-9}
+
+                    
+                    &
+                    \multirow{4}{*}{GAP}
+
+                      & MX& \textbf{0.8}& \textbf{0.7}& 1.3& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CX& 0.7& 0.6& \textbf{1.7}& \textbf{0.9}& \textbf{0.9}& 3 \\  \cline{3-9}
+
+                    
+                    &  & CY& 0.7& 0.6& \textbf{1.7}& \textbf{0.9}& \textbf{0.9}& 3 \\  \cline{3-9}
+
+                    
+                    &  & CXY& 0.7& 0.6& \textbf{1.7}& \textbf{0.9}& \textbf{0.9}& 3 \\  \cline{2-9}
+
+                    
+                    &
+                    \multirow{2}{*}{GLO}
+
+                      & MX& \textbf{0.8}& \textbf{0.7}& 1.6& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CX& 0.7& \textbf{0.7}& \textbf{1.7}& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{1-9}
+
+                    
+                    
+
+        \end{tabular}
+        }
+
+        \resizebox{\textwidth}{!}{
+
+        \begin{tabular}{|c|c|c|r|r|r|r|r|r|}  \cline{1-9}
+        
+        \multicolumn{3}{|c|}{RF(0_6)}& \multicolumn{3}{|c|}{GERMAN}& \multicolumn{2}{|c|}{JAPAN} & \multirow{2}{*}{Total} \\  \cline{4-8}
+         \multicolumn{3}{|c|}{}
+
+        & Accuracy & F1-Score & Financial-cost& Accuracy & F1-Score & \\  \cline{1-9}
+        \multicolumn{3}{|c|}{Classic} 
+
+        & 0.7& 0.6& 1.2& 0.9& 0.9& \\ \cline{1-9}
+
+        
+            \multirow{10}{*}{MlC}&
+
+            
+                    \multirow{4}{*}{PER}
+
+                      & MX& \textbf{0.8}& \textbf{0.7}& 1.2& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CX& 0.7& \textbf{0.7}& \textbf{1.9}& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CY& 0.7& \textbf{0.7}& \textbf{1.9}& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CXY& 0.7& \textbf{0.7}& \textbf{1.9}& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{2-9}
+
+                    
+                    &
+                    \multirow{4}{*}{GAP}
+
+                      & MX& \textbf{0.8}& \textbf{0.7}& 1.2& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CX& 0.7& 0.6& \textbf{2.0}& \textbf{0.9}& \textbf{0.9}& 3 \\  \cline{3-9}
+
+                    
+                    &  & CY& 0.7& 0.6& \textbf{2.0}& \textbf{0.9}& \textbf{0.9}& 3 \\  \cline{3-9}
+
+                    
+                    &  & CXY& 0.7& 0.6& \textbf{2.0}& \textbf{0.9}& \textbf{0.9}& 3 \\  \cline{2-9}
+
+                    
+                    &
+                    \multirow{2}{*}{GLO}
+
+                      & MX& \textbf{0.8}& \textbf{0.7}& 1.3& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CX& 0.7& 0.6& \textbf{1.7}& \textbf{0.9}& \textbf{0.9}& 3 \\  \cline{1-9}
+
+                    
+                    
+            \multirow{10}{*}{MCA}&
+
+            
+                    \multirow{4}{*}{PER}
+
+                      & MX& \textbf{0.8}& \textbf{0.7}& 1.2& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CX& 0.7& \textbf{0.7}& \textbf{1.9}& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CY& 0.7& \textbf{0.7}& \textbf{1.9}& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CXY& 0.7& \textbf{0.7}& \textbf{1.9}& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{2-9}
+
+                    
+                    &
+                    \multirow{4}{*}{GAP}
+
+                      & MX& \textbf{0.7}& \textbf{0.7}& 1.3& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CX& \textbf{0.7}& 0.6& \textbf{1.9}& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CY& \textbf{0.7}& 0.6& \textbf{1.9}& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CXY& \textbf{0.7}& 0.6& \textbf{1.9}& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{2-9}
+
+                    
+                    &
+                    \multirow{2}{*}{GLO}
+
+                      & MX& \textbf{0.8}& \textbf{0.7}& 1.5& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CX& 0.7& 0.6& \textbf{1.7}& \textbf{0.9}& \textbf{0.9}& 3 \\  \cline{1-9}
+
+                    
+                    
+
+        \end{tabular}
+        }
+
+        \resizebox{\textwidth}{!}{
+
+        \begin{tabular}{|c|c|c|r|r|r|r|r|r|}  \cline{1-9}
+        
+        \multicolumn{3}{|c|}{RF(0_7)}& \multicolumn{3}{|c|}{GERMAN}& \multicolumn{2}{|c|}{JAPAN} & \multirow{2}{*}{Total} \\  \cline{4-8}
+         \multicolumn{3}{|c|}{}
+
+        & Accuracy & F1-Score & Financial-cost& Accuracy & F1-Score & \\  \cline{1-9}
+        \multicolumn{3}{|c|}{Classic} 
+
+        & 0.7& 0.6& 1.2& 0.9& 0.9& \\ \cline{1-9}
+
+        
+            \multirow{10}{*}{MlC}&
+
+            
+                    \multirow{4}{*}{PER}
+
+                      & MX& \textbf{0.8}& \textbf{0.7}& 1.2& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CX& \textbf{0.8}& \textbf{0.7}& \textbf{2.1}& \textbf{0.9}& \textbf{0.9}& 5 \\  \cline{3-9}
+
+                    
+                    &  & CY& \textbf{0.8}& \textbf{0.7}& \textbf{2.1}& \textbf{0.9}& \textbf{0.9}& 5 \\  \cline{3-9}
+
+                    
+                    &  & CXY& \textbf{0.8}& \textbf{0.7}& \textbf{2.1}& \textbf{0.9}& \textbf{0.9}& 5 \\  \cline{2-9}
+
+                    
+                    &
+                    \multirow{4}{*}{GAP}
+
+                      & MX& \textbf{0.8}& \textbf{0.7}& 1.4& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CX& 0.7& 0.6& \textbf{2.1}& \textbf{0.9}& \textbf{0.9}& 3 \\  \cline{3-9}
+
+                    
+                    &  & CY& 0.7& 0.6& \textbf{2.1}& \textbf{0.9}& \textbf{0.9}& 3 \\  \cline{3-9}
+
+                    
+                    &  & CXY& 0.7& 0.6& \textbf{2.1}& \textbf{0.9}& \textbf{0.9}& 3 \\  \cline{2-9}
+
+                    
+                    &
+                    \multirow{2}{*}{GLO}
+
+                      & MX& \textbf{0.8}& \textbf{0.7}& 1.5& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CX& 0.7& 0.6& \textbf{2.0}& \textbf{0.9}& \textbf{0.9}& 3 \\  \cline{1-9}
+
+                    
+                    
+            \multirow{10}{*}{MCA}&
+
+            
+                    \multirow{4}{*}{PER}
+
+                      & MX& \textbf{0.8}& \textbf{0.7}& 1.4& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CX& \textbf{0.8}& \textbf{0.7}& \textbf{2.1}& \textbf{0.9}& \textbf{0.9}& 5 \\  \cline{3-9}
+
+                    
+                    &  & CY& \textbf{0.8}& \textbf{0.7}& \textbf{2.1}& \textbf{0.9}& \textbf{0.9}& 5 \\  \cline{3-9}
+
+                    
+                    &  & CXY& \textbf{0.8}& \textbf{0.7}& \textbf{2.1}& \textbf{0.9}& \textbf{0.9}& 5 \\  \cline{2-9}
+
+                    
+                    &
+                    \multirow{4}{*}{GAP}
+
+                      & MX& \textbf{0.8}& \textbf{0.7}& 1.5& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CX& 0.7& 0.6& \textbf{2.1}& \textbf{0.9}& \textbf{0.9}& 3 \\  \cline{3-9}
+
+                    
+                    &  & CY& 0.7& 0.6& \textbf{2.1}& \textbf{0.9}& \textbf{0.9}& 3 \\  \cline{3-9}
+
+                    
+                    &  & CXY& 0.7& 0.6& \textbf{2.1}& \textbf{0.9}& \textbf{0.9}& 3 \\  \cline{2-9}
+
+                    
+                    &
+                    \multirow{2}{*}{GLO}
+
+                      & MX& \textbf{0.8}& \textbf{0.7}& 1.5& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CX& 0.7& 0.6& \textbf{2.0}& \textbf{0.9}& \textbf{0.9}& 3 \\  \cline{1-9}
+
+                    
+                    
+
+        \end{tabular}
+        }
+
+        \resizebox{\textwidth}{!}{
+
+        \begin{tabular}{|c|c|c|r|r|r|r|r|r|}  \cline{1-9}
+        
+        \multicolumn{3}{|c|}{RF(0_8)}& \multicolumn{3}{|c|}{GERMAN}& \multicolumn{2}{|c|}{JAPAN} & \multirow{2}{*}{Total} \\  \cline{4-8}
+         \multicolumn{3}{|c|}{}
+
+        & Accuracy & F1-Score & Financial-cost& Accuracy & F1-Score & \\  \cline{1-9}
+        \multicolumn{3}{|c|}{Classic} 
+
+        & 0.7& 0.6& 1.2& 0.9& 0.9& \\ \cline{1-9}
+
+        
+            \multirow{10}{*}{MlC}&
+
+            
+                    \multirow{4}{*}{PER}
+
+                      & MX& 0.7& \textbf{0.7}& 1.2& \textbf{0.9}& \textbf{0.9}& 3 \\  \cline{3-9}
+
+                    
+                    &  & CX& \textbf{0.8}& \textbf{0.7}& \textbf{2.0}& \textbf{0.9}& \textbf{0.9}& 5 \\  \cline{3-9}
+
+                    
+                    &  & CY& \textbf{0.8}& \textbf{0.7}& \textbf{2.0}& \textbf{0.9}& \textbf{0.9}& 5 \\  \cline{3-9}
+
+                    
+                    &  & CXY& \textbf{0.8}& \textbf{0.7}& \textbf{2.0}& \textbf{0.9}& \textbf{0.9}& 5 \\  \cline{2-9}
+
+                    
+                    &
+                    \multirow{4}{*}{GAP}
+
+                      & MX& \textbf{0.8}& \textbf{0.7}& 1.4& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CX& 0.7& \textbf{0.7}& \textbf{1.9}& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CY& 0.7& \textbf{0.7}& \textbf{1.9}& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CXY& 0.7& \textbf{0.7}& \textbf{1.9}& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{2-9}
+
+                    
+                    &
+                    \multirow{2}{*}{GLO}
+
+                      & MX& \textbf{0.8}& \textbf{0.7}& 1.4& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CX& 0.7& \textbf{0.7}& \textbf{1.7}& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{1-9}
+
+                    
+                    
+            \multirow{10}{*}{MCA}&
+
+            
+                    \multirow{4}{*}{PER}
+
+                      & MX& \textbf{0.8}& \textbf{0.7}& 1.3& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CX& \textbf{0.8}& \textbf{0.7}& \textbf{2.0}& \textbf{0.9}& \textbf{0.9}& 5 \\  \cline{3-9}
+
+                    
+                    &  & CY& \textbf{0.8}& \textbf{0.7}& \textbf{2.0}& \textbf{0.9}& \textbf{0.9}& 5 \\  \cline{3-9}
+
+                    
+                    &  & CXY& \textbf{0.8}& \textbf{0.7}& \textbf{2.0}& \textbf{0.9}& \textbf{0.9}& 5 \\  \cline{2-9}
+
+                    
+                    &
+                    \multirow{4}{*}{GAP}
+
+                      & MX& \textbf{0.8}& \textbf{0.7}& 1.4& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CX& 0.7& 0.6& \textbf{2.0}& \textbf{0.9}& \textbf{0.9}& 3 \\  \cline{3-9}
+
+                    
+                    &  & CY& 0.7& 0.6& \textbf{2.0}& \textbf{0.9}& \textbf{0.9}& 3 \\  \cline{3-9}
+
+                    
+                    &  & CXY& 0.7& 0.6& \textbf{2.0}& \textbf{0.9}& \textbf{0.9}& 3 \\  \cline{2-9}
+
+                    
+                    &
+                    \multirow{2}{*}{GLO}
+
+                      & MX& 0.7& \textbf{0.7}& 1.5& \textbf{0.9}& \textbf{0.9}& 3 \\  \cline{3-9}
+
+                    
+                    &  & CX& \textbf{0.8}& \textbf{0.7}& \textbf{1.9}& \textbf{0.9}& \textbf{0.9}& 5 \\  \cline{1-9}
+
+                    
+                    
+
+        \end{tabular}
+        }
+
+        \resizebox{\textwidth}{!}{
+
+        \begin{tabular}{|c|c|c|r|r|r|r|r|r|}  \cline{1-9}
+        
+        \multicolumn{3}{|c|}{RF(0_9)}& \multicolumn{3}{|c|}{GERMAN}& \multicolumn{2}{|c|}{JAPAN} & \multirow{2}{*}{Total} \\  \cline{4-8}
+         \multicolumn{3}{|c|}{}
+
+        & Accuracy & F1-Score & Financial-cost& Accuracy & F1-Score & \\  \cline{1-9}
+        \multicolumn{3}{|c|}{Classic} 
+
+        & 0.7& 0.6& 1.2& 0.9& 0.9& \\ \cline{1-9}
+
+        
+            \multirow{10}{*}{MlC}&
+
+            
+                    \multirow{4}{*}{PER}
+
+                      & MX& \textbf{0.8}& \textbf{0.7}& 1.2& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CX& 0.7& 0.6& \textbf{1.5}& \textbf{0.9}& \textbf{0.9}& 3 \\  \cline{3-9}
+
+                    
+                    &  & CY& 0.7& 0.6& \textbf{1.5}& \textbf{0.9}& \textbf{0.9}& 3 \\  \cline{3-9}
+
+                    
+                    &  & CXY& 0.7& 0.6& \textbf{1.5}& \textbf{0.9}& \textbf{0.9}& 3 \\  \cline{2-9}
+
+                    
+                    &
+                    \multirow{4}{*}{GAP}
+
+                      & MX& \textbf{0.8}& \textbf{0.7}& 1.3& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CX& 0.7& 0.6& \textbf{1.8}& \textbf{0.9}& \textbf{0.9}& 3 \\  \cline{3-9}
+
+                    
+                    &  & CY& 0.7& 0.6& \textbf{1.8}& \textbf{0.9}& \textbf{0.9}& 3 \\  \cline{3-9}
+
+                    
+                    &  & CXY& 0.7& 0.6& \textbf{1.8}& \textbf{0.9}& \textbf{0.9}& 3 \\  \cline{2-9}
+
+                    
+                    &
+                    \multirow{2}{*}{GLO}
+
+                      & MX& \textbf{0.8}& \textbf{0.7}& 1.3& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CX& 0.7& 0.6& \textbf{1.8}& \textbf{0.9}& \textbf{0.9}& 3 \\  \cline{1-9}
+
+                    
+                    
+            \multirow{10}{*}{MCA}&
+
+            
+                    \multirow{4}{*}{PER}
+
+                      & MX& \textbf{0.8}& \textbf{0.7}& 1.2& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CX& 0.7& 0.6& \textbf{1.5}& \textbf{0.9}& \textbf{0.9}& 3 \\  \cline{3-9}
+
+                    
+                    &  & CY& 0.7& 0.6& \textbf{1.5}& \textbf{0.9}& \textbf{0.9}& 3 \\  \cline{3-9}
+
+                    
+                    &  & CXY& 0.7& 0.6& \textbf{1.5}& \textbf{0.9}& \textbf{0.9}& 3 \\  \cline{2-9}
+
+                    
+                    &
+                    \multirow{4}{*}{GAP}
+
+                      & MX& \textbf{0.8}& \textbf{0.7}& \textbf{1.6}& \textbf{0.9}& \textbf{0.9}& 5 \\  \cline{3-9}
+
+                    
+                    &  & CX& 0.7& \textbf{0.7}& \textbf{1.6}& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CY& 0.7& \textbf{0.7}& \textbf{1.6}& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CXY& 0.7& \textbf{0.7}& \textbf{1.6}& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{2-9}
+
+                    
+                    &
+                    \multirow{2}{*}{GLO}
+
+                      & MX& \textbf{0.7}& \textbf{0.7}& 1.5& \textbf{0.9}& \textbf{0.9}& 4 \\  \cline{3-9}
+
+                    
+                    &  & CX& 0.5& 0.5& \textbf{1.8}& 0.8& 0.8& 1 \\  \cline{1-9}
+
+                    
+                    
+
+        \end{tabular}
+        }
+\end{document}  

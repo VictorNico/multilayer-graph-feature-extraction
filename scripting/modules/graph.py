@@ -649,9 +649,6 @@ def standard_extraction(extracts, feats, maxConfig=None):
         extracts[key] = norm
     return internalMaxConfig
 
-
-
-
 # @profile
 def inject_features_extracted(data, features):
     """inject features extracted in dataframe
@@ -1079,7 +1076,7 @@ def removeEdge(graph, k, label, loan_id):
     modified_graph = copy.deepcopy(graph)
     if modified_graph.has_edge(loan_node, decision_label_node) is True:
         modified_graph.remove_edge(loan_node, decision_label_node)
-        modified_graph.remove_node(loan_node)
+        # modified_graph.remove_node(loan_node)
     # print(f"{loan_node} - {decision_label_node} still exist {modified_graph.has_edge(loan_node, decision_label_node)}")
 
     return modified_graph
