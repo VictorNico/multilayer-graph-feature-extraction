@@ -280,10 +280,10 @@ def print_compare(
         """
         # add metrics for financial folders
         for folder in financial_folder:
-            lines+= "& Accuracy & F1-Score & Financial-cost"
+            lines+= "& Acc & F1 & Cost"
         # add metrics' for non financial folder
         for folder in financial_folder:
-            lines+=  "& Accuracy & F1-Score"
+            lines+=  "& Acc & F1"
         # add the total name
         lines+= " & \\\\ "
         lines+= " \\cline{1-"+str(nb_cols)+"}"
@@ -296,11 +296,11 @@ def print_compare(
         for folder in financial_folder:
             for metric in ['accuracy','f1-score','financial-cost']:
                 # print(model, folder, metric)
-                lines+= "& "+str(round(store[model][folder]['classic'].loc[model, metric],1))+""
+                lines+= "& "+str(round(store[model][folder]['classic'].loc[model, metric],4))+""
         # add cols for non financial folder
         for folder in none_financial_folder:
             for metric in ['accuracy','f1-score']:
-                lines+= "& "+str(round(store[model][folder]['classic'].loc[model, metric],1))+""
+                lines+= "& "+str(round(store[model][folder]['classic'].loc[model, metric],4))+""
         # add an empty cell for Total
         lines+= "& \\\\ \\cline{1-"+str(nb_cols)+"""}
 
@@ -890,11 +890,11 @@ def generate_report_tables(
                                 for config in list(files[approach][logic].keys()): # MX, CX, CY, CXY
                                     for result in list(range(len(files[approach][logic][config]))): # each result file's containing evaluation metrics
                                         # save exact metric values
-                                        val_local_details_metrics_depth_1[model][result_folder][metric][approach][logic][config].append(round(files[approach][logic][config][result].loc[model, metric],1))
-                                        val_global_details_metrics_depth_1[model][result_folder][metric][approach][logic][config].append(round(files[approach][logic][config][result].loc[model, metric],1))
+                                        val_local_details_metrics_depth_1[model][result_folder][metric][approach][logic][config].append(round(files[approach][logic][config][result].loc[model, metric],4))
+                                        val_global_details_metrics_depth_1[model][result_folder][metric][approach][logic][config].append(round(files[approach][logic][config][result].loc[model, metric],4))
 
-                                        val_local_details_metrics_depth_2[model][result_folder][metric][approach][logic].append(round(files[approach][logic][config][result].loc[model, metric],1))
-                                        val_global_details_metrics_depth_2[model][result_folder][metric][approach][logic].append(round(files[approach][logic][config][result].loc[model, metric],1))
+                                        val_local_details_metrics_depth_2[model][result_folder][metric][approach][logic].append(round(files[approach][logic][config][result].loc[model, metric],4))
+                                        val_global_details_metrics_depth_2[model][result_folder][metric][approach][logic].append(round(files[approach][logic][config][result].loc[model, metric],4))
 
                                         valu = round(
                                                 (

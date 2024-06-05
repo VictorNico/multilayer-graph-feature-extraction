@@ -82,9 +82,9 @@ std::vector<std::vector<int>> compute_confusion_matrix(const std::vector<int>& t
 }
 
 std::vector<std::vector<int>> compute_confusion_matrix(
-        const std::vector<std::variant<int, double, bool, std::string>>& true_labels,
-        const std::vector<std::variant<int, double, bool, std::string>>& predicted_labels,
-        const std::vector<std::variant<int, double, bool, std::string>>& labels) {
+        const std::vector<float>& true_labels,
+        const std::vector<float>& predicted_labels,
+        const std::vector<float>& labels) {
     /**
      * Computes the confusion matrix.
      *
@@ -97,7 +97,7 @@ std::vector<std::vector<int>> compute_confusion_matrix(
     std::vector<std::vector<int>> confusion_matrix(num_classes, std::vector<int>(num_classes, 0));
 
     // Create a dictionary to map labels to their index
-    std::unordered_map<std::variant<int, double, bool, std::string>, int> label_to_index;
+    std::unordered_map<float, int> label_to_index;
     for (int i = 0; i < num_classes; i++) {
         label_to_index[labels[i]] = i;
     }
@@ -115,7 +115,7 @@ std::vector<std::vector<int>> compute_confusion_matrix(
     return confusion_matrix;
 }
 
-std::unordered_map<std::string, int> count_elements(const std::vector<std::variant<int, double, bool, std::string>>& lst) {
+std::unordered_map<std::string, int> count_elements(const std::vector<float>& lst) {
     /**
      * Counts the number of elements in a list.
      *
@@ -123,11 +123,8 @@ std::unordered_map<std::string, int> count_elements(const std::vector<std::varia
      * @return The count dictionary.
      */
     std::unordered_map<std::string, int> count_dict;
-    for (const auto& element : lst) {
-        std::string elem_str;
-        std::stringstream ss;
-        std::visit([&ss](const auto& value) { ss << value; }, element);
-        elem_str = ss.str();
+    for (const float& element : lst) {
+        std::string elem_str = std::to_string(element);
         if (count_dict.find(elem_str) != count_dict.end()) {
             count_dict[elem_str]++;
         } else {

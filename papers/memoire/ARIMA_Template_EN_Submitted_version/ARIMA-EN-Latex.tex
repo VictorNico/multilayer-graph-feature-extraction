@@ -146,6 +146,37 @@ motivons notre travail dans un environnement où la corrélation des défaillanc
 est évidente. Nous concentrons notre attention sur les réseaux multicouches dans les prêts agricoles et présentons des algorithmes généraux pour les inclure dans tout modèle prédictif où ils apparaissent. Si les réseaux multicouches ont été étudiés dans le secteur bancaire, jusqu'à présent - et à notre connaissance - leurs effets sur les prêts de détail (prêts à la consommation traditionnels et prêts de gré à gré aux petites et moyennes entreprises) n'ont pas fait l'objet du même niveau d'attention. Cela n'est pas surprenant compte tenu de sa structure : les prêts aux particuliers sont beaucoup plus nombreux, de sorte que toute interaction entre les réseaux nécessite une analyse complexe qui n'est devenue réalisable qu'au cours de la dernière décennie. Cela dit, il est également naturel de s'attendre à ce que les emprunteurs soient connectés de nombreuses manières complexes, de sorte que l'analyse utilisée pour mesurer leur comportement devrait également suivre ce niveau de complexité. 
 
 
+
+\resizebox{\textwidth}{!}{
+\begin{tabular}{|l|l|l |r|r|r |r|r|r |r|r|r |r|r|r| r|r| r|}
+	\cline{1-15}
+     \multicolumn{3}{|c|}{LDA}     & \multicolumn{3}{|c|}{German} & \multicolumn{3}{|c|}{Credit risk} & \multicolumn{3}{|c|}{AFB} & \multicolumn{2}{|c|}{Japan}  & \multirow{2}{*}{Total} \\  \cline{4-14}
+     	\multicolumn{3}{|c|}{} & Accuracy & F1-Score & Financial-cost & Accuracy & F1-Score & Financial-cost & Accuracy & F1-Score & Financial-cost  & Accuracy & F1-Score & \\  \cline{1-15}
+		 \multicolumn{3}{|c|}{Classic}  &  & & &  & & & & &  & & & \\  \cline{1-15}
+		\multirow{10}{*}{MlC}& \multirow{2}{*}{GLO} &MX &  & & &  & & & & &  & & & \\  \cline{3-15}
+		&  &CX &  & & &  & & & & &  & & & \\  \cline{2-15}
+		&  \multirow{4}{*}{PER} &MX &  & & &  & & & & &  & & & \\  \cline{3-15}
+		& &CX &  & & &  & & & & &  & & & \\  \cline{3-15}
+		& &CY &  & & &  & & & & &  & & & \\  \cline{3-15}
+		&  &CXY &  & & &  & & & & &  & & & \\  \cline{2-15}
+		&  \multirow{4}{*}{GAP}&MX &  & & &  & & & & &  & & & \\ \cline{3-15}
+		& &CX &  & & &  & & & & &  & & & \\  \cline{3-15}
+		& &CY &  & & &  & & & & &  & & & \\  \cline{3-15}
+		&  &CXY &  & & &  & & & & &  & & & \\ \cline{1-15}
+		\multirow{10}{*}{MCA}&  \multirow{2}{*}{GLO} &MX &  & & &  & & & & & & & & \\ \cline{3-15}
+		& &CX &  & & &  & & & & & & & & \\ \cline{2-15}
+		&  \multirow{4}{*}{PER}&MX &  & & &  & & & & & & & & \\ \cline{3-15}
+		& &CX &  & & &  & & & & & & & & \\ \cline{3-15}
+		& &CY &  & & &  & & & & & & & & \\ \cline{3-15}
+		&  &CXY &  & & &  & & & & & &  & & \\ \cline{2-15}
+		&  \multirow{4}{*}{GAP}&MX &  & & &  & & & & & &  & & \\ \cline{3-15}
+		& &CX &  & & &  & & & & & &  & & \\ \cline{3-15}
+		& &CY &  & & &  & & & & & &  & & \\ \cline{3-15}
+		&  &CXY &  & & &  & & & & & &  & & \\ \cline{1-15}
+\end{tabular}
+}
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Section}
 %%%%%%%%%%%%%%%%%%%%%%%%%%

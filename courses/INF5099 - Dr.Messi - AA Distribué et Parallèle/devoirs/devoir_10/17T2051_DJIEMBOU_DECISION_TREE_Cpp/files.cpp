@@ -4,11 +4,11 @@
 
 #include "headers/files.h"
 
-using namespace std;
+// using namespace std;
 
 //// Helper function to cast a string to the appropriate type
 
-std::unordered_map<std::string, std::vector<std::variant<int, double, bool, std::string>>> process_file(const std::string& file_path, const std::string& details_separator, bool header_flag) {
+std::unordered_map<std::string, std::vector<float>> process_file(const std::string& file_path, const std::string& details_separator, bool header_flag) {
     /**
      * Processes a file and extracts the descriptions.
      *
@@ -17,7 +17,7 @@ std::unordered_map<std::string, std::vector<std::variant<int, double, bool, std:
      * @param header_flag Indicates whether the file contains header information.
      * @return The descriptions extracted from the file.
      */
-    std::unordered_map<std::string, std::vector<std::variant<int, double, bool, std::string>>> descriptions;
+    std::unordered_map<std::string, std::vector<float>> descriptions;
 
 
     // Read the text file
@@ -53,13 +53,13 @@ std::unordered_map<std::string, std::vector<std::variant<int, double, bool, std:
                 const std::type_info* typeInfo = getType(field);
                 if (header.empty()) {
                     if (descriptions.find(std::to_string(fieldIndex)) == descriptions.end()) {
-                        descriptions[std::to_string(fieldIndex)] = std::vector<std::variant<int, double, bool, std::string>>();
+                        descriptions[std::to_string(fieldIndex)] = std::vector<float>();
                     }
                     descriptions[std::to_string(fieldIndex)].push_back(castToAppropriateType(field));
 
                 } else {
                     if (descriptions.find(header[fieldIndex]) == descriptions.end()) {
-                        descriptions[header[fieldIndex]] = std::vector<std::variant<int, double, bool, std::string>>();
+                        descriptions[header[fieldIndex]] = std::vector<float>();
                     }
                         descriptions[header[fieldIndex]].push_back(castToAppropriateType(field));
                 }
@@ -71,7 +71,7 @@ std::unordered_map<std::string, std::vector<std::variant<int, double, bool, std:
     if (descriptions.find("Index") == descriptions.end()) {
         std::cout << "inside" <<std::endl;
         // Add the 'Index' column
-        descriptions["Index"] = std::vector < std::variant < int, double, bool, std::string >> ();
+        descriptions["Index"] = std::vector<float>();
 
         for (int i = 1; i < lines.size(); i++) {
             descriptions["Index"].push_back(i);
@@ -94,21 +94,11 @@ std::string rtrim(const std::string& s) {
     }).base());
 }
 
-std::variant<int, double, bool, std::string> castToAppropriateType(const std::string& data) {
-    if (std::all_of(data.begin(), data.end(), ::isdigit)) {
-        return std::stoi(data);
-    }
+float castToAppropriateType(const std::string& data) {
     try {
         return std::stof(data);
     } catch (const std::invalid_argument&) {
-        if (data == "true") {
-            return true;
-        } else if (data == "false") {
-            return false;
-        }
-        else {
-            return data;
-        }
+        throw std::invalid_argument(data+" ne peut pas etre converti en floatant");
     }
 }
 
@@ -123,14 +113,14 @@ const std::type_info* getType(const std::string& data) {
 }
 
 std::tuple<
-    std::unordered_map<std::string, std::vector<std::variant<int, double, bool, std::string>>>,
-    std::unordered_map<std::string, std::vector<std::variant<int, double, bool, std::string>>>,
-    std::vector<std::variant<int, double, bool, std::string>>,
-    std::vector<std::variant<int, double, bool, std::string>>
+    std::unordered_map<std::string, std::vector<float>>,
+    std::unordered_map<std::string, std::vector<float>>,
+    std::vector<float>,
+    std::vector<float>
     >
     train_test_split(
-        std::unordered_map<std::string, std::vector<std::variant<int, double, bool, std::string>>>& data,
-        std::vector<std::variant<int, double, bool, std::string>>& labels,
+        std::unordered_map<std::string, std::vector<float>>& data,
+        std::vector<float>& labels,
         double test_size = 0.2,
         int random_state = -1){
     // Vérifier que le nombre de labels correspond au nombre d'exemples
@@ -154,8 +144,8 @@ std::tuple<
     size_t test_count = static_cast<size_t>(std::ceil(indexes.size() * test_size));
 
     // Séparer les données d'entraînement et de test
-    std::vector<std::variant<int, double, bool, std::string>> train_labels(indexes.size() - test_count);
-    std::vector<std::variant<int, double, bool, std::string>> test_labels(test_count);
+    std::vector<float> train_labels(indexes.size() - test_count);
+    std::vector<float> test_labels(test_count);
     for (size_t i = 0; i < indexes.size(); ++i) {
         if (i < indexes.size() - test_count) {
             train_labels[i] = labels[indexes[i]];
@@ -165,10 +155,10 @@ std::tuple<
     }
 
     // Créer les dictionnaires d'entraînement et de test
-    std::unordered_map<std::string, std::vector<std::variant<int, double, bool, std::string>>> train_data, test_data;
+    std::unordered_map<std::string, std::vector<float>> train_data, test_data;
     for (const auto& key : data) {
-        std::vector<std::variant<int, double, bool, std::string>> train_values(indexes.size() - test_count);
-        std::vector<std::variant<int, double, bool, std::string>> test_values(test_count);
+        std::vector<float> train_values(indexes.size() - test_count);
+        std::vector<float> test_values(test_count);
         for (size_t i = 0; i < indexes.size(); ++i) {
             if (i < indexes.size() - test_count) {
                 train_values[i] = key.second[indexes[i]];
@@ -184,10 +174,10 @@ std::tuple<
 }
 
 void write_dataset(
-        const std::unordered_map<std::string, std::vector<std::variant<int, double, bool, std::string>>>& train_data,
-        const std::unordered_map<std::string, std::vector<std::variant<int, double, bool, std::string>>>& test_data,
-        const std::vector<std::variant<int, double, bool, std::string>>& y_train,
-        const std::vector<std::variant<int, double, bool, std::string>>& y_test,
+        const std::unordered_map<std::string, std::vector<float>>& train_data,
+        const std::unordered_map<std::string, std::vector<float>>& test_data,
+        const std::vector<float>& y_train,
+        const std::vector<float>& y_test,
         const std::string& output_dir, const std::string& className) {
     // Créer le répertoire de sortie s'il n'existe pas déjà
     std::filesystem::create_directories(output_dir);
@@ -202,31 +192,9 @@ void write_dataset(
 //    std::cout << "hello" << std::endl;
     for (size_t i = 0; i < train_data.begin()->second.size(); ++i) {
         for (const auto& key : train_data) {
-//            if (key.first != "Index") {
-//                train_file << std::get<std::string>(key.second[i]) << ",";
-//                std::cout << key.first << "train" << std::endl;
-                if (holds_alternative<std::string>(key.second[i])) {
-                    train_file << std::get<std::string>(key.second[i]) << ",";
-                } else if (holds_alternative<int>(key.second[i])) {
-                    train_file << std::get<int>(key.second[i]) << ",";
-                } else if (holds_alternative<double>(key.second[i])) {
-                    train_file << std::get<double>(key.second[i]) << ",";
-                } else if (holds_alternative<bool>(key.second[i])) {
-                    train_file << std::get<bool>(key.second[i]) << ",";
-                }
-//            }
+            train_file << key.second[i] << ",";
         }
-        if (holds_alternative<std::string>(y_train[i])) {
-            train_file << std::get<std::string>(y_train[i]) << "\n";
-        } else if (holds_alternative<int>(y_train[i])) {
-//            std::cout << std::get<int>(y_train[i]) << ',';
-            train_file << std::get<int>(y_train[i]) << "\n";
-        } else if (holds_alternative<double>(y_train[i])) {
-            train_file << std::get<double>(y_train[i]) << "\n";
-        } else if (holds_alternative<bool>(y_train[i])) {
-            train_file << std::get<bool>(y_train[i]) << "\n";
-        }
-//        train_file << std::get<std::string>(y_train[i]) << "\n";
+        train_file << y_train[i] << "\n";    
     }
     train_file.close();
 
@@ -236,34 +204,11 @@ void write_dataset(
         test_file << pair.first << ",";
     }
     test_file << className << "\n";
-//    test_file << "target\n";
     for (size_t i = 0; i < test_data.begin()->second.size(); ++i) {
         for (const auto& key : test_data) {
-//            if (key.first != "Index") {
-//                std::cout << key.first << "test" << std::endl;
-//                test_file << std::get<std::string>(key.second[i]) << ",";
-                if (holds_alternative<std::string>(key.second[i])) {
-                    test_file << std::get<std::string>(key.second[i]) << ",";
-                } else if (holds_alternative<int>(key.second[i])) {
-                    test_file << std::get<int>(key.second[i]) << ",";
-                } else if (holds_alternative<double>(key.second[i])) {
-                    test_file << std::get<double>(key.second[i]) << ",";
-                } else if (holds_alternative<bool>(key.second[i])) {
-                    test_file << std::get<bool>(key.second[i]) << ",";
-                }
-//            }
+            test_file << key.second[i] << ",";
         }
-        if (holds_alternative<std::string>(y_test[i])) {
-            test_file << std::get<std::string>(y_test[i]) << "\n";
-        } else if (holds_alternative<int>(y_test[i])) {
-//            std::cout << std::get<int>(y_test[i]) << ',';
-            test_file << std::get<int>(y_test[i]) << "\n";
-        } else if (holds_alternative<double>(y_test[i])) {
-            test_file << std::get<double>(y_test[i]) << "\n";
-        } else if (holds_alternative<bool>(y_test[i])) {
-            test_file << std::get<bool>(y_test[i]) << "\n";
-        }
-//        test_file << std::get<std::string>(y_test[i]) << "\n";
+        test_file << y_test[i] << "\n";
     }
     test_file.close();
 }

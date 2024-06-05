@@ -19,7 +19,7 @@
 
 #include "./decisionTree.h"
 
-std::unordered_map<std::string, std::vector<std::variant<int, double, bool, std::string>>> process_file(const std::string&, const std::string&, bool);
+std::unordered_map<std::string, std::vector<float>> process_file(const std::string&, const std::string&, bool);
 
 std::string ltrim(const std::string&);
 
@@ -27,24 +27,24 @@ std::string rtrim(const std::string&);
 
 const std::type_info* getType(const std::string&);
 
-std::variant<int, double, bool, std::string> castToAppropriateType(const std::string&);
+float castToAppropriateType(const std::string&);
 
 std::tuple<
-std::unordered_map<std::string, std::vector<std::variant<int, double, bool, std::string>>>,
-std::unordered_map<std::string, std::vector<std::variant<int, double, bool, std::string>>>,
-std::vector<std::variant<int, double, bool, std::string>>,
-std::vector<std::variant<int, double, bool, std::string>>
+std::unordered_map<std::string, std::vector<float>>,
+std::unordered_map<std::string, std::vector<float>>,
+std::vector<float>,
+std::vector<float>
 > train_test_split(
-        std::unordered_map<std::string, std::vector<std::variant<int, double, bool, std::string>>>& ,
-        std::vector<std::variant<int, double, bool, std::string>>& ,
+        std::unordered_map<std::string, std::vector<float>>& ,
+        std::vector<float>& ,
         double,
         int);
 
 void write_dataset(
-        const std::unordered_map<std::string, std::vector<std::variant<int, double, bool, std::string>>>& train_data,
-        const std::unordered_map<std::string, std::vector<std::variant<int, double, bool, std::string>>>& test_data,
-        const std::vector<std::variant<int, double, bool, std::string>>& y_train,
-        const std::vector<std::variant<int, double, bool, std::string>>& y_test,
+        const std::unordered_map<std::string, std::vector<float>>& train_data,
+        const std::unordered_map<std::string, std::vector<float>>& test_data,
+        const std::vector<float>& y_train,
+        const std::vector<float>& y_test,
         const std::string& output_dir,
         const std::string& className);
 

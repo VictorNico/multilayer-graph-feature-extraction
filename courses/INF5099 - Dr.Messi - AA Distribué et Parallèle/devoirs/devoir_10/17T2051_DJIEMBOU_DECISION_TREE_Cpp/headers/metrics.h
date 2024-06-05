@@ -25,14 +25,14 @@ std::vector<std::vector<int>> compute_confusion_matrix(const std::vector<int>&,
                                                        const std::vector<int>&);
 
 std::vector<std::vector<int>> compute_confusion_matrix(
-        const std::vector<std::variant<int, double, bool, std::string>>&,
-        const std::vector<std::variant<int, double, bool, std::string>>&,
-        const std::vector<std::variant<int, double, bool, std::string>>&);
+        const std::vector<float>&,
+        const std::vector<float>&,
+        const std::vector<float>&);
 
 double f1_score(const std::vector<std::vector<int>>&);
 
 double recall(const std::vector<std::vector<int>>&);
 
-std::unordered_map<std::string, int> count_elements(const std::vector<std::variant<int, double, bool, std::string>>&);
+std::unordered_map<std::string, int> count_elements(const std::vector<float>&);
 
 #endif //DTREE_METRICS_H

@@ -35,11 +35,10 @@ bool checkExistanceOfFile(std::string path, std::string sep){
 }
 
 int main(int argc, char* argv[]) {
-    if (argc < 5) {
-        std::cerr << "Usage: " << argv[0] << " <input_file> <delimiter> <is_header>  <class_name>  [<test_file> <is_classification> <max_depth> <min_samples_split> <min_information_gain> <max_categories>]" << std::endl;
+    if (argc < 6) {
+        std::cerr << "Usage: " << argv[0] << " <input_file> <delimiter> <is_header>  <class_name>  <num_threads>  [<test_file> <is_classification> <max_depth> <min_samples_split> <min_information_gain> <max_categories>]" << std::endl;
         return 1;
     }
-//    std::string className,
     bool is_classification = true;
     int max_depth = -1;
     int min_samples_split = 2;
@@ -52,20 +51,21 @@ int main(int argc, char* argv[]) {
     std::string delimiter = ",";
     bool is_header = true;
     //// args and data loading
-    std::unordered_map<std::string, std::vector<std::variant<int, double, bool, std::string>>> train_data,test_data;
-    std::vector<std::variant<int, double, bool, std::string>> y_train,y_test;
+    std::unordered_map<std::string, std::vector<float>> train_data,test_data;
+    std::vector<float> y_train,y_test;
 
-    if(argc == 11){
+    if(argc == 12){
         std::string train_file = argv[1];
-        std::string test_file = argv[5];
+        std::string test_file = argv[6];
+        num_threads_ = std::stoi(argv[5]);
         className = argv[4];
         delimiter = argv[2];
         is_header = std::stoi(argv[3]);
-        is_classification = std::stoi(argv[6]);
-        max_depth = std::stoi(argv[7]);
-        min_samples_split = std::stoi(argv[8]);
-        min_information_gain = std::stod(argv[9]);
-        max_categories = std::stoi(argv[10]);
+        is_classification = std::stoi(argv[7]);
+        max_depth = std::stoi(argv[8]);
+        min_samples_split = std::stoi(argv[9]);
+        min_information_gain = std::stod(argv[10]);
+        max_categories = std::stoi(argv[11]);
 
         // check if input file is valid
         bool exist = checkExistanceOfFile(train_file,delimiter);
@@ -99,12 +99,12 @@ int main(int argc, char* argv[]) {
         train_data.erase("Index");
 
     }
-    else if (argc == 5){
+    else if (argc == 6){
         // get args values
         std::string input_file = argv[1];
         className = argv[4];
         delimiter = argv[2];
-
+        num_threads_ = std::stoi(argv[5]);
         is_header = std::stoi(argv[3]);
 
         // check if input file is valid
@@ -116,13 +116,13 @@ int main(int argc, char* argv[]) {
         }
 
         // load data
-        std::unordered_map<std::string, std::vector<std::variant<int, double, bool, std::string>>> data = process_file(input_file, delimiter, is_header);
+        std::unordered_map<std::string, std::vector<float>> data = process_file(input_file, delimiter, is_header);
 //        std::cout << argv[3] << std::endl;
         // gen train and test dataset
         for (const auto& [key, values] : data) {
             std::cout << key << ":" << values.size() << std::endl;
         }
-        std::vector<std::variant<int, double, bool, std::string>> labels = data[className];
+        std::vector<float> labels = data[className];
 
         data.erase(className);
         std::tie(train_data, test_data, y_train, y_test) = train_test_split(data, labels, 0.2, 42);
@@ -138,11 +138,14 @@ int main(int argc, char* argv[]) {
     }
 
     // build tree
-    auto start = std::chrono::high_resolution_clock::now();
+    // auto start = std::chrono::high_resolution_clock::now();
+    clock_t start = clock();
     TreeNode* root = interativeTrainTree(train_data,className,is_classification,max_depth,min_samples_split,min_information_gain,counter,max_categories);
-    auto end = std::chrono::high_resolution_clock::now();
+    // auto end = std::chrono::high_resolution_clock::now();
+    clock_t end = clock();
 
-    std::chrono::duration<double> duration = end - start;
+    // std::chrono::duration<double> duration = end - start;
+    double duration = static_cast<double>(end - start) / CLOCKS_PER_SEC;
 
     std::cout << "received " << typeid(root).name() << std::endl;
     if (root != nullptr) {
@@ -152,10 +155,10 @@ int main(int argc, char* argv[]) {
     }
 
     // prediction
-    std::vector<std::variant<int, double, bool, std::string>> pred = predictions(test_data, root);
+    std::vector<float> pred = predictions(test_data, root);
 
     // confusion matrix
-    std::set<std::variant<int, double, bool, std::string>> unique_values;
+    std::set<float> unique_values;
     // Supposons que 'values' soit un ensemble de valeurs à convertir
     for (const auto& value : y_test) {
         unique_values.insert(value);
@@ -164,7 +167,7 @@ int main(int argc, char* argv[]) {
     std::cout << "y_test " << y_test.size() << std::endl;
     std::cout << "pred " << pred.size() << std::endl;
     // Convertir l'ensemble en vecteur
-    std::vector<std::variant<int, double, bool, std::string>> unique_vector(unique_values.begin(), unique_values.end());
+    std::vector<float> unique_vector(unique_values.begin(), unique_values.end());
 
     std::vector<std::vector<int>> confusion_matrix = compute_confusion_matrix(y_test, pred, unique_vector);
 
@@ -182,8 +185,8 @@ int main(int argc, char* argv[]) {
     std::cout << "recall: " << recall(confusion_matrix) << std::endl;
     std::cout << "f1: " << f1_score(confusion_matrix) << std::endl;
     // save metrics
-    std::vector<std::string> metricNames = {"Precision", "Accuracy", "Recall","F1_Score","elapsed time (s)", "max depth", "rows", "cols"};
-    std::vector<double> metricValues = {precision(confusion_matrix), accuracy(confusion_matrix), recall(confusion_matrix), f1_score(confusion_matrix), duration.count(), static_cast<double>(max_depth), static_cast<double>(train_data[className].size()), static_cast<double>(train_data.size())};
+    std::vector<std::string> metricNames = {"Precision", "Accuracy", "Recall","F1_Score","elapsed time (s)", "Num Threads", "max depth", "rows", "cols"};
+    std::vector<double> metricValues = {precision(confusion_matrix), accuracy(confusion_matrix), recall(confusion_matrix), f1_score(confusion_matrix), duration, static_cast<double>(num_threads_), static_cast<double>(max_depth), static_cast<double>(train_data[className].size()), static_cast<double>(train_data.size())};
     saveMetricsToCSV("outputs/metrics.csv", metricNames, metricValues, className, "Sequential C++");
     // save model
     std::string modelNamePath = "outputs/"+className+".bin";
