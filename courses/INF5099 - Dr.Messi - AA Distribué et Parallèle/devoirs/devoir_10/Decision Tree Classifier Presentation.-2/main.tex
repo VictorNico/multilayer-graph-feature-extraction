@@ -1,0 +1,276 @@
+\documentclass[11pt]{beamer}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{translator}
+\usepackage[french]{babel}
+\usetheme{madrid}
+\usepackage{fontspec}
+\usepackage{color}
+\usepackage{xcolor}
+\setsansfont{Times New Roman}
+\usepackage{graphics}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{booktabs}
+\usepackage{subfigure}
+\usepackage{multicol}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{fancyhdr}
+\usepackage{lipsum}
+\usepackage{tikz}
+\usepackage{wallpaper}
+\usepackage{wrapfig}
+\usepackage{multicol}
+\usetikzlibrary{positioning}
+
+\begin{document}
+	\author[V.DJIEMBOU]{DJIEMBOU TIENTCHEU VICTOR NICO\inst{1} }
+	\title{Algorithme d'Arbre de Decision}
+    \subtitle{Devoir 9 - INF5099}
+	\titlegraphic{\includegraphics[scale=0.3]{assets/logo}}
+	\institute[UYI]{\inst{1} \textit{Université de Yaoundé I,\\ Faculté des Sciences,\\ Département d'Informatique,\\ Étudiant Master SD} }
+	%\date{}
+	%\subject{}
+	%\setbeamercovered{transparent}
+	\setbeamertemplate{navigation symbols}{}
+	\setbeamertemplate{itemize }{circle}
+	\newcommand\Background{
+            \begin{tikzpicture}[remember picture,overlay]
+			\node[inner sep=0pt,outer sep=0pt,opacity=1]
+			at (5.7,-4)
+			{\includegraphics[scale=0.23]{assets/999}};
+		\end{tikzpicture}
+        }
+	%\setbeamertemplate{background canvas}{\includegraphics[scale=0.19]{999}}
+	\setbeamercolor{frametitle}{bg=gray}
+	\AtBeginSection[]{
+  		\begin{frame}
+    			\frametitle{Outline}
+   			 \tableofcontents[currentsection]
+  		\end{frame}
+	}
+	
+\begin{frame}[plain]
+	\Background
+	\maketitle
+\end{frame}
+
+\begin{frame}
+	\Background
+	\tableofcontents
+\end{frame}
+% Introduction
+
+\section{Introduction}
+\subsection{Generalites}
+\begin{frame}
+	\frametitle{\textsc{Generalites}}
+	\begin{columns}[T]
+    		\begin{column}{0.5\textwidth}
+                
+      			\includegraphics[width=\textwidth]{assets/classif}
+    		\end{column}
+   	 	\begin{column}{0.5\textwidth}
+      			\includegraphics[width=\textwidth]{assets/example}
+    		\end{column}
+ 	 \end{columns}
+\end{frame}
+
+\subsection{Version existantes}
+\begin{frame}
+	\frametitle{\textsc{Version existantes}}
+	\begin{block}{Définition}
+		\textbf{Un arbre de décision} est un algorithme qui permet de former un modèle qui se base sur les arbres de décision pour associer une classe ou un catégorie a une entrée. 
+	\end{block}
+	\begin{exampleblock}{Noms des versions}
+	\vspace{3pt}
+	\begin{itemize}
+			\item CHAID
+			\item ID3
+			\item C4.5
+			\item CART
+            \item C5
+			\end{itemize}
+
+	\end{exampleblock}
+	
+\end{frame}
+
+\subsection{Comparaison des versions}
+\begin{frame}
+	\frametitle{\textsc{Idée de solution}}
+	\begin{block}{Tableau caractérisation des arbres de décision}
+		\begin{table}[H]
+    \centering
+    \resizebox{\textwidth}{!}{%
+    \renewcommand{\arraystretch}{1.9} % Augmenter la hauteur du tableau
+    \begin{tabular}{|c|c|c|c|}
+        \hline
+    Algorithme d'arbre de décision  & Type de données & Méthode de fractionnement des données numériques & Outils possibles\\ \hline
+    CHAID (CHi-square Automatic Interaction Detector)  &  Catégorielle  & Indéfini  & SPSS answer tree \\ \hline
+   ID3 (Iterative Dichotomiser 3)   &  Catégorielle  & Pas de restriction  &  WEKA\\ \hline
+       C4.5  & Catégorielle et Numérique & Pas de restriction &  WEKA \\ \hline
+       CART (Classification and Regression Tree)   & Catégorielle et Numérique & Séparation binaire &  CART 5.0  \\ \hline
+    \end{tabular}
+    }
+    \label{tab:my_label}
+\end{table}
+	\end{block}
+\end{frame}	
+ \begin{frame}
+	\frametitle{\textsc{Idée de solution}}
+	\begin{block}{Tableau de decription des arbres de décision}
+		\begin{table}[H]
+    \centering
+    \resizebox{\textwidth}{!}{%
+    \renewcommand{\arraystretch}{2.5} % Augmenter la hauteur du tableau
+    \begin{tabular}{|p{7cm}|p{7cm}|p{7cm}|}
+        \hline
+        \textbf{Nom de l'algorithme} & \textbf{Classification} & \textbf{Description}\\ \hline
+        CHAID (CHi-square Automatic Interaction Detector)  &  Antérieur à l'implémentation originale de l'ID3 & Ce type d'arbre de décision est utilisé pour une variable nominale à échelle. La technique détecte la variable dépendante à partir des variables catégorisées d'un ensemble de données \\ \hline
+        ID3 (Iterative Dichotomiser 3)  & Utilise la fonction d'entropie et le gain d'information comme mesures & La seule préoccupation concerne les valeurs discrètes. Par conséquent, l'ensemble de données continues doit être classé dans l'ensemble de données discrètes\\ \hline
+        C4.5 & La version améliorée de l'ID 3 & Traite à la fois des données discrètes et continues. Il peut également gérer les données incomplètes \\ \hline
+        CART (Classification and Regression Tree) & Utilise l'indice de Gini comme mesure & En appliquant la division numérique, nous pouvons construire l'arbre basé sur CART \\ \hline
+    \end{tabular}}
+    \label{tab:my_label}
+\end{table}
+	\end{block}
+	
+\end{frame}	
+
+\section{Fonctions de l'algorithme }
+\begin{frame}
+	\frametitle{\textsc{Fonctions de l'algorithme}}
+	\begin{block}{Opération clefs}
+		\begin{itemize}
+			\item Calcul de l'impurété
+                    \begin{itemize}
+			\item Entropie : $E(S) = \sum^c_{i=1}-p_ilog_2p_i$
+			\item Indice de Gini : $Gini = 1- \sum^n_{i=1}(P_i)^2$
+		\end{itemize}
+			\item Calcul du gain d'information
+   \begin{itemize}
+			\item Gain de classification: $Information\ Gain_{Classification}= E(d)– \sum \frac{|s|}{|d|}E(s)$
+			\item Gain de regression: $Information\ Gain_{Regression}= Variance(d)– \sum \frac{|s|}{|d|}Variance(s)$
+		\end{itemize}
+		\end{itemize}
+	\end{block}
+\end{frame}
+
+
+\section{Algorithme}
+\subsection{Version récursive}
+\begin{frame}
+	\frametitle{\textsc{Version récursive}}
+ \vspace{-.4cm}
+	 \begin{algorithm}[H]
+  \tiny{
+\caption{Algorithme de l'arbre de décision recursive (DTR)}
+\label{algo:dtr}
+\begin{algorithmic}[1]
+\REQUIRE $dataset$: Ensemble d'entraînement $D \gets \{(x_1,y_1), \ldots, (x_n,y_n)\}$, $depth$ la profondeur de l'arbre  et le critère d'arrêt
+%\REQUIRE $attributes$: Liste des attributs de l'ensemble de données
+%\REQUIRE $target\_attribute$: Attribut cible (classe)
+%\ENSURE $tree$: Arbre de décision résultant
+
+ \IF{$D,depth$ satisfont le critère d'arrêt}
+            \RETURN un noeud avec comme etiquette la classe majoritaire du jeu
+       \ELSE
+            \STATE Trouver le meilleur candidat diviseur de $D$ $\gets \{col,val,ig,type\}$
+            \IF{ig satisfait le critère d'arrêt}
+            	\RETURN un noeud avec comme etiquette la classe majoritaire du jeu
+            \ELSE	
+                \STATE $gauche, droite \gets $ Diviser $D$ sur la base du meilleur candidat
+                \IF{Candidat numérique}
+                		\STATE $cond \gets col + '<=' + val $  
+                \ELSE
+                		\STATE $cond \gets col + 'in' + val $  
+                \ENDIF
+                \STATE $sous\_arbre \gets \{cond: []\}$
+                \STATE  $\text{réponse}_{gauche} \gets DTR(gauche,\ depth+1,\ \text{critère}\ \text{d'arrêt})$
+                \STATE  $\text{réponse}_{droite} \gets DTR(droite,\ depth+1,\ \text{critère}\ \text{d'arrêt})$
+                \IF{$réponse_{gauche} == réponse_{droite}$}
+                		\STATE $sous\_arbre \gets réponse_{droite}$
+                \ELSE
+                		\STATE ajouter $\text{réponse}_{gauche}$ dans $sous\_arbre[cond]$
+			\STATE ajouter $\text{réponse}_{droite}$ dans $sous\_arbre[cond]$
+                \ENDIF
+            \ENDIF
+       \ENDIF
+
+\RETURN $node$ comme nœud de l'arbre de décision
+\end{algorithmic}}
+\end{algorithm}
+\end{frame}
+
+
+
+\subsection{Version Iterative}
+\begin{frame}
+	\frametitle{\textsc{Version itérative}}
+	
+\begin{algorithm}[H]
+\tiny{
+\caption{Algorithme de l'arbre de décision itératif}
+\label{alg:decision_tree}
+\begin{algorithmic}[1]
+
+    \REQUIRE Ensemble d'entraînement $D \gets \{(x_1,y_1), \ldots, (x_n,y_n)\}$ et le critère d'arrêt
+    %\ENSURE $tree$: Arbre de décision résultant
+
+    \STATE  Créer un noeud racine définit Root $\{col, val, ig, cond, left, right\}$
+    \STATE Initialiser une pile $T$ vide
+    \STATE Empiler $\{depth=0, node=Root, data=D\}$ dans $T$  
+    \WHILE{il y a des noeuds non étiquetées dans $T$}    
+    	\STATE $depth,node,data \gets $Depiller $T$ 
+        \IF{$depth,data$ satisfont le critère d'arrêt}
+            \STATE Étiqueter $node.cond$ avec l'étiquette la plus fréquente parmi les échantillons dans $data$.
+       \ELSE
+            \STATE Trouver le meilleur candidat diviseur de $data$ $\gets \{col,val,ig,type\}$
+            \IF{ig satisfait le critère d'arrêt}
+            	\STATE Étiqueter $node.cond$ avec l'étiquette la plus fréquente parmi les échantillons dans $data$.
+            \ELSE	
+                \STATE $left, right \gets $ Diviser $data$ sur la base du meilleur candidat
+                \IF{Candidat numérique}
+                		\STATE $node.cond \gets col + '<=' + val $  
+                \ELSE
+                		\STATE $node.cond \gets col + 'in' + val $  
+                \ENDIF
+                \STATE Mettre a jour $\{col,val,ig\}$ par celui de la meilleur division
+                \STATE Empiler $\{depth=depth+1, node=node.left, data=left\}$ dans $T$ 
+                \STATE Empiler $\{depth=depth+1, node=node.right, data=right\}$ dans $T$ 
+            \ENDIF
+       \ENDIF
+    \ENDWHILE
+\end{algorithmic}}
+\end{algorithm}
+
+	
+\end{frame}
+
+\section{Résultats}
+\begin{frame}
+	\frametitle{\textsc{Résultat}}
+	%\Background
+     \begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\linewidth]{assets/res.png}
+    \caption{Métriques du modèle construit from scratch }
+    \label{fig:met}
+\end{figure}
+\end{frame}
+
+\begin{frame}[plain]
+	\Background
+	\begin{center}
+		{\Huge \textbf{Merci de votre attention}}\\
+		\vspace{9pt}
+		Victor DJIEMBOU $^{1}$ \\
+		\vspace{9pt}
+		$^{1}$ \textit{Université de Yaoundé I,\\ Faculté des Sciences,\\ Département d'Informatique,\\ Étudiant Master SD}
+	\end{center}
+	
+\end{frame}
+\end{document}

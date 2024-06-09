@@ -13,7 +13,22 @@
 #include <mutex>
 #include <fstream>
 #include <string>
-// #include <chrono>
-#include <ctime>
+#include <chrono>
+
+#include "./files.h"
+#include "./metrics.h"
+#include "./decisionTree.h"
+
+void test_and_save(
+    TreeNode*, 
+    std::unordered_map<std::string, std::vector<float>>&,
+    std::unordered_map<std::string, std::vector<float>>&,
+    std::vector<float>,
+    std::string,
+    int,
+    int
+    );
+
+bool checkExistanceOfFile(std::string, std::string);
 
 #endif //DTREE_MAIN_H

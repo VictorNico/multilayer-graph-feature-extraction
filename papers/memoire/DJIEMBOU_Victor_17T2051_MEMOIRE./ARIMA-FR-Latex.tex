@@ -1,0 +1,321 @@
+\documentclass{arima-fr}
+% force arXiv/HAL à compiler avec PDFLaTeX
+\pdfoutput=1 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Modules
+\usepackage{array}
+\usepackage{pgfplots}
+\usepackage{graphicx}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\usepackage{hyperref}
+\usepackage[babel]{csquotes}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% En-tête
+\title{Prédiction du risque de crédit bancaire sensible aux coûts financiers en intégrant des descripteurs extraits des graphes}
+\author[1]{Victor Nico DJIEMBOU TIENTCHEU}
+\author[1]{Armel Jacques NZEKON NZEKO'O}
+\affil[1]{Université de Yaoundé I, Cameroun} 
+% auteur correspondant avec son e-mail
+\corrauthor{Victor nico.djiembou@facsciences-uy1.cm, Armel armel.nzekon@facsciences-uy1.cm}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Code pour les citations de logiciels 
+\usepackage[
+  style=numeric-comp,
+  datamodel=software, % extend the datamodel with entries for software
+  abbreviate=false,
+  natbib=true,
+  sorting=ynt,
+  backend=biber,
+  bibencoding=utf8,
+  giveninits=true,
+  url=false,
+  doi=false,
+  defernumbers,
+  maxcitenames=10,
+  defernumbers=false,
+  maxbibnames=100]{biblatex}
+%
+% Load the software biblatex style
+%
+
+\usepackage{software-biblatex}
+%
+% Set software specific bibliography options
+%
+\ExecuteBibliographyOptions{
+  halid=true,
+  swhid=true,
+  swlabels=true,
+  vcs=true,
+  license=false}
+%
+% Make title an hyperlink to the DOI or URL to make the result leaner (suggested by N. Rougier 4/4/2020)
+%
+
+\newcommand{\doiorurl}{%
+ \iffieldundef{doi}
+    {\iffieldundef{url}
+       {}
+       {\strfield{url}}}
+    {http://dx.doi.org/\strfield{doi}}%
+}
+\newcommand{\myhref}[1]{%
+ \ifboolexpr{%
+  test {\ifhyperref}
+  and
+  not test {\iftoggle{bbx:url}}
+   and
+   not test {\iftoggle{bbx:doi}}
+  }
+  {\href{\doiorurl}{#1}}
+  {#1}%
+}
+\DeclareFieldFormat{title}{\myhref{\mkbibemph{#1}}}
+\DeclareFieldFormat
+  [article,inbook,incollection,inproceedings,patent,thesis,unpublished]
+  {title}{\myhref{\mkbibquote{#1\isdot}}}
+\addbibresource{ARIMA-FR.bib}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\pgfplotsset{compat=1.17}
+\begin{document}
+\maketitle
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\abstract {
+
+%%%%%% contexte d'intérêt
+Les prêts sont des opérations financières très importantes pour le développement et la croissance économique d'un pays, car ces derniers facilitent la création et la croissance des entreprises et donc l'emploi de plus de personnes tant par les entreprises privées, publiques ou parapubliques.
+
+%%%%%% problème lié au context d'intérêt
+Les non remboursements des prêts ont des coûts importants sur les institutions financières prêteuses, pouvant entraîner leur faillite et donc détruire tout le système de prêt et constituer par là, un frein au développement économique. Il est donc nécessaire de pouvoir prédire efficacement si un prêt sera remboursé ou non par l'emprunteur.  
+
+%%%%%% approche classique de resolution du problème
+A cet effet, la question de prédiction du risque de crédit est devenu un domaine majeur dans lequel des chercheurs en Intelligence artificielle proposent des modèles qui prédisent la classe d'un prêt à partir des attributs standards qui le décrivent dans l'institution préteuse. Ces attributs standards n'étant pas suffisants pour avoir les meilleures prédictions, ces dernières années, plusieurs travaux portent sur la création de nouveaux attributs descriptifs à mettre en entrée des modèles classiques de prédiction dans le but d'améliorer leur performance. 
+
+%%%%%% transition vers la limite ou question spécifique 
+C'est le cas des récents travaux sur l'extraction de nouveaux descripteurs des prêts modélisés par un graphe multicouches dans lesquels une seule application du PageRank personnalisé sur le graphe multicouches permet d'extraire les nouveaux descripteurs des différents prêts considérés.      
+
+%%%%%% la ou les limites de l'existant a aborde dans le travail
+Les travaux actuels sur les graphes multicouches ont pour limites de ne pas être suffisamment personnalisés par prêt, de ne pas considérer les classes des prêts dans le processus de construction du graphe lors de l'apprentissage, de ne pas proposer de stratégie pour le choix des attributs à considérer comme couches du graphe construit et enfin de ne pas évaluer leur impact sur les coût financiers qui sont un aspect important pour les institution prêteuses. 
+
+%%%%%% L'idee de solutions & démarche (c'est combiné pour ton cas)
+Dans ce mémoire, nous proposons d'intégrer les classes des prêts dans le processus de construction des graphes multicouches, et d'appliquer le PageRank personnalisé par prêt pour extraire les nouveaux descripteurs des ces graphes. Par ailleurs, nous proposons un protocole de sélection des attributs à considérer comme couches du graphe multicouches, et effectuons une évaluation des coûts financiers des modèles de prédiction du risque de crédit construits à partir des données enrichies par les nouveaux descripteurs. 
+
+%%%%%% descriptions du cadre d'experimentations
+Des expérimentations sont menées sur 04 jeux de données, en considérant 06 modèles classiques de prédiction du risque de crédit (LDA, SVM, LR, DT, RF, XGBoost) et 03 métriques d'évaluation des performances des modèles (Accuracy, F1-score, Cost), dont l'une sensible aux coûts financiers. Des valeurs de SHapley sont considérés pour évaluer l'importance des nouveaux descripteurs.
+
+%%%%%% présentation des principaux résultats
+Nous observons que notre approche permet d'améliorer les meilleurs modèles de l'existant dans C\% des cas, de plus le fait d'intégrer les informations de classe permet de garantir une réductions des coûts financiers de plus de Y\% dans la majorité de cas.
+
+}
+
+\keywords{risque de crédit, sciences des réseaux, graphe multicouches}
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Introduction}
+%%%%%%%% Contexte d'application  et contexte d'intérêt.
+\subsection{Contexte d'application  et d'intérêt}
+Les prêts financiers sont une opération importante dans la croissance économique dans le monde car elle sont utilisé pour subventionner les projets organismes gouvernementaux et des particuliers.
+
+Les projets d'urbanisation et des recherches les plus poussées dans le monde n'existe que parce que les prêts financiers existent. 
+
+%%%%%%%% Transition vers la problématique
+\subsection{Transition vers la problématique}
+Crise de subprime en 2008
+
+Machine learning pour la prédiction du risque de crédit financiers
+
+manque de données et caractéristiques descriptives
+
+Création de nouvelle dimension descriptives dans les jeux de données en utilisant des graphes multicouches
+
+La logique de PageRank personnalisation ne se porte pas sur chaque information emprunteurs mais sur celui du réseau formé
+
+Il existe pas un mécanismes pour identifier de façon exacts les attributs l'ensembles de relations les plus pertinentes à analyser
+
+La modélisation ne prend pas en compte les informations de décisions de ses historiques pourtant connu
+
+L'approche ne met pas un intérêt sur l'impact de la solution en terme coûts financiers pour l'entité prêteuses.
+
+%%%%%%%% Problème 
+\subsection{Problème}
+Il est question pour nous dans ce memoire de trouver comment proposer à la fois une façon d'améliorer la personnalisation du PageRank, prendre en compte la décision de prêt dans la modélisation graphe biparti multicouches, de sélectionner les attributs descriptives optimales pour la construction du graphe et mettre ce pieds un métrique de   
+
+%%%%%%%% Objectif
+\subsection{Objectif}
+proposer un PageRank personnalisation porté sur un seul emprunteur à la fois
+
+proposer un protocole qui va permettre d'identifier les relations les plus pertinentes à analyser
+
+proposer une cadre de modélisation graphe biparti multicouches qui incorpore les informations de décision des prêts historique.
+
+%%%%%%%% Contribution
+\subsection{Contribution}
+proposer une meilleur façons d'extraire des descripteurs des graphes multicouches en proposant
+\begin{itemize}
+\item un PageRank personnalisation porté sur un seul emprunteur à la fois
+
+\item un protocole qui va permettre d'identifier les relations les plus pertinentes à analyser
+
+\item une cadre de modélisation graphe biparti multicouches qui incorpore les informations de décision des prêts historique.
+
+\item une métrique pour évaluer les coûts financiers.
+\end{itemize}
+
+
+%%%%%%%% Plan du mémoire
+\subsection{Plan du mémoire}
+Le reste de ce memoire se présentera comme suit, dans la section suivante nous présenterons l'état de l'art sur la prédiction du risque de crédit financier, dans la troisième section. Nous présentons notre solution, un cadre d'extraction optimale de descripteurs dans des graphes biparti multicouches. La quatrième section présente notre cadre expérimentale. Et enfin, en section 5 nous conclurons notre travail.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Prédiction du risque de crédit}
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+l'évaluation du risque de crédit par des modèles de machine learning classique + manque de données + non représentativité + non equivalence des coûts
+
+augmentation de donnée avec les méthodes de sampling (over et under)
+
+méthodes de création de nouvelles attributs descriptives
+	\begin{itemize}
+		\item graphes complet
+		\item graphe multivue
+		\item graphe biparti
+		\item graphe biparti multicouche
+	\end{itemize}
+
+
+\section{Prise en compte des décisions dans la modélisation graphe biparti multicouches et personnalisation du PageRank à un seul emprunteur pour une prédiction du risque de crédit sensible aux coûts financiers }
+
+graphe biparti multicouches
+
+PageRank personnalisé
+
+modèles de machine learning
+
+PageRank Personnalisé à un emprunt
+
+Graphe biparti multicouches intégrant les informations de décision
+
+Protocole de selection des k meilleurs attributs devant servir à la construction du graphes biparti multicouches à k couches.
+
+
+
+
+\section{Expérimentations}
+
+\subsection{Description du jeux de données}
+AFB, CREDIT RISK, GERMAN, JAPAN (nombre de ligne (exemple), nombre de colonnes, nombre de colonnes numériques, nombre d'attributs catégoriel, nombre d'exemples positif, nombre d'exemples négatifs)
+
+\subsection{Évaluation et paramétrage de modèles}
+
+Acc + F1 + Cost
+
+Approches
+\begin{itemize}
+\item MlC
+\item MCA
+\end{itemize}
+
+Logiques
+\begin{itemize}
+\item GLO
+\item PER
+\item GAP
+\end{itemize}
+
+modeles
+\begin{itemize}
+\item MX
+\item CX
+\item CY
+\item CXY
+\end{itemize}
+
+
+
+
+\subsection{Résultats}
+SHAP + Tableaux
+
+
+\section{Conclusion}
+
+\subsection{rappel du problème abordé}
+Il etait question pour nous dans ce memoire de trouver comment proposer à la fois une façon d'améliorer la personnalisation du PageRank, prendre en compte la décision de prêt dans la modélisation graphe biparti multicouches, de sélectionner les attributs descriptives optimales pour la construction du graphe et mettre ce pieds un métrique de   
+
+\subsection{Idée de solution}
+Prise en compte des décisions dans la modélisation graphe biparti multicouches et personnalisation du PageRank à un seul emprunteur pour une prédiction du risque de crédit sensible aux coûts financiers
+
+\subsection{Démarche}
+proposer un PageRank personnalisé porté sur un seul emprunteur à la fois
+
+proposer un protocole qui va permettre d'identifier les relations les plus pertinentes à analyser
+
+proposer une cadre de modélisation graphe biparti multicouches qui incorpore les informations de décision des prêts historique.
+
+une métrique de coûts financiers
+
+\subsection{Les principaux résultats}
+
+
+
+\subsection{Les perspectives}
+prendre en compte les données numérique dans la modélisation
+
+proposer de nouvelles stratégies d'exploitation du graphes autres que le PageRank personnalisé.
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Code pour bibliographie avec les logiciels 
+\printbibheading
+\printbibliography[heading=subbibliography,nottype=software,nottype=softwareversion,nottype=softwaremodule,nottype=codefragment,title={Publications}]
+\printbibliography[heading=subbibliography,type=software,title={Software Project}]
+\printbibliography[heading=subbibliography,type=softwareversion,title={Software versions, modules, excerpts and manuals}]
+\nocite{*}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\appendix\footnotesize
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Annexe 1}
+Dans Bibtex, comment écrire une citation d'un article de ARIMA (example: \citet{arima}) sans rien oublier et dans le bon format?
+Voir la structure dans les commentaires à la fin de \textit{arima.tex}.
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Remerciements}
+Nous tenons à remercier tous nos partenaires financiers : ANR ..., ERC ..., agences de financement, ...
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Biographie}
+Il est possible ici d'insérer de courtes biographies des auteurs.
+
+
+
+
+
+\end{document}

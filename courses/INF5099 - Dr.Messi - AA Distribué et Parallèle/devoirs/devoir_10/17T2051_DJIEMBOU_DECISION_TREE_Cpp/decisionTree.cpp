@@ -12,6 +12,11 @@ std::unordered_map<std::string, std::tuple<float, float, bool, bool>> masks_; /*
 int num_threads_ = -1; /** Number of thread to use */
 std::string y_;
 
+std::vector<NodeData> stack_trace;
+std::mutex mutex_;
+int avalaible_;
+double duration;
+
 float gini_impurity(const std::vector<float>& y) {
     if (y.empty()) {
         throw std::runtime_error("Input vector must not be empty.");
@@ -91,8 +96,9 @@ float variance(const std::vector<float>& y) {
 // Fonction de thread pour calculer une partie du masque
 void process_thread(SharedData0& data, int thread_id) {
     for (size_t i = thread_id; i < data.X.size(); i += data.completed_threads) {
-        std::lock_guard<std::mutex> lock(data.mutex);
+        // data.mutex.lock();
         (*data.mask)[i] = data.X[i] < data.val;
+        // data.mutex.unlock();
         // std::cout << thread_id << "("<<data.X[i] << "," << data.val << ") ...> " << (*data.mask)[i] << " i: " << std::to_string(i) << std::endl;
     }
 }
@@ -107,7 +113,6 @@ std::vector<bool> getMaskParallel(const std::vector<float>& X, const float& val)
     for (int i = 0; i < num_threads_; ++i) {
         threads.emplace_back(process_thread, std::ref(data), i);
     }
-
     for (auto& thread : threads) {
         thread.join();
     }
@@ -126,8 +131,8 @@ void process_thread_count(SharedData& data, int thread_id) {
             // std::cout << "<--->" << std::endl;
         }
     }
-    std::lock_guard<std::mutex> lock(data.mutex);
-    data.a+=l;
+    std::atomic_size_t& a = data.a;
+    a += l;
 }
 
 
@@ -140,7 +145,6 @@ size_t count_true_parallel(const std::vector<bool>& mask, int num_threads) {
     for (int i = 0; i < num_threads_; ++i) {
         threads.emplace_back(process_thread_count, std::ref(data), i);
     }
-
     for (auto& thread : threads) {
         thread.join();
     }
@@ -156,14 +160,19 @@ void process_thread_separate(SharedData2& data, int thread_id) {
     d2.reserve(data.y.size() / data.completed_threads); // Allouer de la mémoire pour d2
     for (size_t i = thread_id; i < data.y.size(); i += data.completed_threads) {
         if (data.mask[i]) {
-            d1.push_back(data.y[i]);
+            data.mutex.lock();
+            (*data.pos_data).push_back(data.y[i]);
+            data.mutex.unlock();
         } else {
-            d2.push_back(data.y[i]);
+            data.mutex.lock();
+            (*data.neg_data).push_back(data.y[i]);
+            data.mutex.unlock();
         }
     }
-    std::lock_guard<std::mutex> lock(data.mutex);
-    (*data.pos_data).insert((*data.pos_data).end(), std::make_move_iterator(d1.begin()), std::make_move_iterator(d1.end()));
-    (*data.neg_data).insert((*data.neg_data).end(), std::make_move_iterator(d2.begin()), std::make_move_iterator(d2.end()));
+    // data.mutex.lock();
+    // (*data.pos_data).insert((*data.pos_data).end(), std::make_move_iterator(d1.begin()), std::make_move_iterator(d1.end()));
+    // (*data.neg_data).insert((*data.neg_data).end(), std::make_move_iterator(d2.begin()), std::make_move_iterator(d2.end()));
+    // data.mutex.unlock();
 }
 
 // Fonction parallèle pour séparer les données
@@ -175,10 +184,10 @@ void separate_data_parallel(const std::vector<float>& y, const std::vector<bool>
     for (int i = 0; i < num_threads_; ++i) {
         threads.emplace_back(process_thread_separate, std::ref(data), i);
     }
-
     for (auto& thread : threads) {
         thread.join();
     }
+    
 }
 
 // Fonction parallèle pour calculer le gain d'information
@@ -296,16 +305,17 @@ std::tuple<float, float, bool, bool> max_information_gain_split(
 
     for (const float& val : options) {
         std::vector<bool> mask;
-        if (num_threads_ == -1) {
-            mask = getMask(x,val);
-        } else {
+        if (((Logic == 1) || (Logic == 3) ) && (x.size() > 200)) {
+            // std::cout << "pp" << std::endl;
             mask= getMaskParallel(x,val);
+        } else {
+            mask = getMask(x,val);
         }
         float val_ig;
-        if (num_threads_ == -1){
-            val_ig = information_gain(y,mask);
-        }else{
+        if (((Logic == 2) || (Logic == 3) ) && (y.size() > 200)){
             val_ig = information_gain_parallel(y,mask);
+        }else{
+            val_ig = information_gain(y,mask);
         }
         ig.push_back(val_ig);
         split_value.push_back(val);
@@ -365,10 +375,24 @@ get_best_split(const std::string& y,
                ) {
     
     std::unordered_map<std::string, std::tuple<float, float, bool, bool>> masks;
-    for (const auto& [column, x] : data) {
-        if (column != y) {
-            auto [ig, split_feature, is_categorical, flag] = max_information_gain_split(x, data.at(y));
-            masks[column] = std::make_tuple(ig, split_feature, is_categorical, flag);
+    if ((Logic == 4) || ((Logic == 7) && (num_threads_ - usedThreads) >= 2 )){
+        y_ = y;
+        data_ = data;
+    // Créer les threads
+        std::vector<std::thread> threads;
+        for (int i = 0; i < (num_threads_ - usedThreads); ++i) {
+            threads.emplace_back(iterate_search_, i);
+        }
+        for (auto& thread : threads) {
+            thread.join();
+        }
+    }
+    else{
+        for (const auto& [column, x] : data) {
+            if (column != y) {
+                auto [ig, split_feature, is_categorical, flag] = max_information_gain_split(x, data.at(y));
+                masks[column] = std::make_tuple(ig, split_feature, is_categorical, flag);
+            }
         }
     }
     
@@ -436,18 +460,24 @@ make_split(const std::string& variable,
     for (size_t i = 0; i < data.at(variable).size(); ++i) {
         if (data.at(variable)[i] < value) {
             index.push_back(i);
-        }
-    }
-
-    for (size_t i = 0; i < data.at(variable).size(); ++i) {
-        if (std::find(index.begin(), index.end(), i) == index.end()) {
+        }else{
             index2.push_back(i);
         }
     }
 
+    // for (size_t i = 0; i < data.at(variable).size(); ++i) {
+    //     if (std::find(index.begin(), index.end(), i) == index.end()) {
+    //         index2.push_back(i);
+    //     }
+    // }
+
     std::unordered_map<std::string, std::vector<float>> data_1;
     std::unordered_map<std::string, std::vector<float>> data_2;
-
+    // if(Logic != 0){
+    //     for (const auto& [key, values] : data) {
+    //         std::cout << "Key: " << key << "->" << values.size() << std::endl;
+    //     }
+    // }
     for (const auto& [key, value_list] : data) {
         std::vector<float> temp1, temp2;
         for (size_t i : index) {
@@ -552,8 +582,10 @@ void sub_tree(
     // Push child nodes onto the stack
 //    std::cout << "pred stack" << (depth + 1) << std::endl;
     int next = depth + 1;
+    if (num_threads_ != -1){ mutex_.lock();}
     stack.emplace_back(NodeData{std::move(left), next, current_node->left});
     stack.emplace_back(NodeData{std::move(right), next, current_node->right});
+    if (num_threads_ != -1){ mutex_.unlock();}
 //    std::cout << "stack" << std::endl;
 }
 
@@ -618,7 +650,7 @@ TreeNode* interativeTrainTree(
         int depthg = current.depth;
         TreeNode* current_node = std::move(current.node);
 
-//        std::cout << "depth" << depthg << std::endl;
+       // std::cout << "depth" << depthg << std::endl;
 //        std::cout << "pre cond" << stack.size() << std::endl;
         std::pair<bool, bool> conditions = checkConditionsDTree(depthg, xy_current, max_categories, max_depth, counter, min_samples_split);
 //        std::cout << "cond" << std::endl;
@@ -631,7 +663,7 @@ TreeNode* interativeTrainTree(
             // std::cout << value;
             // }, val);
             // std::cout << " - " << ig << " - " << is_num << std::endl;
-
+            
             if (ig != std::numeric_limits<float>::infinity() && ig >= min_information_gain) {
 //                std::cout << "pre ms" << std::endl;
                 auto [left, right] = make_split(var, val, xy_current, is_num);
@@ -643,7 +675,7 @@ TreeNode* interativeTrainTree(
                 std::string question;
 
                 question = var + " " + split_type + " " + std::to_string(val);
-
+                // std::cout << "ok" << std::endl;
 //                std::cout << "pre Sub "<< std::endl ;
                 sub_tree(current_node, var, ig, question, depthg, val, stack, left, right);
 //                std::cout << "Sub " << (root == nullptr )<< std::endl;
@@ -661,6 +693,97 @@ TreeNode* interativeTrainTree(
         xy_current.clear();
         // std::cout << "ok"<< std::endl;
         current.data.clear();
+    }
+//    std::cout << "end"<< std::endl;
+    return std::move(root);
+}
+
+void DecisionTreeGrowth(
+    GrowthShareData& GrowthShareData_,
+    int thread_id
+    ){
+    for (size_t iter = thread_id; iter < stack_trace.size(); iter+=GrowthShareData_.nb_threads){
+        NodeData current = stack_trace[iter];
+        std::unordered_map<std::string, std::vector<float>> xy_current = current.data;
+        int depthg = current.depth;
+        TreeNode* current_node = std::move(current.node);
+        std::pair<bool, bool> conditions = checkConditionsDTree(depthg, xy_current, GrowthShareData_.max_categories, GrowthShareData_.max_depth, 0, GrowthShareData_.min_samples_split);
+        if (conditions.first && conditions.second) {
+            auto [var, val, ig, is_num] = get_best_split(GrowthShareData_.y, xy_current);
+
+            if (ig != std::numeric_limits<float>::infinity() && ig >= GrowthShareData_.min_information_gain) {
+                auto [left, right] = make_split(var, val, xy_current, is_num);
+
+                std::string split_type = is_num ? "<=" : "in";
+                std::string question;
+
+                question = var + " " + split_type + " " + std::to_string(val);
+
+                sub_tree(current_node, var, ig, question, depthg, val, GrowthShareData_.stack, left, right);
+            } else {
+                leaf_tree(xy_current, GrowthShareData_.y, GrowthShareData_.target_factor, var, ig, val, current_node);
+            }
+        } else {
+            leaf_tree(xy_current, GrowthShareData_.y, GrowthShareData_.target_factor, std::string(), std::numeric_limits<float>::infinity(), float(), current_node);
+        }
+        xy_current.clear();
+        current.data.clear();
+    }
+    
+}
+
+TreeNode* interativeTrainTree_Parallel(
+        std::unordered_map<std::string, std::vector<float>> data,
+        std::string y,
+        bool target_factor,
+        int max_depth,
+        int min_samples_split,
+        float min_information_gain,
+        int counter,
+        int max_categories) {
+
+    std::vector<NodeData> stack;
+    TreeNode* root = new TreeNode;
+    init_tree(data, stack, root);
+    clock_t start, end;
+    double duration;
+    while (!stack.empty()) {
+       stack_trace = std::move(stack);
+       int nb_threads = stack_trace.size() < num_threads_ ? stack_trace.size() : num_threads_;
+       avalaible_ = num_threads_ - nb_threads;
+       stack.resize(0);
+       // std::cout << nb_threads << " inse " << stack_trace.size() << std::endl;
+       GrowthShareData GrowthShareData_ {stack,
+                    nb_threads, 
+                    y,
+                    target_factor,
+                    max_depth,
+                    min_samples_split,
+                    min_information_gain,
+                    counter,
+                    max_categories};
+        
+        if (nb_threads > 1){
+           // std::cout << "inse" << std::endl;
+            usedThreads = nb_threads;
+            std::vector<std::thread> threads;
+            for (int i = 0; i < nb_threads; i++){
+                threads.emplace_back(
+                    DecisionTreeGrowth, 
+                    std::ref(GrowthShareData_),
+                    i
+                    );
+            }
+            for (auto& thread : threads) {
+                thread.join();
+            }
+        }else{
+            usedThreads = 0;
+            DecisionTreeGrowth(std::ref(GrowthShareData_),0);
+        }
+        
+        
+        
     }
 //    std::cout << "end"<< std::endl;
     return std::move(root);

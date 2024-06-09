@@ -26,6 +26,7 @@
 #include <condition_variable>
 
 
+
 float gini_impurity(const std::vector<float>&);
 
 float entropy(const std::vector<float>&);
@@ -185,6 +186,9 @@ extern std::unordered_map<std::string, std::tuple<float, float, bool, bool>> mas
 extern int num_threads_; /** Number of thread to use */
 extern std::string y_;
 
+extern int Logic;
+extern int usedThreads;
+
 // Structure de données partagées pour les threads
 struct SharedData {
     const std::vector<bool>& mask;
@@ -232,6 +236,34 @@ std::vector<bool> getMaskParallel(const std::vector<float>&, const float&);
 void process_thread(SharedData0&, int);
 
 
+struct GrowthShareData {
+    std::vector<NodeData>& stack;
+    int nb_threads;
+    std::string y;
+    bool target_factor;
+    int max_depth;
+    int min_samples_split;
+    float min_information_gain;
+    int counter;
+    int max_categories;
+};
+
+
+TreeNode* interativeTrainTree_Parallel(
+        std::unordered_map<std::string, std::vector<float>>,
+        std::string,
+        bool,
+        int,
+        int,
+        float,
+        int,
+        int);
+
+
+void DecisionTreeGrowth(
+    GrowthShareData& GrowthShareData_,
+    int thread_id
+    );
 
 
 #endif //DTREE_DECISIONTREE_H

@@ -229,7 +229,8 @@ get_quantitative_from_cols = lambda x: (list(set([
 def print_compare(
     store,
     output_path,
-    alpha
+    alpha,
+    valll=False
 ):
     # fetch model name
     tables = {model:'' for model in list(store.keys())}
@@ -306,7 +307,7 @@ def print_compare(
 
         """
 
-        is_best = lambda mag,current: (max([max(mag[el]) for el in list(mag.keys())]) == current) and (current != 0)
+        is_best = lambda mag,current,act: (act([act(mag[el]) for el in list(mag.keys())]) == current) and (current != 0)
         # fetch store to fullfil the tables with content
         for ai, approach in enumerate(list(store[model][financial_folder[0]]['accuracy'].keys())): # Mlc or MCA
             lines+= """
@@ -328,9 +329,10 @@ def print_compare(
                         # metrics = list(set(metrics)-set(['classic']))
                         # print(folder, metrics, config, approach, logic)
                         for metric in metrics:
-                            # print(store[model][folder].keys(), folder, model)
-                            is_sup = is_best(store[model][folder][metric][approach][logic], max(store[model][folder][metric][approach][logic][config]))
-                            val = "\\textbf{"+str(max(store[model][folder][metric][approach][logic][config]))+"}" if is_sup else str(max(store[model][folder][metric][approach][logic][config]))
+                            act = max if valll is False else (min if "financial-cost" in metric else max) 
+                            print(metric, act, valll)
+                            is_sup = is_best(store[model][folder][metric][approach][logic], act(store[model][folder][metric][approach][logic][config]),act)
+                            val = "\\textbf{"+str(act(store[model][folder][metric][approach][logic][config]))+"}" if is_sup else str(act(store[model][folder][metric][approach][logic][config]))
                             lines+= f"& {val}"
                             total_counter[config].append(is_sup)
                     start = (3 if ci != len(list(store[model][financial_folder[0]]['accuracy'][approach][logic].keys()))-1 else (1 if li == len(list(store[model][financial_folder[0]]['accuracy'][approach].keys()))-1 else 2))
@@ -594,6 +596,10 @@ def generate_report_tables(
     template_details_metrics_depth_1 = {
         'accuracy': {
             'MlC': {
+                'GLO': {
+                    'MX': [],
+                    'CX': [],
+                },
                 'PER': {
                     'MX': [],
                     'CX': [],
@@ -605,13 +611,13 @@ def generate_report_tables(
                     'CX': [],
                     'CY': [],
                     'CXY': []
-                },
-                'GLO': {
-                    'MX': [],
-                    'CX': [],
                 }
             },
             'MCA': {
+                'GLO': {
+                    'MX': [],
+                    'CX': [],
+                },
                 'PER': {
                     'MX': [],
                     'CX': [],
@@ -623,15 +629,15 @@ def generate_report_tables(
                     'CX': [],
                     'CY': [],
                     'CXY': []
-                },
-                'GLO': {
-                    'MX': [],
-                    'CX': [],
                 }
             }
         },
         'f1-score': {
             'MlC': {
+                'GLO': {
+                    'MX': [],
+                    'CX': [],
+                },
                 'PER': {
                     'MX': [],
                     'CX': [],
@@ -643,13 +649,13 @@ def generate_report_tables(
                     'CX': [],
                     'CY': [],
                     'CXY': []
-                },
-                'GLO': {
-                    'MX': [],
-                    'CX': [],
                 }
             },
             'MCA': {
+                'GLO': {
+                    'MX': [],
+                    'CX': [],
+                },
                 'PER': {
                     'MX': [],
                     'CX': [],
@@ -661,15 +667,15 @@ def generate_report_tables(
                     'CX': [],
                     'CY': [],
                     'CXY': []
-                },
-                'GLO': {
-                    'MX': [],
-                    'CX': [],
                 }
             }
         },
         'financial-cost': {
             'MlC': {
+                'GLO': {
+                    'MX': [],
+                    'CX': [],
+                },
                 'PER': {
                     'MX': [],
                     'CX': [],
@@ -681,13 +687,13 @@ def generate_report_tables(
                     'CX': [],
                     'CY': [],
                     'CXY': []
-                },
-                'GLO': {
-                    'MX': [],
-                    'CX': [],
                 }
             },
             'MCA': {
+                'GLO': {
+                    'MX': [],
+                    'CX': [],
+                },
                 'PER': {
                     'MX': [],
                     'CX': [],
@@ -699,10 +705,6 @@ def generate_report_tables(
                     'CX': [],
                     'CY': [],
                     'CXY': []
-                },
-                'GLO': {
-                    'MX': [],
-                    'CX': [],
                 }
             }
         }
@@ -711,39 +713,39 @@ def generate_report_tables(
     template_details_metrics_depth_2 = {
         'accuracy': {
             'MlC': {
+                'GLO': [],
                 'PER': [],
-                'GAP': [],
-                'GLO': []
+                'GAP': []
             },
             'MCA': {
+                'GLO': [],
                 'PER': [],
-                'GAP': [],
-                'GLO': []
+                'GAP': []
             }
 
         },
         'f1-score': {
             'MlC': {
+                'GLO': [],
                 'PER': [],
-                'GAP': [],
-                'GLO': []
+                'GAP': []
             },
             'MCA': {
+                'GLO': [],
                 'PER': [],
-                'GAP': [],
-                'GLO': []
+                'GAP': []
             }
         },
         'financial-cost': {
             'MlC': {
+                'GLO': [],
                 'PER': [],
-                'GAP': [],
-                'GLO': []
+                'GAP': []
             },
             'MCA': {
+                'GLO': [],
                 'PER': [],
-                'GAP': [],
-                'GLO': []
+                'GAP': []
             }
         }
     }
@@ -943,7 +945,8 @@ def generate_report_tables(
         val_local_tables = {key: val_local_tables[key] + "\n" + mod for key, mod in print_compare(
             val_local_details_metrics_depth_1,
             f'{cwd}/analyze/val',
-            alpha
+            alpha,
+            True
         ).items()}
 
     ## print the global container (gain, metric)
@@ -955,7 +958,8 @@ def generate_report_tables(
     val_global_tables = "\n".join([ mod for _, mod in print_compare(
         val_global_details_metrics_depth_1,
         f'{cwd}/analyze/val',
-        'all'
+        'all',
+        True
     ).items()])
     create_domain(f'{cwd}/analyze/ig/all_ig/')
     with open(f'{cwd}/analyze/ig/all_ig/ig_all.tex', "a") as fichier:
