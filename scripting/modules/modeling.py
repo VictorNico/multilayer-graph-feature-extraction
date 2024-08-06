@@ -13,6 +13,7 @@ changes:
 
 import pandas as pd
 import numpy as np
+import sys
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.neighbors import KNeighborsClassifier
@@ -24,7 +25,7 @@ from sklearn.linear_model import LogisticRegression
 #from hyperopt import hp, fmin, tpe
 from sklearn.model_selection import GridSearchCV, StratifiedKFold
 #from lightgbm import LGBMClassifier
-from sklearn.metrics import precision_score,accuracy_score,f1_score, recall_score
+# from sklearn.metrics import precision_score,accuracy_score,f1_score, recall_score
 from .file import save_model, save_dataset
 #from sklearn.linear_model import LinearRegression
 from sklearn.svm import SVC
@@ -138,12 +139,24 @@ def init_training_store(dataframe, withCost=True):
     'accuracy',
     'recall',
     'f1-score',
+    'precision0',
+    'recall0',
+    'f1-score0',
+    'precision1',
+    'recall1',
+    'f1-score1',
     'financial-cost'
     ]) if withCost else cols.extend([
     'precision',
     'accuracy',
     'recall',
-    'f1-score'
+    'f1-score',
+    'precision0',
+    'recall0',
+    'f1-score0',
+    'precision1',
+    'recall1',
+    'f1-score1'
     ])
     return pd.DataFrame(columns=cols)
 
@@ -189,6 +202,7 @@ def train_classifier(
         financialOption,
         duration_divider,
         rate_divider,
+        original,
         withCost=True
 ):
     """Train a classifier on a dataframe
@@ -207,22 +221,41 @@ def train_classifier(
     the training storage
     """
 
+    # print(original)
     clf.fit(X_train,y_train)
     y_pred = clf.predict(X_test)
+    df_predictions = pd.DataFrame({'Prediction': y_pred})
+    save_dataset(
+        cwd=cwd+'/predictions',
+        dataframe=df_predictions,
+        name=f'{domain}_y_pred',
+        prefix=prefix,
+        sep=','
+    )
+    cfm = compute_confusion_matrix(y_test, y_pred, list(np.unique(y_test)))
 
-    accuracy = accuracy_score(y_test,y_pred)
-    precision = precision_score(y_test,y_pred)
+    accuracy_r = accuracy(cfm)
+    precision_r = precision(cfm)
+    f1_score_r = f1_score(cfm)
+    recall_r = recall(cfm)
+
+    precision_0_r = precision_0(cfm)
+    f1_score_0_r = f1_score_0(cfm)
+    recall_0_r = recall_0(cfm)
+
+    precision_1_r = precision_1(cfm)
+    f1_score_1_r = f1_score_1(cfm)
+    recall_1_r = recall_1(cfm)
+
     if withCost:
         cost = compute_classification_financial_cost(
             list(y_pred),
             list(y_test),
             financialOption,
-            X_test,
+            original[1],
             duration_divider,
             rate_divider
         )
-    recall = recall_score(y_test,y_pred, average='macro')
-    f1_score_r = f1_score(y_test,y_pred, average='macro')
 
     #save_model(clf, name+'_'+domain, prefix)
     link_to_model = save_model(
@@ -236,19 +269,31 @@ def train_classifier(
         vals = list(clf.coef_[0])
         #print(f"len {len(vals)}")
         #print(vals)
-        vals.extend([precision,accuracy,recall,f1_score_r,cost]) if withCost else vals.extend([precision,accuracy,recall,f1_score_r])
+        vals.extend([precision_r,accuracy_r,recall_r,f1_score_r, precision_0_r, recall_0_r, f1_score_0_r,precision_1_r,recall_1_r,f1_score_1_r  ,cost]) if withCost else vals.extend([precision_r,accuracy_r,recall_r,f1_score_r, precision_0_r, recall_0_r, f1_score_0_r,precision_1_r,recall_1_r,f1_score_1_r])
         keys = X_train.columns.to_list()
         keys.extend([
             'precision',
             'accuracy',
             'recall',
             'f1-score',
+            'precision0',
+            'recall0',
+            'f1-score0',
+            'precision1',
+            'recall1',
+            'f1-score1',
             'financial-cost'
             ]) if withCost else keys.extend([
             'precision',
             'accuracy',
             'recall',
-            'f1-score'])
+            'f1-score',
+            'precision0',
+            'recall0',
+            'f1-score0',
+            'precision1',
+            'recall1',
+            'f1-score1'])
         #print(f"{name} keys:{len(keys)} vals:{len(vals)}")
         store.loc[name] = pd.Series(
                 vals, 
@@ -260,19 +305,31 @@ def train_classifier(
     elif 'RF' in name or 'DT' in name or 'KN' in name:
         vals = list(clf.feature_importances_)
         #print(f"len {len(vals)}")
-        vals.extend([precision,accuracy,recall,f1_score_r,cost]) if withCost else vals.extend([precision,accuracy,recall,f1_score_r])
+        vals.extend([precision_r,accuracy_r,recall_r,f1_score_r, precision_0_r, recall_0_r, f1_score_0_r,precision_1_r,recall_1_r,f1_score_1_r  ,cost]) if withCost else vals.extend([precision_r,accuracy_r,recall_r,f1_score_r, precision_0_r, recall_0_r, f1_score_0_r,precision_1_r,recall_1_r,f1_score_1_r])
         keys = X_train.columns.to_list()
         keys.extend([
             'precision',
             'accuracy',
             'recall',
             'f1-score',
+            'precision0',
+            'recall0',
+            'f1-score0',
+            'precision1',
+            'recall1',
+            'f1-score1',
             'financial-cost'
-        ]) if withCost else keys.extend([
+            ]) if withCost else keys.extend([
             'precision',
             'accuracy',
             'recall',
-            'f1-score'])
+            'f1-score',
+            'precision0',
+            'recall0',
+            'f1-score0',
+            'precision1',
+            'recall1',
+            'f1-score1'])
         #print(f"{name} keys:{len(keys)} vals:{len(vals)}")
         store.loc[name] = pd.Series(
                 vals, 
@@ -290,13 +347,25 @@ def train_classifier(
             'accuracy',
             'recall',
             'f1-score',
+            'precision0',
+            'recall0',
+            'f1-score0',
+            'precision1',
+            'recall1',
+            'f1-score1',
             'financial-cost'
         ]) if withCost else keys.extend([
             'precision',
             'accuracy',
             'recall',
-            'f1-score'])
-        vals.extend([precision,accuracy,recall,f1_score_r,cost]) if withCost else vals.extend([precision,accuracy,recall,f1_score_r])
+            'f1-score',
+            'precision0',
+            'recall0',
+            'f1-score0',
+            'precision1',
+            'recall1',
+            'f1-score1'])
+        vals.extend([precision_r,accuracy_r,recall_r,f1_score_r, precision_0_r, recall_0_r, f1_score_0_r,precision_1_r,recall_1_r,f1_score_1_r  ,cost]) if withCost else vals.extend([precision_r,accuracy_r,recall_r,f1_score_r, precision_0_r, recall_0_r, f1_score_0_r,precision_1_r,recall_1_r,f1_score_1_r])
         #print(f"{name} keys:{len(keys)} vals:{len(vals)}")
         store.loc[name] = pd.Series(
                 vals, 
@@ -322,6 +391,7 @@ def train(
         duration_divider,
         rate_divider,
         financialOption,
+        original,
         withCost=True
 ):
     """Train our baseline classifiers
@@ -341,26 +411,27 @@ def train(
 
     for name,clf in clfs.items():
 
-        try:
+        # try:
             print(name)
             store = train_classifier(
-                name,
-                clf,
-                x_train,
-                y_train,
-                x_test,
-                y_test,
-                store,
-                domain,
-                prefix,
-                cwd,
-                financialOption,
-                withCost,
-                duration_divider,
-                rate_divider
+                name=name,
+                clf=clf,
+                X_train=x_train,
+                y_train=y_train,
+                X_test=x_test,
+                y_test=y_test,
+                store=store,
+                domain=domain,
+                prefix=prefix,
+                cwd=cwd,
+                financialOption=financialOption,
+                withCost=withCost,
+                duration_divider=duration_divider,
+                rate_divider=rate_divider,
+                original=original
             )
-        except:
-            print(f"An exception occurred during training: {name}")
+        # except e:
+        #     print(f"An exception occurred during training: {name} {e}")
 
     # save of model training logs    
     link_to_evaluations_data = save_dataset(
@@ -408,3 +479,187 @@ def compute_classification_financial_cost(ypred, yreal, financialOption, test_da
             cost += deficit
 
     return cost
+
+
+def precision(confusion_matrix):
+    """
+    Computes the precision metric for Good and Bad Loans Loans.
+    :param confusion_matrix: the confusion matrix
+    :return:
+    """
+    precision_v = None
+    if confusion_matrix is not None and (len(confusion_matrix) == 2 and len(confusion_matrix[0]) == 2):
+        try:
+            precision_v = (1/2)*(
+                (confusion_matrix[0][0] / (confusion_matrix[0][1] + confusion_matrix[0][0]))
+                +
+                (confusion_matrix[1][1] / (confusion_matrix[1][1] + confusion_matrix[1][0]))
+                )
+        except ZeroDivisionError:
+            precision_v = (1/2)*(
+                (confusion_matrix[0][0] / (confusion_matrix[0][1] + confusion_matrix[0][0]) + sys.float_info.epsilon)
+                +
+                (confusion_matrix[1][1] / (confusion_matrix[1][1] + confusion_matrix[1][0]) + sys.float_info.epsilon)
+                )
+    return precision_v
+
+def precision_0(confusion_matrix):
+    """
+    Computes the precision metric for Good Loans.
+    :param confusion_matrix: the confusion matrix
+    :return:
+    """
+    precision_v = None
+    if confusion_matrix is not None and (len(confusion_matrix) == 2 and len(confusion_matrix[0]) == 2):
+        try:
+            precision_v = confusion_matrix[0][0] / (confusion_matrix[0][1] + confusion_matrix[0][0])
+        except ZeroDivisionError:
+            precision_v = confusion_matrix[0][0] / (confusion_matrix[0][1] + confusion_matrix[0][0] + sys.float_info.epsilon)
+    return precision_v
+
+def precision_1(confusion_matrix):
+    """
+    Computes the precision metric for Bad Loans.
+    :param confusion_matrix: the confusion matrix
+    :return:
+    """
+    precision_v = None
+    if confusion_matrix is not None and (len(confusion_matrix) == 2 and len(confusion_matrix[0]) == 2):
+        try:
+            precision_v = confusion_matrix[1][1] / (confusion_matrix[1][1] + confusion_matrix[1][0])
+        except ZeroDivisionError:
+            precision_v = confusion_matrix[1][1] / (confusion_matrix[1][1] + confusion_matrix[1][0] + sys.float_info.epsilon)
+    return precision_v
+
+
+def accuracy(confusion_matrix):
+    """
+    Computes the accuracy metric for Good and Bad Loans.
+    :param confusion_matrix: the confusion matrix
+    :return:
+    """
+    accuracy_v = None
+    if confusion_matrix is not None and (len(confusion_matrix) == 2 and len(confusion_matrix[0]) == 2):
+        try:
+            accuracy_v = (
+                    (confusion_matrix[0][0] + confusion_matrix[1][1]) /
+                    (confusion_matrix[0][1] + confusion_matrix[0][0] + confusion_matrix[1][1] + confusion_matrix[1][0])
+            )
+        except ZeroDivisionError:
+            accuracy_v = (
+                    (confusion_matrix[0][0] + confusion_matrix[1][1]) /
+                    (confusion_matrix[0][1] + confusion_matrix[0][0] + confusion_matrix[1][1] + confusion_matrix[1][0] + sys.float_info.epsilon)
+            )
+    return accuracy_v
+
+
+def f1_score(confusion_matrix):
+    """
+    Computes the f1 score metric for Good and Bad Loans
+    :param confusion_matrix:
+    :return: f1 - the f1 score
+    """
+    precision_val = precision(confusion_matrix)
+    recall_val = recall(confusion_matrix)
+    try:
+        f1 = 2 * ((precision_val * recall_val) / (precision_val + recall_val))
+    except ZeroDivisionError:
+        f1 = 2 * ((precision_val * recall_val) / (precision_val + recall_val + sys.float_info.epsilon))
+    return f1
+
+def f1_score_0(confusion_matrix):
+    """
+    Computes the f1 score metric for Good Loans.
+    :param confusion_matrix:
+    :return: f1 - the f1 score
+    """
+    precision_val = precision_0(confusion_matrix)
+    recall_val = recall_0(confusion_matrix)
+    try:
+        f1 = 2 * ((precision_val * recall_val) / (precision_val + recall_val))
+    except ZeroDivisionError:
+        f1 = 2 * ((precision_val * recall_val) / (precision_val + recall_val + sys.float_info.epsilon))
+    return f1
+
+def f1_score_1(confusion_matrix):
+    """
+    Computes the f1 score metric for Bad Loans.
+    :param confusion_matrix:
+    :return: f1 - the f1 score
+    """
+    precision_val = precision_1(confusion_matrix)
+    recall_val = recall_1(confusion_matrix)
+    try:
+        f1 = 2 * ((precision_val * recall_val) / (precision_val + recall_val))
+    except ZeroDivisionError:
+        f1 = 2 * ((precision_val * recall_val) / (precision_val + recall_val + sys.float_info.epsilon))
+    return f1
+
+
+def recall(confusion_matrix):
+    """
+    Computes the recall metric for Good and Bad Loans.
+    :param confusion_matrix: the confusion matrix
+    :return: recall_v - the recall value
+    """
+    recall_v = None
+    if confusion_matrix is not None and (len(confusion_matrix) == 2 and len(confusion_matrix[0]) == 2):
+        try:
+            recall_v = (1/2)*(
+                (confusion_matrix[0][0] / (confusion_matrix[0][0] + confusion_matrix[1][0]))
+                +
+                (confusion_matrix[0][1] / (confusion_matrix[0][1] + confusion_matrix[1][1]))
+                )
+        except ZeroDivisionError:
+            recall_v = (1/2)*(
+                (confusion_matrix[0][0] / (confusion_matrix[0][0] + confusion_matrix[1][0] + sys.float_info.epsilon))
+                +
+                (confusion_matrix[0][1] / (confusion_matrix[0][1] + confusion_matrix[1][1] + sys.float_info.epsilon))
+                ) 
+    return recall_v
+
+def recall_0(confusion_matrix):
+    """
+    Computes the recall metric for Good Loans.
+    :param confusion_matrix: the confusion matrix
+    :return: recall_v - the recall value
+    """
+    recall_v = None
+    if confusion_matrix is not None and (len(confusion_matrix) == 2 and len(confusion_matrix[0]) == 2):
+        try:
+            recall_v = confusion_matrix[0][0] / (confusion_matrix[0][0] + confusion_matrix[1][0])
+        except ZeroDivisionError:
+            recall_v = confusion_matrix[0][0] / (confusion_matrix[0][0] + confusion_matrix[1][0] + sys.float_info.epsilon) 
+    return recall_v
+
+def recall_1(confusion_matrix):
+    """
+    Computes the recall metric for Bad Loans.
+    :param confusion_matrix: the confusion matrix
+    :return: recall_v - the recall value
+    """
+    recall_v = None
+    if confusion_matrix is not None and (len(confusion_matrix) == 2 and len(confusion_matrix[0]) == 2):
+        try:
+            recall_v = confusion_matrix[0][1] / (confusion_matrix[0][1] + confusion_matrix[1][1])
+        except ZeroDivisionError:
+            recall_v = confusion_matrix[0][1] / (confusion_matrix[0][1] + confusion_matrix[1][1] + sys.float_info.epsilon)
+    return recall_v
+
+def compute_confusion_matrix(true_labels, predicted_labels, labels):
+    """
+    Computes the confusion matrix.
+    :param true_labels: true labels
+    :param predicted_labels: predicted labels
+    :param labels:
+    :return:
+    """
+    num_classes = len(labels)
+    confusion_matrix = [[0] * num_classes for _ in range(num_classes)]
+
+    for true, predicted in zip(true_labels, predicted_labels):
+        true_index = labels.index(true)
+        predicted_index = labels.index(predicted)
+        confusion_matrix[true_index][predicted_index] += 1
+
+    return confusion_matrix

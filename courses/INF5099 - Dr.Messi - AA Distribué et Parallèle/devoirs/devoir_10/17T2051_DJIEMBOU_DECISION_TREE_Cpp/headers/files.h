@@ -41,12 +41,12 @@ std::vector<float>
         int);
 
 void write_dataset(
-        const std::unordered_map<std::string, std::vector<float>>& train_data,
-        const std::unordered_map<std::string, std::vector<float>>& test_data,
-        const std::vector<float>& y_train,
-        const std::vector<float>& y_test,
-        const std::string& output_dir,
-        const std::string& className);
+        const std::unordered_map<std::string, std::vector<float>> train_data,
+        const std::unordered_map<std::string, std::vector<float>> test_data,
+        const std::vector<float> y_train,
+        const std::vector<float> y_test,
+        const std::string output_dir,
+        const std::string className);
 
 TreeNode* loadTreeNode(std::ifstream&);
 TreeNode* loadTreeModel(const std::string&);
@@ -54,6 +54,6 @@ TreeNode* loadTreeModel(const std::string&);
 void saveTreeNode(std::ofstream&, TreeNode*);
 void saveTreeModel(const std::string&, TreeNode*);
 
-void saveMetricsToCSV(const std::string&, const std::vector<std::string>&, const std::vector<double>&, const std::string&, const std::string&);
+void saveMetricsToCSV(const std::string, const std::vector<std::string>, const std::vector<double>, const std::string, const std::string);
 
 #endif //DTREE_FILES_H

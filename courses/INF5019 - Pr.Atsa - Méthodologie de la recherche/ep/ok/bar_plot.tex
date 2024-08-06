@@ -1,0 +1,35 @@
+\documentclass[varwidth=true, border=2pt]{standalone}
+\usepackage[margin=1in]{geometry}
+\usepackage{multicol}
+\usepackage{bchart}
+
+\begin{document}
+    \begin{bchart}[step=2,max=10]
+        \bcbar{-3.4}
+            \smallskip
+        \bcbar{5.6} 
+            \medskip
+        \bcbar{7.2}
+            \bigskip
+        \bcbar{9.9}
+    \end{bchart}
+    \begin{bchart}[step=2,max=16]
+       \bcbar[label=1st bar]{8.5}
+       \bigskip
+       \bcbar[label=2nd bar]{4.5}
+     \end{bchart}
+     
+     
+     \begin{columns}
+    \begin{column}{0.33\textwidth}
+        Colonne 1 
+    \end{column}
+    \begin{column}{0.33\textwidth}
+        Colonne 2
+    \end{column}
+    \begin{column}{0.33\textwidth}
+        Colonne 3
+    \end{column}
+\end{columns}
+
+\end{document}

@@ -13,7 +13,8 @@
 \pagestyle{fancy}
 \usepackage{hyperref}
 \usepackage[babel]{csquotes}
-
+\usepackage{enumitem}
+\setlist[itemize]{label=\textbullet}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % En-tête
 \title{Prédiction du risque de crédit bancaire sensible aux coûts financiers en intégrant des descripteurs extraits des graphes}
@@ -27,6 +28,7 @@
 %Code pour les citations de logiciels 
 \usepackage[
   style=numeric-comp,
+  %style=authoryear,
   datamodel=software, % extend the datamodel with entries for software
   abbreviate=false,
   natbib=true,
@@ -95,34 +97,9 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \abstract {
+Les prêts sont des opérations financières très importantes pour le développement et la croissance économique d'un pays, car ces derniers facilitent la création et la croissance des entreprises et donc l'emploi de plus de personnes tant par les entreprises privées, publiques ou parapubliques. Les non remboursements des prêts ont des coûts importants sur les institutions financières prêteuses, pouvant entraîner leur faillite et donc détruire tout le système de prêt et constituer par là, un frein au développement économique. Il est donc nécessaire de pouvoir prédire efficacement si un prêt sera remboursé ou non par l'emprunteur. A cet effet, la question de prédiction du risque de crédit est devenu un domaine majeur dans lequel des chercheurs en Apprentissage automatique proposent des modèles qui prédisent la classe d'un prêt à partir des attributs standards qui le décrivent dans l'institution préteuse. Ces attributs standards n'étant pas suffisants pour avoir les meilleures prédictions, ces dernières années, plusieurs travaux portent sur la création de nouveaux attributs descriptifs à mettre en entrée des modèles classiques de prédiction dans le but d'améliorer leur performance. C'est le cas des récents travaux sur l'extraction de nouveaux descripteurs des prêts modélisés par un graphe multicouches dans lesquels une seule application du PageRank personnalisé sur le graphe multicouches permet d'extraire les nouveaux descripteurs des différents prêts considérés. Les travaux actuels sur les graphes multicouches ont pour limites de ne pas être suffisamment personnalisés par prêt, de ne pas considérer les classes des prêts dans le processus de construction du graphe lors de l'apprentissage, de ne pas proposer de stratégie pour le choix des attributs à considérer comme couches du graphe construit et enfin de ne pas évaluer leur impact sur les coût financiers qui sont un aspect important pour les institution prêteuses. Dans ce mémoire, nous proposons d'intégrer les classes des prêts dans le processus de construction des graphes multicouches, et d'appliquer le PageRank personnalisé par prêt pour extraire les nouveaux descripteurs des ces graphes. Par ailleurs, nous proposons un protocole de sélection des attributs à considérer comme couches du graphe multicouches, et effectuons une évaluation des coûts financiers des modèles de prédiction du risque de crédit construits à partir des données enrichies par les nouveaux descripteurs. Des expérimentations sont menées sur 04 jeux de données, en considérant 06 modèles classiques de prédiction du risque de crédit et 03 métriques d'évaluation des performances des modèles, dont l'une sensible aux coûts financiers. Des valeurs de SHapley sont considérés pour évaluer l'importance des nouveaux descripteurs. Nous observons que le protocole de sélection des attributs à considérer comme couches du graphe multicouches permet d'avoir des performances très proches des meilleures et même les meilleures dans X\% des cas. Par ailleurs, la considération des classes dans la construction du graphe multicouches et l'application du PageRank personnalisé par prêt permettent non seulement de diminuer significativement les pertes financières jusqu'à A\%, B\%, C\% et D\%, et les nouveaux descripteurs associés occupent W\%, X\%, Y\% et Z\% du Top-10 des meilleures valeurs de SHapley dans les 04 jeux de données considérés.}
 
-%%%%%% contexte d'intérêt
-Les prêts sont des opérations financières très importantes pour le développement et la croissance économique d'un pays, car ces derniers facilitent la création et la croissance des entreprises et donc l'emploi de plus de personnes tant par les entreprises privées, publiques ou parapubliques.
-
-%%%%%% problème lié au context d'intérêt
-Les non remboursements des prêts ont des coûts importants sur les institutions financières prêteuses, pouvant entraîner leur faillite et donc détruire tout le système de prêt et constituer par là, un frein au développement économique. Il est donc nécessaire de pouvoir prédire efficacement si un prêt sera remboursé ou non par l'emprunteur.  
-
-%%%%%% approche classique de resolution du problème
-A cet effet, la question de prédiction du risque de crédit est devenu un domaine majeur dans lequel des chercheurs en Intelligence artificielle proposent des modèles qui prédisent la classe d'un prêt à partir des attributs standards qui le décrivent dans l'institution préteuse. Ces attributs standards n'étant pas suffisants pour avoir les meilleures prédictions, ces dernières années, plusieurs travaux portent sur la création de nouveaux attributs descriptifs à mettre en entrée des modèles classiques de prédiction dans le but d'améliorer leur performance. 
-
-%%%%%% transition vers la limite ou question spécifique 
-C'est le cas des récents travaux sur l'extraction de nouveaux descripteurs des prêts modélisés par un graphe multicouches dans lesquels une seule application du PageRank personnalisé sur le graphe multicouches permet d'extraire les nouveaux descripteurs des différents prêts considérés.      
-
-%%%%%% la ou les limites de l'existant a aborde dans le travail
-Les travaux actuels sur les graphes multicouches ont pour limites de ne pas être suffisamment personnalisés par prêt, de ne pas considérer les classes des prêts dans le processus de construction du graphe lors de l'apprentissage, de ne pas proposer de stratégie pour le choix des attributs à considérer comme couches du graphe construit et enfin de ne pas évaluer leur impact sur les coût financiers qui sont un aspect important pour les institution prêteuses. 
-
-%%%%%% L'idee de solutions & démarche (c'est combiné pour ton cas)
-Dans ce mémoire, nous proposons d'intégrer les classes des prêts dans le processus de construction des graphes multicouches, et d'appliquer le PageRank personnalisé par prêt pour extraire les nouveaux descripteurs des ces graphes. Par ailleurs, nous proposons un protocole de sélection des attributs à considérer comme couches du graphe multicouches, et effectuons une évaluation des coûts financiers des modèles de prédiction du risque de crédit construits à partir des données enrichies par les nouveaux descripteurs. 
-
-%%%%%% descriptions du cadre d'experimentations
-Des expérimentations sont menées sur 04 jeux de données, en considérant 06 modèles classiques de prédiction du risque de crédit (LDA, SVM, LR, DT, RF, XGBoost) et 03 métriques d'évaluation des performances des modèles (Accuracy, F1-score, Cost), dont l'une sensible aux coûts financiers. Des valeurs de SHapley sont considérés pour évaluer l'importance des nouveaux descripteurs.
-
-%%%%%% présentation des principaux résultats
-Nous observons que notre approche permet d'améliorer les meilleurs modèles de l'existant dans C\% des cas, de plus le fait d'intégrer les informations de classe permet de garantir une réductions des coûts financiers de plus de Y\% dans la majorité de cas.
-
-}
-
-\keywords{risque de crédit, sciences des réseaux, graphe multicouches}
+\keywords{Prédiction du risque de crédit; Graphe multicouches; PageRank personnalisé; \\Apprentissage automatique; SHapley.}
 
 
 
@@ -132,99 +109,138 @@ Nous observons que notre approche permet d'améliorer les meilleurs modèles de 
 \section{Introduction}
 %%%%%%%% Contexte d'application  et contexte d'intérêt.
 \subsection{Contexte d'application  et d'intérêt}
-Les prêts financiers sont une opération importante dans la croissance économique dans le monde car elle sont utilisé pour subventionner les projets organismes gouvernementaux et des particuliers.
+Les prêts sont des opérations financières très importantes pour le développement et la croissance économique d'un pays, car ces derniers facilitent la création et la croissance des entreprises et donc l'emploi de plus de personnes tant par les entreprises privées, publiques ou parapubliques. Que ce soit Tayo au Nigeria en 2020, Tazi.ai au Maroc en 2017 ou encore Kiro'o Games au Cameroun en 2013, tous ses entreprises de renommé actuel ont construit sur la base de prêts financiers. Elles sont aujourd'hui des piliers de l'économie de leur pays. 
 
-Les projets d'urbanisation et des recherches les plus poussées dans le monde n'existe que parce que les prêts financiers existent. 
+Le rapport annuel de la banque mondiale en 2023\cite{WorldBank2023} montre que le volume total des prêts accordés à l'échelle mondiale a atteint un niveau record de 62 987 milliards de dollars, en hausse de 8,4\% par rapport à 2022. Cette croissance est tirée par une demande accrue de financement de la part des entreprises et des ménages, ainsi que par des politiques monétaires accommodantes mises en place par de nombreuses banques centrales.
 
 %%%%%%%% Transition vers la problématique
 \subsection{Transition vers la problématique}
-Crise de subprime en 2008
+Cette hausse de volume de prêt est une opportunité pour la croissance économique mais un risque considérable lorsque nous savons que  les non remboursements des prêts ont des coûts importants sur les institutions financières prêteuses, pouvant entraîner leur faillite et donc détruire tout le système de prêt et constituer par là, un frein au développement économique\cite{10.1093/oep/gpac013}.
 
-Machine learning pour la prédiction du risque de crédit financiers
+La crise des subprimes en est un exemple pertinent qui a débuté aux États-Unis en 2007 et a conduit à une grave récession mondiale en 2008-2009. Ses origines remontent au début des années 2000, lorsque le marché hypothécaire américain a connu une bulle spéculative alimentée par une distribution massive de crédits immobiliers à haut risque, dits "subprimes", à des emprunteurs peu solvables\cite{CriseDesSubprimes2008}. A cet effet, la question de prédiction du risque de crédit est devenu un domaine majeur dans lequel des chercheurs en apprentissage automatique proposent des modèles qui prédisent la classe d’un prêt à partir des attributs standards qui le décrivent dans l’institution préteuse. 
 
-manque de données et caractéristiques descriptives
+Mais ses travaux se heurte aux faits que les données possède déjà très peu de prêt non remboursé et aussi, l'insuffisance des attributs standards pour former des modèles efficace. Alors, ces dernières années, plusieurs travaux se concentrent plutôt sur la création de nouveaux attributs descriptifs à mettre en entrée des modèles classiques de prédiction dans le but d'améliorer leur performance. C'est le cas des récents travaux sur l'extraction de nouveaux descripteurs des prêts modélisés par le graphe multicouches dans lesquels une seule application du PageRank personnalisé sur le graphe multicouches permet d'extraire les nouveaux descripteurs des différents prêts considérés. 
 
-Création de nouvelle dimension descriptives dans les jeux de données en utilisant des graphes multicouches
-
-La logique de PageRank personnalisation ne se porte pas sur chaque information emprunteurs mais sur celui du réseau formé
-
-Il existe pas un mécanismes pour identifier de façon exacts les attributs l'ensembles de relations les plus pertinentes à analyser
-
-La modélisation ne prend pas en compte les informations de décisions de ses historiques pourtant connu
-
-L'approche ne met pas un intérêt sur l'impact de la solution en terme coûts financiers pour l'entité prêteuses.
+De plus ces travaux actuels posent des limites, notamment le fait de ne pas être suffisamment personnalisés par prêt, de ne pas considérer les classes des prêts dans le processus de construction du graphes lors de l'apprentissage, de ne pas proposer de stratégie pour le choix des attributs à considérer comme couches du graphe construit et enfin de ne pas évaluer leur impact sur les coûts financiers.
 
 %%%%%%%% Problème 
 \subsection{Problème}
-Il est question pour nous dans ce memoire de trouver comment proposer à la fois une façon d'améliorer la personnalisation du PageRank, prendre en compte la décision de prêt dans la modélisation graphe biparti multicouches, de sélectionner les attributs descriptives optimales pour la construction du graphe et mettre ce pieds un métrique de   
+Il est donc question pour nous dans ce mémoire de trouver comment proposer à la fois une façon d'améliorer la personnalisation du PageRank, prendre en compte la décision de prêt dans la modélisation graphe multicouches, de sélectionner les attributs descriptives optimales pour la construction du graphe et d'évaluer les coûts financiers des modèles construits.
+%extraites des descripteurs via un PageRank personnalisé par prêt dans un graphe qui prend en compte la classe lors du processus de construction du graphe multicouches pendant l'entrainement où les couches on été dûment sélection par un protocole spécifique
 
 %%%%%%%% Objectif
 \subsection{Objectif}
-proposer un PageRank personnalisation porté sur un seul emprunteur à la fois
-
-proposer un protocole qui va permettre d'identifier les relations les plus pertinentes à analyser
-
-proposer une cadre de modélisation graphe biparti multicouches qui incorpore les informations de décision des prêts historique.
+Dans ce mémoire, nous travaillons sur la prédiction du risque de crédit bancaire en nous focalisant sur l'extraction d'attribut de graphe multicouches construit sur la base d'historique de crédit bancaire d'institution préteuse par exécution d'un algorithme de PageRank personnalisé. Par ailleurs, nous avons pour objectifs d'intégrer la classe dans le graphe multicouches construit lors de l'apprentissage. Dans la suite nous allons proposer un PageRank personnalisé par prêt pour extraire des attributs du graphe multicouhes. Enfin, Nous proposons une stratégie de sélection d'attributs à considérer comme couche dans la construction du graphe multicouches basé sur les coûts financiers qui va permettre d'estimer l'impacte des modèles de prédiction construits sur l'évaluation du risque de crédit par les institutions préteuses.
 
 %%%%%%%% Contribution
 \subsection{Contribution}
-proposer une meilleur façons d'extraire des descripteurs des graphes multicouches en proposant
+Notre contribution pour ce mémoire se décrit comme suit:
 \begin{itemize}
-\item un PageRank personnalisation porté sur un seul emprunteur à la fois
+\item Proposition d'une métrique de coûts financiers pour les institutions préteuses.
 
-\item un protocole qui va permettre d'identifier les relations les plus pertinentes à analyser
+\item Proposition d'un cadre de modélisation de graphe multicouches qui intègre les classes de prêts;   
 
-\item une cadre de modélisation graphe biparti multicouches qui incorpore les informations de décision des prêts historique.
+\item Proposition d'un nouveaux PageRank personnalisation par prêts pour le graphe multicouches;
 
-\item une métrique pour évaluer les coûts financiers.
+
+\item Proposition d'une stratégie de sélection d'attributs à considérer comme couche dans le graphe multicouches;
+
 \end{itemize}
 
 
 %%%%%%%% Plan du mémoire
 \subsection{Plan du mémoire}
-Le reste de ce memoire se présentera comme suit, dans la section suivante nous présenterons l'état de l'art sur la prédiction du risque de crédit financier, dans la troisième section. Nous présentons notre solution, un cadre d'extraction optimale de descripteurs dans des graphes biparti multicouches. La quatrième section présente notre cadre expérimentale. Et enfin, en section 5 nous conclurons notre travail.
+Le reste de ce mémoire se présentera comme suit, dans la section ~\ref{cr-art} nous présenterons l'état de l'art sur la prédiction du risque de crédit financier. La section ~\ref{mlna-prop} présente notre solution, un cadre d'extraction de nouveaux descripteurs par application du PageRank personnalisé par prêt sur des graphes multicouches construit en intégrant les classes. La section ~\ref{exp} présente notre cadre expérimentale. Et enfin, en section ~\ref{con} nous conclurons notre travail.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Prédiction du risque de crédit}
+\label{cr-art}
 %%%%%%%%%%%%%%%%%%%%%%%%%%
-l'évaluation du risque de crédit par des modèles de machine learning classique + manque de données + non représentativité + non equivalence des coûts
 
-augmentation de donnée avec les méthodes de sampling (over et under)
+\subsection{Définition du problème de prédiction du risque de crédit}
+Le problème de prédiction du risque de crédit consiste à estimer la probabilité qu'un emprunteur ne rembourse pas son prêt dans les délais impartis. C'est un enjeu majeur pour les institutions financières afin de minimiser leurs pertes et de maintenir la santé de leur portefeuille de crédits. Ce problème peut être formalisé mathématiquement comme suit:
 
-méthodes de création de nouvelles attributs descriptives
-	\begin{itemize}
-		\item graphes complet
-		\item graphe multivue
-		\item graphe biparti
-		\item graphe biparti multicouche
-	\end{itemize}
+Soit un ensemble d'emprunteurs $\mathcal{B} = {b_1, b_2, ..., b_n}$. Chaque emprunteur $b_i$ est caractérisé par un vecteur de variables explicatives $\mathbf{x}_i = (x_{i1}, x_{i2}, ..., x_{ip})$ qui décrivent son profil (revenus, historique de crédit, etc.).
+
+L'objectif est de prédire la variable binaire $y_i \in {0, 1}$ qui indique si l'emprunteur $b_i$ rembourse son prêt ($y_i = 0$) ou non ($y_i = 1$) dans les délais.
+Formellement, on cherche à construire un modèle de prédiction $\hat{y_i} = f(\mathbf{x}_i)$ qui estime au mieux la probabilité de défaut $P(y_i = 1 | \mathbf{x}_i)$ pour chaque emprunteur $b_i$. 
 
 
-\section{Prise en compte des décisions dans la modélisation graphe biparti multicouches et personnalisation du PageRank à un seul emprunteur pour une prédiction du risque de crédit sensible aux coûts financiers }
+\subsection{Techniques classiques de prédiction du risque de crédit}
+Les premiers modèles de prédiction du risque de crédit étaient principalement basés sur des techniques statistiques telles que la régression logistique (LR). Ces modèles, comme l'ont montré \cite{khemais2016credit}, permettent d'obtenir des résultats satisfaisants en termes de prédiction, tout en étant relativement simples à mettre en œuvre. Cependant, ils reposent sur des hypothèses restrictives comme la linéarité des relations et l'indépendance des variables explicatives.
 
-graphe biparti multicouches
+Pour pallier ces limitations, des approches plus avancées ont été développées, notamment les arbres de décision (DT) et les machines à vecteurs de support (SVM) \cite{dastile2020statistical}. Ces modèles, plus flexibles, permettent de capturer des relations non linéaires et des interactions complexes entre les variables. Néanmoins, ils peuvent souffrir d'un manque de robustesse et nécessitent un réglage fin des paramètres.
 
-PageRank personnalisé
+Plus récemment, les techniques d'apprentissage automatique telles que les forêts aléatoires (RF) \cite{ziemba2020client,dastile2020statistical} et le boosting de gradient extrême (XGB) \cite{dastile2020statistical,mushava2022novel} ont démontré leur efficacité pour la prédiction du risque de crédit. Ces modèles de "boîte noire" sont capables de capturer des patterns complexes dans les données, tout en étant plus robustes que les approches précédentes. Cependant, leur manque de transparence peut rendre l'interprétation des résultats plus difficile. 
 
-modèles de machine learning
+Dans ses travaux, Les modèles de prédictions sont formé sur des données déséquilibrés car dans la réalité, les historiques des institutions financières préteuses ne renseignent pas assez sur la descriptions des prêts qui étaient à défaut au vu du nombre réduit des cas existant. Des techniques d'augmentation de données par mélange synthétique des existantes comme SMOTE, ADASYN, BSMOTE, ROS, etc... \cite{barabasi2013network, lenka2022empirical, anis2017investigating, mushava2022novel} permettent d'atténuer l'effet de ce déséquilibre. Toutefois, les modèles formés n'étant toujours pas très performance, de nouveaux travaux portent leur intérêt sur l'évaluation du risque de crédit sur des données autres que celles de décrivant les prêts par les institutions préteuses.
 
-PageRank Personnalisé à un emprunt
-
-Graphe biparti multicouches intégrant les informations de décision
-
-Protocole de selection des k meilleurs attributs devant servir à la construction du graphes biparti multicouches à k couches.
-
+%\subsection{Données alternatif pour la prédiction du risque de crédit}
+\subsection{Nouveaux descripteurs pour la prédiction du risque de crédit}
+%Récemment pour pallier aux problème d'insuffisance des caractéristiques et au déséquilibre des classes, des chercheurs se sont intéressés à l'extraction de nouveaux descripteurs pertinents à partir de données alternatives, comme les réseaux sociaux ou les données de géolocalisation\cite{berg2020rise, albareto2011organization} (Berg et al., 2020 ; Guo et al., 2021). Ces nouvelles sources d'informations permettent de mieux caractériser le profil et le comportement des emprunteurs.
 
 
+%Pour pallier le manque de données et la non-représentativité des échantillons, des techniques d'augmentation de données ont été proposées, comme le sur-échantillonnage (oversampling) et le sous-échantillonnage (undersampling)\cite{barabasi2013network,} (Blagus \& Lusa, 2013 ; Chawla et al., 2002).
+
+Présenter ici les autres natures de données alternatives utilisés pour la prédiction du risque de crédit (3 paragraphes chronologiques) et comment elles sont utilisées pour la prédiction du risque de crédit.
+
+
+%L'utilisation de données de graphes, telles que les relations entre emprunteurs, les réseaux d'entreprises ou les transactions, permet d'extraire de nouveaux descripteurs potentiellement riches d'informations sur le risque de crédit\cite{khandani2010consumer} (Kenett et al., 2010 ; Soramäki \& Cook, 2013).
+
+Présenter l'alternative portée sur la modélisations des prêts en graphes.
+
+\subsection{Évaluation de la pertinence des nouveaux descripteurs}
+
+\subsection{Évaluation des coûts financiers des modèles de prédiction du risque de crédit}
+% parler des travaux qui s'y sont interesse
+
+% il sera interessant de voire l'impact des nouveaux descripteurs sur les couts financiers des institutions preteuses (un idee de transaction)
+
+\section{Extraction de nouveaux descripteurs par application du PageRank personnalisé par prêt sur des graphes mulitcouches construit en intégrant les classes}
+\label{mlna-prop}
+
+\subsection{Modèles d'apprentissage supervisé}
+
+\subsubsection{Définition}
+
+\subsubsection{Linear Discriminative Analysis (LDA)}
+
+\subsubsection{Logistic Regression (LR)}
+
+\subsubsection{Support Vector Machine (SVM)}
+
+\subsubsection{Decision Tree (DT)}
+
+\subsubsection{Random Forest (RF)}
+
+\subsubsection{eXtreme Gradient Boosting (XGBoost)}
+
+
+\subsection{Graphes multicouches biparti}
+
+\subsection{Analyse des graphes} % descripteurs
+
+\subsection{Évaluation des coûts financiers}
+
+
+\subsection{Construction du graphes multicouches intégrant les classes}
+
+\subsection{Proposition du PageRank Personnalisé par prêt}
+
+\subsection{Protocole de sélection des attributs à considérer dans la construction du graphe}
 
 \section{Expérimentations}
-
+\label{exp}
 \subsection{Description du jeux de données}
 AFB, CREDIT RISK, GERMAN, JAPAN (nombre de ligne (exemple), nombre de colonnes, nombre de colonnes numériques, nombre d'attributs catégoriel, nombre d'exemples positif, nombre d'exemples négatifs)
 
 \subsection{Évaluation et paramétrage de modèles}
 
-Acc + F1 + Cost
+\subsubsection{Métriques d'évaluation}
+
+Acc + F1 + Cost + SHapLey
+
+\subsubsection{Approches de construction du graphes}
 
 Approches
 \begin{itemize}
@@ -232,6 +248,7 @@ Approches
 \item MCA
 \end{itemize}
 
+\subsubsection{Logiques de personnalisation personnalisation}
 Logiques
 \begin{itemize}
 \item GLO
@@ -239,7 +256,8 @@ Logiques
 \item GAP
 \end{itemize}
 
-modeles
+\subsubsection{Configuration de descripteurs}
+Configs
 \begin{itemize}
 \item MX
 \item CX
@@ -247,7 +265,7 @@ modeles
 \item CXY
 \end{itemize}
 
-
+\subsubsection{paramétrages des algorithmes}
 
 
 \subsection{Résultats}
@@ -255,9 +273,9 @@ SHAP + Tableaux
 
 
 \section{Conclusion}
-
+\label{con}
 \subsection{rappel du problème abordé}
-Il etait question pour nous dans ce memoire de trouver comment proposer à la fois une façon d'améliorer la personnalisation du PageRank, prendre en compte la décision de prêt dans la modélisation graphe biparti multicouches, de sélectionner les attributs descriptives optimales pour la construction du graphe et mettre ce pieds un métrique de   
+Il était question pour nous dans ce mémoire de trouver comment proposer à la fois une façon d'améliorer la personnalisation du PageRank, prendre en compte la décision de prêt dans la modélisation graphe biparti multicouches, de sélectionner les attributs descriptives optimales pour la construction du graphe et mettre ce pieds un métrique de   
 
 \subsection{Idée de solution}
 Prise en compte des décisions dans la modélisation graphe biparti multicouches et personnalisation du PageRank à un seul emprunteur pour une prédiction du risque de crédit sensible aux coûts financiers

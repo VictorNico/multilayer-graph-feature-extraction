@@ -66,6 +66,7 @@ DEGREE_F = lambda x: (('DEGREE' in x))
 svg = "<?xml version='1.0' ?><!DOCTYPE svg  PUBLIC '-//W3C//DTD SVG 1.1//EN'  'http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd'><svg enable-background='new 0 0 32 32' height='12px' id='Layer_1' version='1.1' viewBox='0 0 32 32' width='12px' xml:space='preserve' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'><path d='M18.221,7.206l9.585,9.585c0.879,0.879,0.879,2.317,0,3.195l-0.8,0.801c-0.877,0.878-2.316,0.878-3.194,0  l-7.315-7.315l-7.315,7.315c-0.878,0.878-2.317,0.878-3.194,0l-0.8-0.801c-0.879-0.878-0.879-2.316,0-3.195l9.587-9.585  c0.471-0.472,1.103-0.682,1.723-0.647C17.115,6.524,17.748,6.734,18.221,7.206z' fill='#515151'/></svg>"
 layers = [1]
 approach = ['MlC','MCA']
+
 style = """<style> 
     table, th, td {
     border: 1px solid black;
@@ -121,6 +122,7 @@ header = """
     \\usepackage{multirow}
     \\usepackage{hyperref}
     \\usepackage[babel]{csquotes}
+    \\usepackage{rotating}
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %SetFonts
@@ -356,6 +358,276 @@ def print_compare(
         _file.close()
     return tables
 
+
+
+def print_compare_v2(
+    store,
+    output_path,
+    alpha,
+    valll=False
+):
+    # fetch model name
+    tables = {model:'' for model in list(store.keys())}
+    for model in list(store.keys()):
+        # add the resize box to ensure the scale of the table will be contain's inside the width space avalable.
+        # start setting up the tabular dimensions setting
+        table_header = """
+        \\resizebox{\\textwidth}{!}{
+
+        \\begin{tabular}{|c|c|c|"""
+        # identify folder with none financial details
+        none_financial_folder = [folder for folder in list(store[model].keys()) if sum(['finan' in mec for mec in list(store[model][folder].keys())]) != 1]
+        financial_folder = [folder for folder in list(store[model].keys()) if sum(['finan' in mec for mec in list(store[model][folder].keys())]) == 1]
+        print(none_financial_folder, financial_folder)
+        # add cols for financial folders
+        for _ in financial_folder:
+            table_header+= "r|r|r|"
+        # add cols for non financial folder
+        for _ in none_financial_folder:
+            print(1)
+            table_header+= "r|r|"
+        # add col for total results
+        table_header+= "} "
+        # add separator clines
+        nb_cols = (3+(3*len(financial_folder))+(2*len(none_financial_folder)))
+        table_header+= " \\cline{1-"+str(nb_cols)+"}" # corresponding to the number of columns
+
+
+        # build the first line
+        lines = ''
+        # add the model block
+        lines += """
+        \\multicolumn{3}{|c|}{"""+model+"("+str(alpha).replace('.','_')+""")}"""
+        # add cols for financial folders
+        for folder in financial_folder:
+            lines+= "& \\multicolumn{3}{|c|}{"+folder.replace('_','\\_')+"}"
+        # add cols for non financial folder
+        for folder in none_financial_folder:
+            print(1)
+            lines+=  "& \\multicolumn{2}{|c|}{"+folder+"}"
+        # add the total name
+        lines+= "\\\\ "
+        lines+= " \\cline{4-"+str(nb_cols)+"}"
+
+        # build metrics' lines
+        lines+= """
+         \\multicolumn{3}{|c|}{}"""
+        # add metrics for financial folders
+        for folder in financial_folder:
+            lines+= "& Acc & F1 & Cost"
+        # add metrics' for non financial folder
+        for folder in none_financial_folder:
+            print(1)
+            lines+=  "& Acc & F1"
+        # add the total name
+        lines+= " \\\\ "
+        lines+= " \\cline{1-"+str(nb_cols)+"}"
+
+        # add classic metrics
+        lines+="""
+        \\multicolumn{3}{|c|}{Classic}"""
+        for folder in financial_folder:
+            for metric in ['accuracy','f1-score','financial-cost']:
+                # print(model, folder, metric)
+                lines+= "& "+str(round(store[model][folder]['classic'].loc[model, metric],4))+""
+        # add cols for non financial folder
+        for folder in none_financial_folder:
+            print(1)
+            for metric in ['accuracy','f1-score']:
+                lines+= "& "+str(round(store[model][folder]['classic'].loc[model, metric],4))+""
+        # add an empty cell for Total
+        lines+= "\\\\ \\cline{1-"+str(nb_cols)+"""}
+
+        """
+
+        is_best = lambda mag,act: (set([act(mag[el][al][il]) for el in list(mag.keys()) for al in list(mag[el].keys()) for il in list(mag[el][al].keys())]))
+        # fetch store to fullfil the tables with content
+        for ai, approach in enumerate(list(store[model][financial_folder[0]]['accuracy'].keys())): # Mlc or MCA
+            lines+= """
+            \\multirow{10}{*}{"""+approach+"""}&"""
+            for li, logic in enumerate(list(store[model][financial_folder[0]]['accuracy'][approach].keys())): # GLO, PER or GAP
+                total_counter = {}
+                lines+= f"{'&'*int(li != 0)}"+"""\\multirow{"""+str(len(list(store[model][financial_folder[0]]['accuracy'][approach][logic].keys())))+"""}{*}{"""+logic+"""}"""
+                for ci,config in enumerate(list(store[model][financial_folder[0]]['accuracy'][approach][logic].keys())): # MX, CX, CY, CXY 
+                    lines+= f"{'&'*int(ci != 0)}  & {config}"
+                    for fi, folder in enumerate(list(store[model].keys())):
+                        if (ci == 0) and (fi == 0):
+                            total_counter = {key:[] for key in list(store[model][folder]['accuracy'][approach][logic].keys())}
+                        metrics = (['accuracy','f1-score','financial-cost'] if (folder in financial_folder) else ['accuracy','f1-score'])
+                        # metrics = list(set(metrics)-set(['classic']))
+                        # print(folder, metrics, config, approach, logic)
+                        for metric in metrics:
+                            act = max if valll is False else (min if "financial-cost" in metric else max) 
+                            # print(metric, act, valll)
+                            is_sup = sorted(list(is_best(store[model][folder][metric],act)), reverse= (False if ((valll == True) and ("financial-cost" in metric )) else True))
+                            # print(metric,(False if ((valll == True) and ("financial-cost" in metric )) else True),act(store[model][folder][metric][approach][logic][config]), valll, is_sup)
+                            pos = is_sup.index(act(store[model][folder][metric][approach][logic][config]))
+
+                            val = "\\textbf{"+str(act(store[model][folder][metric][approach][logic][config]))+"}" if (pos == 0) and (act(store[model][folder][metric][approach][logic][config]) != 0.0) else (
+                                "\\underline{"+str(act(store[model][folder][metric][approach][logic][config]))+"}" if (pos == 1) and (act(store[model][folder][metric][approach][logic][config]) != 0.0) else (
+                                    "\\textit{"+str(act(store[model][folder][metric][approach][logic][config]))+"}" if (pos == 2) and (act(store[model][folder][metric][approach][logic][config]) != 0.0) else 
+                                    str(act(store[model][folder][metric][approach][logic][config]))
+                                    )
+                                )
+
+                            lines+= f"& {val}"
+                            total_counter[config].append(is_sup)
+                    start = (3 if ci != len(list(store[model][financial_folder[0]]['accuracy'][approach][logic].keys()))-1 else (1 if li == len(list(store[model][financial_folder[0]]['accuracy'][approach].keys()))-1 else 2))
+                    # print(start)
+                    lines+= f"""\\\\ """+ """ \\cline{"""+str(start)+"""-"""+str(nb_cols)+"""}
+
+                    
+                    """
+
+        lines+= """
+
+        \\end{tabular}
+        }"""
+
+        table = table_header + lines
+        tables[model] = table
+        create_domain(f"{output_path}/tableaux/{str(alpha).replace('.','_')}")
+        filename1 = f"{output_path}/tableaux/{str(alpha).replace('.','_')}/tab_alpha_{str(alpha).replace('.','_')}_{model}.tex"
+        _file = open(filename1, "w")
+        _file.write(table)
+        _file.close()
+    return tables
+
+
+def print_compare_v3(
+    store,
+    output_path,
+    alpha,
+    valll=False
+):
+    # fetch model name
+    tables = {model:'' for model in list(store.keys())}
+    for model in list(store.keys()):
+        # add the resize box to ensure the scale of the table will be contain's inside the width space avalable.
+        # start setting up the tabular dimensions setting
+        table_header = """
+        %\\begin{sidewaystable}
+        \\resizebox{\\textwidth}{!}{
+
+        \\begin{tabular}{|c|c|c|"""
+        # identify folder with none financial details
+        none_financial_folder = [folder for folder in list(store[model].keys()) if sum(['finan' in mec for mec in list(store[model][folder].keys())]) != 1]
+        financial_folder = [folder for folder in list(store[model].keys()) if sum(['finan' in mec for mec in list(store[model][folder].keys())]) == 1]
+        print(none_financial_folder, financial_folder)
+        # add cols for financial folders
+        for _ in financial_folder:
+            table_header+= "r|r|r|r|r|r|r|r|r|"
+        # add cols for non financial folder
+        for _ in none_financial_folder:
+            print(1)
+            table_header+= "r|r|r|r|r|r|r|r|"
+        # add col for total results
+        table_header+= "} "
+        # add separator clines
+        nb_cols = (3+(9*len(financial_folder))+(8*len(none_financial_folder)))
+        table_header+= " \\cline{1-"+str(nb_cols)+"}" # corresponding to the number of columns
+
+
+        # build the first line
+        lines = ''
+        # add the model block
+        lines += """
+        \\multicolumn{3}{|c|}{"""+model+"("+str(alpha).replace('.','_')+""")}"""
+        # add cols for financial folders
+        for folder in financial_folder:
+            lines+= "& \\multicolumn{9}{|c|}{"+folder.replace('_','\\_')+"}"
+        # add cols for non financial folder
+        for folder in none_financial_folder:
+            print(1)
+            lines+=  "& \\multicolumn{8}{|c|}{"+folder+"}"
+        # add the total name
+        lines+= "\\\\ "
+        lines+= " \\cline{4-"+str(nb_cols)+"}"
+
+        # build metrics' lines
+        lines+= """
+         \\multicolumn{3}{|c|}{}"""
+        # add metrics for financial folders
+        for folder in financial_folder:
+            lines+= "& Acc & F1 & P1 & R1 & F11 & P0 & R0 & F10 & Cost"
+        # add metrics' for non financial folder
+        for folder in none_financial_folder:
+            print(1)
+            lines+=  "& Acc & F1 & P1 & R1 & F11 & P0 & R0 & F10 "
+        # add the total name
+        lines+= " \\\\ "
+        lines+= " \\cline{1-"+str(nb_cols)+"}"
+
+        # add classic metrics
+        lines+="""
+        \\multicolumn{3}{|c|}{Classic}"""
+        for folder in financial_folder:
+            for metric in ['accuracy', 'f1-score', 'precision1', 'recall1', 'f1-score1', 'precision0', 'recall0', 'f1-score0', 'financial-cost']:
+                # print(model, folder, metric)
+                lines+= "& "+str(round(store[model][folder]['classic'].loc[model, metric],4))+""
+        # add cols for non financial folder
+        for folder in none_financial_folder:
+            print(1)
+            for metric in ['accuracy', 'f1-score', 'precision1', 'recall1', 'f1-score1', 'precision0', 'recall0', 'f1-score0']:
+                lines+= "& "+str(round(store[model][folder]['classic'].loc[model, metric],4))+""
+        # add an empty cell for Total
+        lines+= "\\\\ \\cline{1-"+str(nb_cols)+"""}
+
+        """
+
+        is_best = lambda mag,act: (set([act(mag[el][al][il]) for el in list(mag.keys()) for al in list(mag[el].keys()) for il in list(mag[el][al].keys())]))
+        # fetch store to fullfil the tables with content
+        for ai, approach in enumerate(list(store[model][financial_folder[0]]['accuracy'].keys())): # Mlc or MCA
+            lines+= """
+            \\multirow{10}{*}{"""+approach+"""}&"""
+            for li, logic in enumerate(list(store[model][financial_folder[0]]['accuracy'][approach].keys())): # GLO, PER or GAP
+                total_counter = {}
+                lines+= f"{'&'*int(li != 0)}"+"""\\multirow{"""+str(len(list(store[model][financial_folder[0]]['accuracy'][approach][logic].keys())))+"""}{*}{"""+logic+"""}"""
+                for ci,config in enumerate(list(store[model][financial_folder[0]]['accuracy'][approach][logic].keys())): # MX, CX, CY, CXY 
+                    lines+= f"{'&'*int(ci != 0)}  & {config}"
+                    for fi, folder in enumerate(list(store[model].keys())):
+                        if (ci == 0) and (fi == 0):
+                            total_counter = {key:[] for key in list(store[model][folder]['accuracy'][approach][logic].keys())}
+                        metrics = (['accuracy', 'f1-score', 'precision1', 'recall1', 'f1-score1', 'precision0', 'recall0', 'f1-score0', 'financial-cost'] if (folder in financial_folder) else ['accuracy', 'f1-score', 'precision1', 'recall1', 'f1-score1', 'precision0', 'recall0', 'f1-score0'])
+                        # metrics = list(set(metrics)-set(['classic']))
+                        # print(folder, metrics, config, approach, logic)
+                        for metric in metrics:
+                            act = max if valll is False else (min if "financial-cost" in metric else max) 
+                            # print(metric, act, valll)
+                            is_sup = sorted(list(is_best(store[model][folder][metric],act)), reverse= (False if ((valll == True) and ("financial-cost" in metric )) else True))
+                            # print(metric,(False if ((valll == True) and ("financial-cost" in metric )) else True),act(store[model][folder][metric][approach][logic][config]), valll, is_sup)
+                            pos = is_sup.index(act(store[model][folder][metric][approach][logic][config]))
+
+                            val = "\\textbf{"+str(act(store[model][folder][metric][approach][logic][config]))+"}" if (pos == 0) and (act(store[model][folder][metric][approach][logic][config]) != 0.0) else (
+                                "\\underline{"+str(act(store[model][folder][metric][approach][logic][config]))+"}" if (pos == 1) and (act(store[model][folder][metric][approach][logic][config]) != 0.0) else (
+                                    "\\textit{"+str(act(store[model][folder][metric][approach][logic][config]))+"}" if (pos == 2) and (act(store[model][folder][metric][approach][logic][config]) != 0.0) else 
+                                    str(act(store[model][folder][metric][approach][logic][config]))
+                                    )
+                                )
+
+                            lines+= f"& {val}"
+                            total_counter[config].append(is_sup)
+                    start = (3 if ci != len(list(store[model][financial_folder[0]]['accuracy'][approach][logic].keys()))-1 else (1 if li == len(list(store[model][financial_folder[0]]['accuracy'][approach].keys()))-1 else 2))
+                    # print(start)
+                    lines+= f"""\\\\ """+ """ \\cline{"""+str(start)+"""-"""+str(nb_cols)+"""}
+
+                    
+                    """
+
+        lines+= """
+
+        \\end{tabular}
+        }
+        %\\end{sidewaystable}"""
+
+        table = table_header + lines
+        tables[model] = table
+        create_domain(f"{output_path}/tableaux/{str(alpha).replace('.','_')}")
+        filename1 = f"{output_path}/tableaux/{str(alpha).replace('.','_')}/tab_alpha_{str(alpha).replace('.','_')}_{model}.tex"
+        _file = open(filename1, "w")
+        _file.write(table)
+        _file.close()
+    return tables
 
 
 """
@@ -937,12 +1209,12 @@ def generate_report_tables(
             best_mlna_k_per_alpha[result_folder][alpha]['value'].append(list_of_accuracy[0][2])
 
         ## on store, call a print table function (gain, metric)
-        ig_local_tables = {key: ig_local_tables[key] + "\n" + mod for key, mod in print_compare(
+        ig_local_tables = {key: ig_local_tables[key] + "\n" + mod for key, mod in print_compare_v2(
             ig_local_details_metrics_depth_1,
             f'{cwd}/analyze/ig',
             alpha
         ).items()}
-        val_local_tables = {key: val_local_tables[key] + "\n" + mod for key, mod in print_compare(
+        val_local_tables = {key: val_local_tables[key] + "\n" + mod for key, mod in print_compare_v2(
             val_local_details_metrics_depth_1,
             f'{cwd}/analyze/val',
             alpha,
@@ -950,12 +1222,12 @@ def generate_report_tables(
         ).items()}
 
     ## print the global container (gain, metric)
-    ig_global_tables = "\n".join([ mod for _, mod in print_compare(
+    ig_global_tables = "\n".join([ mod for _, mod in print_compare_v2(
         ig_global_details_metrics_depth_1,
         f'{cwd}/analyze/ig',
         'all'
     ).items()])
-    val_global_tables = "\n".join([ mod for _, mod in print_compare(
+    val_global_tables = "\n".join([ mod for _, mod in print_compare_v2(
         val_global_details_metrics_depth_1,
         f'{cwd}/analyze/val',
         'all',
@@ -978,9 +1250,1761 @@ def generate_report_tables(
 
     joblib.dump(best_mlna_k_per_alpha, f'{cwd}/analyze/best.tex')
 
+
+
+def generate_report_tables_v2(
+    outputs_name=None, 
+    cwd=None, 
+    layers=[1], 
+    _type='qualitative',
+    alphas=[0.85]
+):
+    """
+    Analyzer Launcher
+    Parameters
+    ----------
+    outputs_path
+    cwd
+    layers
+    type
+
+    Returns
+    -------
+
+    """
+    day = time.strftime("%Y_%m_%d_%H")
+    ## identify the name of results folder
+    data_result_folder_name = [dirnames for _, dirnames, _ in os.walk(f'{cwd}/{outputs_name}')][0]
+    print(data_result_folder_name)
+    ## init a global container for containing the results of all results folder
+
+    template_details_metrics_depth_1 = {
+        'accuracy': {
+            'MlC': {
+                'GLO': {
+                    'MX': [],
+                    'CX': [],
+                },
+                'PER': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                },
+                'GAP': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                }
+            },
+            'MCA': {
+                'GLO': {
+                    'MX': [],
+                    'CX': [],
+                },
+                'PER': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                },
+                'GAP': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                }
+            }
+        },
+        'f1-score': {
+            'MlC': {
+                'GLO': {
+                    'MX': [],
+                    'CX': [],
+                },
+                'PER': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                },
+                'GAP': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                }
+            },
+            'MCA': {
+                'GLO': {
+                    'MX': [],
+                    'CX': [],
+                },
+                'PER': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                },
+                'GAP': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                }
+            }
+        },
+        'precision1': {
+            'MlC': {
+                'GLO': {
+                    'MX': [],
+                    'CX': [],
+                },
+                'PER': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                },
+                'GAP': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                }
+            },
+            'MCA': {
+                'GLO': {
+                    'MX': [],
+                    'CX': [],
+                },
+                'PER': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                },
+                'GAP': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                }
+            }
+        },
+        'recall1': {
+            'MlC': {
+                'GLO': {
+                    'MX': [],
+                    'CX': [],
+                },
+                'PER': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                },
+                'GAP': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                }
+            },
+            'MCA': {
+                'GLO': {
+                    'MX': [],
+                    'CX': [],
+                },
+                'PER': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                },
+                'GAP': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                }
+            }
+        },
+        'f1-score1': {
+            'MlC': {
+                'GLO': {
+                    'MX': [],
+                    'CX': [],
+                },
+                'PER': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                },
+                'GAP': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                }
+            },
+            'MCA': {
+                'GLO': {
+                    'MX': [],
+                    'CX': [],
+                },
+                'PER': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                },
+                'GAP': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                }
+            }
+        },
+        'precision0': {
+            'MlC': {
+                'GLO': {
+                    'MX': [],
+                    'CX': [],
+                },
+                'PER': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                },
+                'GAP': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                }
+            },
+            'MCA': {
+                'GLO': {
+                    'MX': [],
+                    'CX': [],
+                },
+                'PER': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                },
+                'GAP': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                }
+            }
+        },
+        'recall0': {
+            'MlC': {
+                'GLO': {
+                    'MX': [],
+                    'CX': [],
+                },
+                'PER': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                },
+                'GAP': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                }
+            },
+            'MCA': {
+                'GLO': {
+                    'MX': [],
+                    'CX': [],
+                },
+                'PER': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                },
+                'GAP': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                }
+            }
+        },
+        'f1-score0': {
+            'MlC': {
+                'GLO': {
+                    'MX': [],
+                    'CX': [],
+                },
+                'PER': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                },
+                'GAP': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                }
+            },
+            'MCA': {
+                'GLO': {
+                    'MX': [],
+                    'CX': [],
+                },
+                'PER': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                },
+                'GAP': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                }
+            }
+        },
+        'financial-cost': {
+            'MlC': {
+                'GLO': {
+                    'MX': [],
+                    'CX': [],
+                },
+                'PER': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                },
+                'GAP': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                }
+            },
+            'MCA': {
+                'GLO': {
+                    'MX': [],
+                    'CX': [],
+                },
+                'PER': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                },
+                'GAP': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                }
+            }
+        }
+    }
+    print(template_details_metrics_depth_1.keys())
+    template_details_metrics_depth_2 = {
+        'accuracy': {
+            'MlC': {
+                'GLO': [],
+                'PER': [],
+                'GAP': []
+            },
+            'MCA': {
+                'GLO': [],
+                'PER': [],
+                'GAP': []
+            }
+        },
+        'f1-score': {
+            'MlC': {
+                'GLO': [],
+                'PER': [],
+                'GAP': []
+            },
+            'MCA': {
+                'GLO': [],
+                'PER': [],
+                'GAP': []
+            }
+        },
+        'precision1': {
+            'MlC': {
+                'GLO': [],
+                'PER': [],
+                'GAP': []
+            },
+            'MCA': {
+                'GLO': [],
+                'PER': [],
+                'GAP': []
+            }
+        },
+        'recall1': {
+            'MlC': {
+                'GLO': [],
+                'PER': [],
+                'GAP': []
+            },
+            'MCA': {
+                'GLO': [],
+                'PER': [],
+                'GAP': []
+            }
+        },
+        'f1-score1': {
+            'MlC': {
+                'GLO': [],
+                'PER': [],
+                'GAP': []
+            },
+            'MCA': {
+                'GLO': [],
+                'PER': [],
+                'GAP': []
+            }
+        },
+        'precision0': {
+            'MlC': {
+                'GLO': [],
+                'PER': [],
+                'GAP': []
+            },
+            'MCA': {
+                'GLO': [],
+                'PER': [],
+                'GAP': []
+            }
+        },
+        'recall0': {
+            'MlC': {
+                'GLO': [],
+                'PER': [],
+                'GAP': []
+            },
+            'MCA': {
+                'GLO': [],
+                'PER': [],
+                'GAP': []
+            }
+        },
+        'f1-score0': {
+            'MlC': {
+                'GLO': [],
+                'PER': [],
+                'GAP': []
+            },
+            'MCA': {
+                'GLO': [],
+                'PER': [],
+                'GAP': []
+            }
+        },
+        'financial-cost': {
+            'MlC': {
+                'GLO': [],
+                'PER': [],
+                'GAP': []
+            },
+            'MCA': {
+                'GLO': [],
+                'PER': [],
+                'GAP': []
+            }
+        }
+    }
+
+    ######################################
+    ig_global_details_metrics_depth_1 = {
+    }
+    val_global_details_metrics_depth_1 = {
+    }
+
+    ig_global_details_metrics_depth_2 = {
+    }
+    val_global_details_metrics_depth_2 = {
+    }
+
+    best_mlna_k_per_alpha = {
+        folder: {key: {'real_best_k': [], 'predicted_best_k':[], 'value':[], 'model':[]} for key in alphas} for folder in data_result_folder_name
+    }
+    #####################################
+    ig_global_tables = ""
+    val_global_tables = ""
+    ig_local_tables = {}
+    val_local_tables = {}
+    ## fetch on alpha values
+    for index, alpha in enumerate(alphas):
+        ## for each alpha, store a local container 
+        ig_local_details_metrics_depth_1 = {
+        }
+        val_local_details_metrics_depth_1 = {
+        }
+        ig_local_details_metrics_depth_2 = {
+        }
+        val_local_details_metrics_depth_2 = {
+        }
+
+        local_best_mlna_k_per_alpha = {
+            key: deepcopy(best_mlna_k_per_alpha) for key in data_result_folder_name
+        }
+
+        
+        ## fetch on name of folders
+        for index2, result_folder in enumerate(data_result_folder_name):
+            # load predicted best mlnk
+            print(result_folder)
+            name = \
+                [file for _, _, files in os.walk(
+                    f'{cwd}/{outputs_name}/{result_folder}/{alpha}/{_type}/model_storage')
+                 for file in files if
+                 '_best_features' in file][0]
+            best_mlna_k_per_alpha[result_folder][alpha]['predicted_best_k'].append(read_model(f'{cwd}/{outputs_name}/{result_folder}/{alpha}/{_type}/model_storage/{name}')["bestK"])
+            ## get classic model
+            classic_f = [
+                load_data_set_from_url(path=file, sep='\t', encoding='utf-8', index_col=0, na_values=None)
+                for file in get_filenames(
+                    root_dir=f'{os.getcwd()}/{outputs_name}/{result_folder}/data_selection_storage',
+                    func=C_F,
+                    verbose=False
+                )
+            ][-1]
+            # define a list which will receive all possible value of accuracy for each layer in aims tp sorted it later and extra, the best best layer and model
+            list_of_accuracy = []
+            ## get model list on classic results
+            models_list = classic_f.index.values.tolist()
+            ## get model dictionary
+            models = model_desc()
+            ## save only the ones use suring the classic learning
+            models_name = {key: models[key] for key in models.keys() if key in models_list}
+            print(models_name)
+            ## identify the number of existing layer storage
+            mlna_folders_names = [dirnames for _, dirnames, _ in os.walk(f'{cwd}/{outputs_name}/{result_folder}/{alpha}/{_type}')][0]
+            mlna_folders_names = sorted([int(el.split("_")[1]) for el in mlna_folders_names if "mlna" in el])
+            print(result_folder, mlna_folders_names,"//", alpha, list(set(mlna_folders_names)&set(layers)))
+
+            ## fetch on each mlna layer resultts
+            for index3, layer in enumerate(list(set(mlna_folders_names)&set(layers))):
+                ## get files results of alpha
+                files = load_results(
+                    f'{outputs_name}/{result_folder}',
+                    _type,
+                    layer,
+                    alpha,
+                    per=True,
+                    glo=True,
+                    mix=True
+                )
+                ## aggregate results belong to metrics specific to the current results
+                for index4, model in enumerate(models_name):
+                    # print(model)  
+                    # append contains structured to our store
+                    if (index2 == index3) and (index2 == 0): # if first alpha, first folder result, and first layer
+
+                        # local ones
+                        ig_local_details_metrics_depth_1[model] = {key: deepcopy(template_details_metrics_depth_1) for key in data_result_folder_name}
+                        val_local_details_metrics_depth_1[model] = {key: deepcopy(template_details_metrics_depth_1) for key in data_result_folder_name}
+
+                        ig_local_details_metrics_depth_2[model] = {key: deepcopy(template_details_metrics_depth_2) for key in data_result_folder_name}
+                        val_local_details_metrics_depth_2[model] = {key: deepcopy(template_details_metrics_depth_2) for key in data_result_folder_name}
+                    if (index2 == index3) and (index2 == 0) and (index == 0):
+                        ig_local_tables[model] = ""
+                        val_local_tables[model] = ""
+                        print('here')
+                        # global one
+                        ig_global_details_metrics_depth_1[model] = {key: deepcopy(template_details_metrics_depth_1) for key in data_result_folder_name}
+                        val_global_details_metrics_depth_1[model] = {key: deepcopy(template_details_metrics_depth_1) for key in data_result_folder_name}
+
+                        ig_global_details_metrics_depth_2[model] = {key: deepcopy(template_details_metrics_depth_2) for key in data_result_folder_name}
+                        val_global_details_metrics_depth_2[model] = {key: deepcopy(template_details_metrics_depth_2) for key in data_result_folder_name}
+                        # print(ig_local_details_metrics_depth_1)
+
+                    # assuming that our store structore now have a financial metric section, we need to ensure that the current result folder
+                    # has a financial dimension
+                    hasFinancialCost = sum(['finan' in el for el in classic_f.columns.values.tolist()])
+                    if hasFinancialCost == 0:
+                        # if there is not financial details, remove the section in ours store
+                        # for mod in list(ig_local_details_metrics_depth_1.keys()): 
+                        # print(index, index2, index3, index4)
+                        if 'financial-cost' in list(ig_local_details_metrics_depth_1[model][result_folder].keys()):
+                            # local
+                            del ig_local_details_metrics_depth_1[model][result_folder]['financial-cost'] 
+                            del val_local_details_metrics_depth_1[model][result_folder]['financial-cost']
+                            del ig_local_details_metrics_depth_2[model][result_folder]['financial-cost']
+                            del val_local_details_metrics_depth_2[model][result_folder]['financial-cost']
+                            if (index3 == 0) and (index == 0):
+                                # global
+                                del ig_global_details_metrics_depth_1[model][result_folder]['financial-cost']
+                                del val_global_details_metrics_depth_1[model][result_folder]['financial-cost']
+                                del ig_global_details_metrics_depth_2[model][result_folder]['financial-cost']
+                                del val_global_details_metrics_depth_2[model][result_folder]['financial-cost']
+
+                    val_local_details_metrics_depth_1[model][result_folder]['classic'] = classic_f
+                    ig_local_details_metrics_depth_1[model][result_folder]['classic'] = classic_f
+                    val_local_details_metrics_depth_2[model][result_folder]['classic'] = classic_f
+                    ig_local_details_metrics_depth_2[model][result_folder]['classic'] = classic_f
+
+                    val_global_details_metrics_depth_1[model][result_folder]['classic'] = classic_f
+                    ig_global_details_metrics_depth_1[model][result_folder]['classic'] = classic_f
+                    val_global_details_metrics_depth_2[model][result_folder]['classic'] = classic_f
+                    ig_global_details_metrics_depth_2[model][result_folder]['classic'] = classic_f
+                    # now fetch ours results to store
+                    for metric in list(set(list(ig_local_details_metrics_depth_1[model][result_folder].keys())) - set(['classic'])): # accuracy and f1-score and/or financial cost
+                        for approach in list(files.keys()): # Mlc or MCA
+                            # print(metric, approach)
+                            for logic in list(files[approach].keys()): # GLO, PER or GAP
+                                for config in list(files[approach][logic].keys()): # MX, CX, CY, CXY
+                                    for result in list(range(len(files[approach][logic][config]))): # each result file's containing evaluation metrics
+                                        # save exact metric values
+                                        val_local_details_metrics_depth_1[model][result_folder][metric][approach][logic][config].append(round(files[approach][logic][config][result].loc[model, metric],4))
+                                        val_global_details_metrics_depth_1[model][result_folder][metric][approach][logic][config].append(round(files[approach][logic][config][result].loc[model, metric],4))
+
+                                        val_local_details_metrics_depth_2[model][result_folder][metric][approach][logic].append(round(files[approach][logic][config][result].loc[model, metric],4))
+                                        val_global_details_metrics_depth_2[model][result_folder][metric][approach][logic].append(round(files[approach][logic][config][result].loc[model, metric],4))
+
+                                        valu = round(
+                                                (
+                                                    (
+                                                        round(
+                                                            files[approach][logic][config][result].loc[model, metric], 
+                                                            4
+                                                            ) 
+                                                        - 
+                                                        round(
+                                                            classic_f.loc[model, metric], 
+                                                            4
+                                                            )
+                                                        ) 
+                                                    / 
+                                                    round(
+                                                        classic_f.loc[model, metric], 
+                                                        4
+                                                        )
+                                                    ) * 100, 
+                                                1
+                                                )
+                                        ig =  valu if 'finan' not in metric else  (valu if valu ==0 else -1*valu) 
+                                        # save just gain information
+                                        ig_local_details_metrics_depth_1[model][result_folder][metric][approach][logic][config].append(ig)
+                                        ig_global_details_metrics_depth_1[model][result_folder][metric][approach][logic][config].append(ig)
+
+                                        ig_local_details_metrics_depth_2[model][result_folder][metric][approach][logic].append(ig)
+                                        ig_global_details_metrics_depth_2[model][result_folder][metric][approach][logic].append(ig)
+                            
+                                        if 'accu' in metric:
+                                            list_of_accuracy.append((layer, model,files[approach][logic][config][result].loc[model, metric]))
+
+            # analyse impact of layers and identify the best mlna as k
+            list_of_accuracy = sorted(list_of_accuracy, key=lambda x: abs(x[2]), reverse=False) # best will be at position 0
+            best_mlna_k_per_alpha[result_folder][alpha]['real_best_k'].append(list_of_accuracy[0][0])
+            best_mlna_k_per_alpha[result_folder][alpha]['model'].append(list_of_accuracy[0][1])
+            best_mlna_k_per_alpha[result_folder][alpha]['value'].append(list_of_accuracy[0][2])
+
+        ## on store, call a print table function (gain, metric)
+        ig_local_tables = {key: ig_local_tables[key] + "\n" + mod for key, mod in print_compare_v3(
+            ig_local_details_metrics_depth_1,
+            f'{cwd}/analyzeV1/ig',
+            alpha
+        ).items()}
+        val_local_tables = {key: val_local_tables[key] + "\n" + mod for key, mod in print_compare_v3(
+            val_local_details_metrics_depth_1,
+            f'{cwd}/analyzeV1/val',
+            alpha,
+            True
+        ).items()}
+
+    ## print the global container (gain, metric)
+    ig_global_tables = "\n".join([ mod for _, mod in print_compare_v3(
+        ig_global_details_metrics_depth_1,
+        f'{cwd}/analyzeV1/ig',
+        'all'
+    ).items()])
+    val_global_tables = "\n".join([ mod for _, mod in print_compare_v3(
+        val_global_details_metrics_depth_1,
+        f'{cwd}/analyzeV1/val',
+        'all',
+        True
+    ).items()])
+    create_domain(f'{cwd}/analyzeV1/ig/all_ig/')
+    with open(f'{cwd}/analyzeV1/ig/all_ig/ig_all.tex', "a") as fichier:
+        fichier.write(header+ig_global_tables+footer)
+    create_domain(f'{cwd}/analyzeV1/val/val_all/')
+    with open(f'{cwd}/analyzeV1/val/val_all/val_all.tex', "a") as fichier:
+        fichier.write(header+val_global_tables+footer)
+
+    for key in list(ig_local_tables.keys()):
+        create_domain(f'{cwd}/analyzeV1/ig/{key}/')
+        with open(f'{cwd}/analyzeV1/ig/{key}/{key}.tex', "a") as fichier:
+            fichier.write(header+ig_local_tables[key]+footer)
+        create_domain(f'{cwd}/analyzeV1/val/{key}/')
+        with open(f'{cwd}/analyzeV1/val/{key}/{key}.tex', "a") as fichier:
+            fichier.write(header+val_local_tables[key]+footer)
+
+    joblib.dump(best_mlna_k_per_alpha, f'{cwd}/analyzeV1/best.tex')
         
 
 
+
+
+def generate_report_tables_v3(
+    outputs_name=None, 
+    cwd=None, 
+    layers=[1], 
+    _type='qualitative',
+    alphas=[0.85]
+):
+    """
+    Analyzer Launcher
+    Parameters
+    ----------
+    outputs_path
+    cwd
+    layers
+    type
+
+    Returns
+    -------
+
+    """
+    day = time.strftime("%Y_%m_%d_%H")
+    ## identify the name of results folder
+    data_result_folder_name = [dirnames for _, dirnames, _ in os.walk(f'{cwd}/{outputs_name}')][0]
+    print(data_result_folder_name)
+    ## init a global container for containing the results of all results folder
+
+    template_details_metrics_depth_1 = {
+        'accuracy': {
+            'MlC': {
+                'GLO': {
+                    'MX': [],
+                    'CX': [],
+                },
+                'PER': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                },
+                'GAP': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                }
+            },
+            'MCA': {
+                'GLO': {
+                    'MX': [],
+                    'CX': [],
+                },
+                'PER': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                },
+                'GAP': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                }
+            }
+        },
+        'f1-score': {
+            'MlC': {
+                'GLO': {
+                    'MX': [],
+                    'CX': [],
+                },
+                'PER': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                },
+                'GAP': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                }
+            },
+            'MCA': {
+                'GLO': {
+                    'MX': [],
+                    'CX': [],
+                },
+                'PER': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                },
+                'GAP': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                }
+            }
+        },
+        'precision1': {
+            'MlC': {
+                'GLO': {
+                    'MX': [],
+                    'CX': [],
+                },
+                'PER': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                },
+                'GAP': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                }
+            },
+            'MCA': {
+                'GLO': {
+                    'MX': [],
+                    'CX': [],
+                },
+                'PER': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                },
+                'GAP': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                }
+            }
+        },
+        'recall1': {
+            'MlC': {
+                'GLO': {
+                    'MX': [],
+                    'CX': [],
+                },
+                'PER': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                },
+                'GAP': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                }
+            },
+            'MCA': {
+                'GLO': {
+                    'MX': [],
+                    'CX': [],
+                },
+                'PER': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                },
+                'GAP': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                }
+            }
+        },
+        'f1-score1': {
+            'MlC': {
+                'GLO': {
+                    'MX': [],
+                    'CX': [],
+                },
+                'PER': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                },
+                'GAP': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                }
+            },
+            'MCA': {
+                'GLO': {
+                    'MX': [],
+                    'CX': [],
+                },
+                'PER': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                },
+                'GAP': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                }
+            }
+        },
+        'precision0': {
+            'MlC': {
+                'GLO': {
+                    'MX': [],
+                    'CX': [],
+                },
+                'PER': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                },
+                'GAP': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                }
+            },
+            'MCA': {
+                'GLO': {
+                    'MX': [],
+                    'CX': [],
+                },
+                'PER': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                },
+                'GAP': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                }
+            }
+        },
+        'recall0': {
+            'MlC': {
+                'GLO': {
+                    'MX': [],
+                    'CX': [],
+                },
+                'PER': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                },
+                'GAP': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                }
+            },
+            'MCA': {
+                'GLO': {
+                    'MX': [],
+                    'CX': [],
+                },
+                'PER': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                },
+                'GAP': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                }
+            }
+        },
+        'f1-score0': {
+            'MlC': {
+                'GLO': {
+                    'MX': [],
+                    'CX': [],
+                },
+                'PER': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                },
+                'GAP': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                }
+            },
+            'MCA': {
+                'GLO': {
+                    'MX': [],
+                    'CX': [],
+                },
+                'PER': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                },
+                'GAP': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                }
+            }
+        },
+        'financial-cost': {
+            'MlC': {
+                'GLO': {
+                    'MX': [],
+                    'CX': [],
+                },
+                'PER': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                },
+                'GAP': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                }
+            },
+            'MCA': {
+                'GLO': {
+                    'MX': [],
+                    'CX': [],
+                },
+                'PER': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                },
+                'GAP': {
+                    'MX': [],
+                    'CX': [],
+                    'CY': [],
+                    'CXY': []
+                }
+            }
+        }
+    }
+    print(template_details_metrics_depth_1.keys())
+    template_details_metrics_depth_2 = {
+        'accuracy': {
+            'MlC': {
+                'GLO': [],
+                'PER': [],
+                'GAP': []
+            },
+            'MCA': {
+                'GLO': [],
+                'PER': [],
+                'GAP': []
+            }
+        },
+        'f1-score': {
+            'MlC': {
+                'GLO': [],
+                'PER': [],
+                'GAP': []
+            },
+            'MCA': {
+                'GLO': [],
+                'PER': [],
+                'GAP': []
+            }
+        },
+        'precision1': {
+            'MlC': {
+                'GLO': [],
+                'PER': [],
+                'GAP': []
+            },
+            'MCA': {
+                'GLO': [],
+                'PER': [],
+                'GAP': []
+            }
+        },
+        'recall1': {
+            'MlC': {
+                'GLO': [],
+                'PER': [],
+                'GAP': []
+            },
+            'MCA': {
+                'GLO': [],
+                'PER': [],
+                'GAP': []
+            }
+        },
+        'f1-score1': {
+            'MlC': {
+                'GLO': [],
+                'PER': [],
+                'GAP': []
+            },
+            'MCA': {
+                'GLO': [],
+                'PER': [],
+                'GAP': []
+            }
+        },
+        'precision0': {
+            'MlC': {
+                'GLO': [],
+                'PER': [],
+                'GAP': []
+            },
+            'MCA': {
+                'GLO': [],
+                'PER': [],
+                'GAP': []
+            }
+        },
+        'recall0': {
+            'MlC': {
+                'GLO': [],
+                'PER': [],
+                'GAP': []
+            },
+            'MCA': {
+                'GLO': [],
+                'PER': [],
+                'GAP': []
+            }
+        },
+        'f1-score0': {
+            'MlC': {
+                'GLO': [],
+                'PER': [],
+                'GAP': []
+            },
+            'MCA': {
+                'GLO': [],
+                'PER': [],
+                'GAP': []
+            }
+        },
+        'financial-cost': {
+            'MlC': {
+                'GLO': [],
+                'PER': [],
+                'GAP': []
+            },
+            'MCA': {
+                'GLO': [],
+                'PER': [],
+                'GAP': []
+            }
+        }
+    }
+
+    ######################################
+    ig_global_details_metrics_depth_1 = {
+    }
+    val_global_details_metrics_depth_1 = {
+    }
+
+    ig_global_details_metrics_depth_2 = {
+    }
+    val_global_details_metrics_depth_2 = {
+    }
+
+    best_mlna_k_per_alpha = {
+        folder: {key: {'real_best_k': [], 'predicted_best_k':[], 'value':[], 'model':[]} for key in alphas} for folder in data_result_folder_name
+    }
+    #####################################
+    ig_global_tables = ""
+    val_global_tables = ""
+    ig_local_tables = {}
+    val_local_tables = {}
+    ## fetch on alpha values
+    for index, alpha in enumerate(alphas):
+        ## for each alpha, store a local container 
+        ig_local_details_metrics_depth_1 = {
+        }
+        val_local_details_metrics_depth_1 = {
+        }
+        ig_local_details_metrics_depth_2 = {
+        }
+        val_local_details_metrics_depth_2 = {
+        }
+
+        local_best_mlna_k_per_alpha = {
+            key: deepcopy(best_mlna_k_per_alpha) for key in data_result_folder_name
+        }
+
+        
+        ## fetch on name of folders
+        for index2, result_folder in enumerate(data_result_folder_name):
+            # load predicted best mlnk
+            print(result_folder)
+            name = \
+                [file for _, _, files in os.walk(
+                    f'{cwd}/{outputs_name}/{result_folder}/{alpha}/{_type}/model_storage')
+                 for file in files if
+                 '_best_features' in file][0]
+            best_mlna_k_per_alpha[result_folder][alpha]['predicted_best_k'].append(read_model(f'{cwd}/{outputs_name}/{result_folder}/{alpha}/{_type}/model_storage/{name}')["bestK"])
+            ## get classic model
+            classic_f = [
+                load_data_set_from_url(path=file, sep='\t', encoding='utf-8', index_col=0, na_values=None)
+                for file in get_filenames(
+                    root_dir=f'{os.getcwd()}/{outputs_name}/{result_folder}/data_selection_storage',
+                    func=C_F,
+                    verbose=False
+                )
+            ][-1]
+            # define a list which will receive all possible value of accuracy for each layer in aims tp sorted it later and extra, the best best layer and model
+            list_of_accuracy = []
+            ## get model list on classic results
+            models_list = classic_f.index.values.tolist()
+            ## get model dictionary
+            models = model_desc()
+            ## save only the ones use suring the classic learning
+            models_name = {key: models[key] for key in models.keys() if key in models_list}
+            print(models_name)
+            ## identify the number of existing layer storage
+            mlna_folders_names = [dirnames for _, dirnames, _ in os.walk(f'{cwd}/{outputs_name}/{result_folder}/{alpha}/{_type}')][0]
+            mlna_folders_names = sorted([int(el.split("_")[1]) for el in mlna_folders_names if "mlna" in el])
+            print(result_folder, mlna_folders_names,"//", alpha, list(set(mlna_folders_names)&set(layers)))
+
+            ## fetch on each mlna layer resultts
+            for index3, layer in enumerate(list(set(mlna_folders_names)&set(layers))):
+                ## get files results of alpha
+                files = load_results(
+                    f'{outputs_name}/{result_folder}',
+                    _type,
+                    layer,
+                    alpha,
+                    per=True,
+                    glo=True,
+                    mix=True
+                )
+                ## aggregate results belong to metrics specific to the current results
+                for index4, model in enumerate(models_name):
+                    # print(model)  
+                    # append contains structured to our store
+                    if (index2 == index3) and (index2 == 0): # if first alpha, first folder result, and first layer
+
+                        # local ones
+                        ig_local_details_metrics_depth_1[model] = {key: deepcopy(template_details_metrics_depth_1) for key in data_result_folder_name}
+                        val_local_details_metrics_depth_1[model] = {key: deepcopy(template_details_metrics_depth_1) for key in data_result_folder_name}
+
+                        ig_local_details_metrics_depth_2[model] = {key: deepcopy(template_details_metrics_depth_2) for key in data_result_folder_name}
+                        val_local_details_metrics_depth_2[model] = {key: deepcopy(template_details_metrics_depth_2) for key in data_result_folder_name}
+                    if (index2 == index3) and (index2 == 0) and (index == 0):
+                        ig_local_tables[model] = ""
+                        val_local_tables[model] = ""
+                        print('here')
+                        # global one
+                        ig_global_details_metrics_depth_1[model] = {key: deepcopy(template_details_metrics_depth_1) for key in data_result_folder_name}
+                        val_global_details_metrics_depth_1[model] = {key: deepcopy(template_details_metrics_depth_1) for key in data_result_folder_name}
+
+                        ig_global_details_metrics_depth_2[model] = {key: deepcopy(template_details_metrics_depth_2) for key in data_result_folder_name}
+                        val_global_details_metrics_depth_2[model] = {key: deepcopy(template_details_metrics_depth_2) for key in data_result_folder_name}
+                        # print(ig_local_details_metrics_depth_1)
+
+                    # assuming that our store structore now have a financial metric section, we need to ensure that the current result folder
+                    # has a financial dimension
+                    hasFinancialCost = sum(['finan' in el for el in classic_f.columns.values.tolist()])
+                    if hasFinancialCost == 0:
+                        # if there is not financial details, remove the section in ours store
+                        # for mod in list(ig_local_details_metrics_depth_1.keys()): 
+                        # print(index, index2, index3, index4)
+                        if 'financial-cost' in list(ig_local_details_metrics_depth_1[model][result_folder].keys()):
+                            # local
+                            del ig_local_details_metrics_depth_1[model][result_folder]['financial-cost'] 
+                            del val_local_details_metrics_depth_1[model][result_folder]['financial-cost']
+                            del ig_local_details_metrics_depth_2[model][result_folder]['financial-cost']
+                            del val_local_details_metrics_depth_2[model][result_folder]['financial-cost']
+                            if (index3 == 0) and (index == 0):
+                                # global
+                                del ig_global_details_metrics_depth_1[model][result_folder]['financial-cost']
+                                del val_global_details_metrics_depth_1[model][result_folder]['financial-cost']
+                                del ig_global_details_metrics_depth_2[model][result_folder]['financial-cost']
+                                del val_global_details_metrics_depth_2[model][result_folder]['financial-cost']
+
+                    val_local_details_metrics_depth_1[model][result_folder]['classic'] = classic_f
+                    ig_local_details_metrics_depth_1[model][result_folder]['classic'] = classic_f
+                    val_local_details_metrics_depth_2[model][result_folder]['classic'] = classic_f
+                    ig_local_details_metrics_depth_2[model][result_folder]['classic'] = classic_f
+
+                    val_global_details_metrics_depth_1[model][result_folder]['classic'] = classic_f
+                    ig_global_details_metrics_depth_1[model][result_folder]['classic'] = classic_f
+                    val_global_details_metrics_depth_2[model][result_folder]['classic'] = classic_f
+                    ig_global_details_metrics_depth_2[model][result_folder]['classic'] = classic_f
+                    # now fetch ours results to store
+                    for metric in list(set(list(ig_local_details_metrics_depth_1[model][result_folder].keys())) - set(['classic'])): # accuracy and f1-score and/or financial cost
+                        for approach in list(files.keys()): # Mlc or MCA
+                            # print(metric, approach)
+                            for logic in list(files[approach].keys()): # GLO, PER or GAP
+                                for config in list(files[approach][logic].keys()): # MX, CX, CY, CXY
+                                    for result in list(range(len(files[approach][logic][config]))): # each result file's containing evaluation metrics
+                                        # save exact metric values
+                                        val_local_details_metrics_depth_1[model][result_folder][metric][approach][logic][config].append(round(files[approach][logic][config][result].loc[model, metric],4))
+                                        val_global_details_metrics_depth_1[model][result_folder][metric][approach][logic][config].append(round(files[approach][logic][config][result].loc[model, metric],4))
+
+                                        val_local_details_metrics_depth_2[model][result_folder][metric][approach][logic].append(round(files[approach][logic][config][result].loc[model, metric],4))
+                                        val_global_details_metrics_depth_2[model][result_folder][metric][approach][logic].append(round(files[approach][logic][config][result].loc[model, metric],4))
+
+                                        valu = round(
+                                                (
+                                                    (
+                                                        round(
+                                                            files[approach][logic][config][result].loc[model, metric], 
+                                                            4
+                                                            ) 
+                                                        - 
+                                                        round(
+                                                            classic_f.loc[model, metric], 
+                                                            4
+                                                            )
+                                                        ) 
+                                                    / 
+                                                    round(
+                                                        classic_f.loc[model, metric], 
+                                                        4
+                                                        )
+                                                    ) * 100, 
+                                                1
+                                                )
+                                        ig =  valu if 'finan' not in metric else  (valu if valu ==0 else -1*valu) 
+                                        # save just gain information
+                                        ig_local_details_metrics_depth_1[model][result_folder][metric][approach][logic][config].append(ig)
+                                        ig_global_details_metrics_depth_1[model][result_folder][metric][approach][logic][config].append(ig)
+
+                                        ig_local_details_metrics_depth_2[model][result_folder][metric][approach][logic].append(ig)
+                                        ig_global_details_metrics_depth_2[model][result_folder][metric][approach][logic].append(ig)
+                            
+                                        if 'accu' in metric:
+                                            list_of_accuracy.append((layer, model,files[approach][logic][config][result].loc[model, metric]))
+
+            # analyse impact of layers and identify the best mlna as k
+            list_of_accuracy = sorted(list_of_accuracy, key=lambda x: abs(x[2]), reverse=False) # best will be at position 0
+            best_mlna_k_per_alpha[result_folder][alpha]['real_best_k'].append(list_of_accuracy[0][0])
+            best_mlna_k_per_alpha[result_folder][alpha]['model'].append(list_of_accuracy[0][1])
+            best_mlna_k_per_alpha[result_folder][alpha]['value'].append(list_of_accuracy[0][2])
+
+        ## on store, call a print table function (gain, metric)
+        ig_local_tables = {key: ig_local_tables[key] + "\n" + mod for key, mod in print_compare_v3(
+            ig_local_details_metrics_depth_1,
+            f'{cwd}/analyzeV1/ig',
+            alpha
+        ).items()}
+        val_local_tables = {key: val_local_tables[key] + "\n" + mod for key, mod in print_compare_v3(
+            val_local_details_metrics_depth_1,
+            f'{cwd}/analyzeV1/val',
+            alpha,
+            True
+        ).items()}
+
+    ## print the global container (gain, metric)
+    ig_global_tables = "\n".join([ mod for _, mod in print_compare_v3(
+        ig_global_details_metrics_depth_1,
+        f'{cwd}/analyzeV1/ig',
+        'all'
+    ).items()])
+    val_global_tables = "\n".join([ mod for _, mod in print_compare_v3(
+        val_global_details_metrics_depth_1,
+        f'{cwd}/analyzeV1/val',
+        'all',
+        True
+    ).items()])
+    create_domain(f'{cwd}/analyzeV1/ig/all_ig/')
+    with open(f'{cwd}/analyzeV1/ig/all_ig/ig_all.tex', "a") as fichier:
+        fichier.write(header+ig_global_tables+footer)
+    create_domain(f'{cwd}/analyzeV1/val/val_all/')
+    with open(f'{cwd}/analyzeV1/val/val_all/val_all.tex', "a") as fichier:
+        fichier.write(header+val_global_tables+footer)
+
+    for key in list(ig_local_tables.keys()):
+        create_domain(f'{cwd}/analyzeV1/ig/{key}/')
+        with open(f'{cwd}/analyzeV1/ig/{key}/{key}.tex', "a") as fichier:
+            fichier.write(header+ig_local_tables[key]+footer)
+        create_domain(f'{cwd}/analyzeV1/val/{key}/')
+        with open(f'{cwd}/analyzeV1/val/{key}/{key}.tex', "a") as fichier:
+            fichier.write(header+val_local_tables[key]+footer)
+
+    joblib.dump(best_mlna_k_per_alpha, f'{cwd}/analyzeV1/best.tex')
+        
+
+
+
+
+
+
+
+
+
+
+def generate_descriptor_ranking(
+    outputs_name=None, 
+    cwd=None, 
+    layers=[1], 
+    _type='qualitative',
+    alphas=[0.85]
+):
+    """
+    Analyzer Launcher
+    Parameters
+    ----------
+    outputs_path
+    cwd
+    layers
+    type
+
+    Returns
+    -------
+
+    """
+    day = time.strftime("%Y_%m_%d_%H")
+    ## identify the name of results folder
+    data_result_folder_name = [dirnames for _, dirnames, _ in os.walk(f'{cwd}/{outputs_name}')][0]
+    print(data_result_folder_name)
+    ## init a global container for containing the results of all results folder
+
+    template_details_metrics_depth_1 = {
+        'MlC': {
+            'GLO': {
+                'MX': {},
+                'CX': {},
+            },
+            'PER': {
+                'MX': {},
+                'CX': {},
+                'CY': {},
+                'CXY': {}
+            },
+            'GAP': {
+                'MX': {},
+                'CX': {},
+                'CY': {},
+                'CXY': {}
+            }
+        },
+        'MCA': {
+            'GLO': {
+                'MX': {},
+                'CX': {},
+            },
+            'PER': {
+                'MX': {},
+                'CX': {},
+                'CY': {},
+                'CXY': {}
+            },
+            'GAP': {
+                'MX': {},
+                'CX': {},
+                'CY': {},
+                'CXY': {}
+            }
+        }
+    }
+    print(template_details_metrics_depth_1.keys())
+    template_details_metrics_depth_2 = {
+        'MlC': {
+            'GLO': {},
+            'PER': {},
+            'GAP': {}
+        },
+        'MCA': {
+            'GLO': {},
+            'PER': {},
+            'GAP': {}
+        }
+    }
+    template_descripteurs = {
+        'INTER_GLO': [],
+        'INTRA_GLO': [],
+        'COMBINE_GLO': [],
+        'INTER_PER': [],
+        'INTRA_PER': [],
+        'COMBINE_PER': [],
+        'INTER_M_GLO': [],
+        'INTRA_M_GLO': [],
+        'COMBINE_M_GLO': [],
+        'INTER_M_PER': [],
+        'INTRA_M_PER': [],
+        'COMBINE_M_PER': [],
+        'DEGREE': []
+
+    }
+    ######################################
+    global_details_metrics_depth_1 = {
+    }
+
+    global_details_metrics_depth_2 = {
+    }
+
+    #####################################
+    global_tables = ""
+    local_tables = {}
+    ## fetch on alpha values
+    for index, alpha in enumerate(alphas):
+        ## for each alpha, store a local container 
+        local_details_metrics_depth_1 = {
+        }
+        local_details_metrics_depth_2 = {
+        }
+        ## fetch on name of folders
+        for index2, result_folder in enumerate(data_result_folder_name):
+            ## get classic model
+            classic_f = [
+                load_data_set_from_url(path=file, sep='\t', encoding='utf-8', index_col=0, na_values=None)
+                for file in get_filenames(
+                    root_dir=f'{os.getcwd()}/{outputs_name}/{result_folder}/data_selection_storage',
+                    func=C_F,
+                    verbose=False
+                )
+            ][-1]
+            # define a list which will receive all possible value of accuracy for each layer in aims tp sorted it later and extra, the best best layer and model
+            # list_of_accuracy = []
+            ## get model list on classic results
+            models_list = classic_f.index.values.tolist()
+            ## get model dictionary
+            models = model_desc()
+            ## save only the ones use suring the classic learning
+            models_name = {key: models[key] for key in models.keys() if key in models_list}
+            print(models_name)
+            ## identify the number of existing layer storage
+            mlna_folders_names = [dirnames for _, dirnames, _ in os.walk(f'{cwd}/{outputs_name}/{result_folder}/{alpha}/{_type}')][0]
+            mlna_folders_names = sorted([int(el.split("_")[1]) for el in mlna_folders_names if "mlna" in el])
+            print(result_folder, mlna_folders_names,"//", alpha, list(set(mlna_folders_names)&set(layers)))
+
+            ## fetch on each mlna layer resultts
+            for index3, layer in enumerate(list(set(mlna_folders_names)&set(layers))):
+                ## get files results of alpha
+                files = load_results(
+                    f'{outputs_name}/{result_folder}',
+                    _type,
+                    layer,
+                    alpha,
+                    per=True,
+                    glo=True,
+                    mix=True
+                )
+                ## aggregate results belong to metrics specific to the current results
+                for index4, model in enumerate(models_name):
+                    # print(model)  
+                    # append contains structured to our store
+                    if (index2 == index3) and (index2 == 0): # if first alpha, first folder result, and first layer
+
+                        # local ones
+                        local_details_metrics_depth_1[model] = {key: deepcopy(template_details_metrics_depth_1) for key in data_result_folder_name}
+
+                        local_details_metrics_depth_2[model] = {key: deepcopy(template_details_metrics_depth_2) for key in data_result_folder_name}
+
+                    if (index2 == index3) and (index2 == 0) and (index == 0):
+                        local_tables[model] = ""
+                        local_tables[model] = ""
+
+                        # global one
+                        global_details_metrics_depth_1[model] = {key: deepcopy(template_details_metrics_depth_1) for key in data_result_folder_name}
+
+                        global_details_metrics_depth_2[model] = {key: deepcopy(template_details_metrics_depth_2) for key in data_result_folder_name}
+
+                    
+                    # now fetch ours results to store
+                    for approach in list(files.keys()): # Mlc or MCA
+                        # print(metric, approach)
+                        for logic in list(files[approach].keys()): # GLO, PER or GAP
+                            if isinstance(local_details_metrics_depth_1[model][result_folder][approach][logic],"list"):
+                                global_details_metrics_depth_1[model][result_folder][approach][logic] = deepcopy(template_descripteurs)
+
+                            for config in list(files[approach][logic].keys()): # MX, CX, CY, CXY
+                                if isinstance(local_details_metrics_depth_1[model][result_folder][approach][logic][config],"list"):
+                                    local_details_metrics_depth_1[model][result_folder][approach][logic][config] = deepcopy(template_descripteurs)
+
+                                for result in list(range(len(files[approach][logic][config]))): # each result file's containing evaluation metrics
+                                    colo = files[key][logic][p].columns
+                                    for att in colo:
+                                        if not (att in ["accuracy", "precision", "recall", "f1-score","financial-cost"]):
+                                            if GLO_INTER_F(att):
+                                                tab1_body_model[model][f'MLN {k}'][
+                                                    'INTER_GLO'].append(files[key][logic][p].loc[model, att])
+                                            elif GLO_INTRA_F(att):
+                                                tab1_body_model[model][f'MLN {k}'][
+                                                    'INTRA_GLO'].append(files[key][logic][p].loc[model, att])
+                                            elif GLO_COMBINE_F(att):
+                                                tab1_body_model[model][f'MLN {k}'][
+                                                    'COMBINE_GLO'].append(files[key][logic][p].loc[model, att])
+                                            elif PER_INTER_F(att):
+                                                tab1_body_model[model][f'MLN {k}'][
+                                                    'INTER_PER'].append(files[key][logic][p].loc[model, att])
+                                            elif PER_INTRA_F(att):
+                                                tab1_body_model[model][f'MLN {k}'][
+                                                    'INTRA_PER'].append(files[key][logic][p].loc[model, att])
+                                            elif PER_COMBINE_F(att):
+                                                tab1_body_model[model][f'MLN {k}'][
+                                                    'COMBINE_PER'].append(files[key][logic][p].loc[model, att])
+                                            elif GLO_INTER_M_F(att):
+                                                tab1_body_model[model][f'MLN {k}'][
+                                                    'INTER_M_GLO'].append(files[key][logic][p].loc[model, att])
+                                            elif GLO_INTRA_M_F(att):
+                                                tab1_body_model[model][f'MLN {k}'][
+                                                    'INTRA_M_GLO'].append(files[key][logic][p].loc[model, att])
+                                            elif GLO_COMBINE_M_F(att):
+                                                tab1_body_model[model][f'MLN {k}'][
+                                                    'COMBINE_M_GLO'].append(files[key][logic][p].loc[model, att])
+                                            elif PER_INTER_M_F(att):
+                                                tab1_body_model[model][f'MLN {k}'][
+                                                    'INTER_M_PER'].append(files[key][logic][p].loc[model, att])
+                                            elif PER_INTRA_M_F(att):
+                                                tab1_body_model[model][f'MLN {k}'][
+                                                    'INTRA_M_PER'].append(files[key][logic][p].loc[model, att])
+                                            elif PER_COMBINE_M_F(att):
+                                                tab1_body_model[model][f'MLN {k}'][
+                                                    'COMBINE_M_PER'].append(files[key][logic][p].loc[model, att])
+                                            elif DEGREE_F(att):
+                                                tab1_body_model[model][f'MLN {k}'][
+                                                    'DEGREE'].append(files[key][logic][p].loc[model, att])
+                                            else:
+                                                if not (att in tab1_body_model[model][
+                                                    f'MLN {k}'].keys()):
+                                                    tab1_body_model[model][f'MLN {k}'][
+                                                        att] = []
+                                                    tab1_body_model_f[model][att] = []
+                                                    descripteurs[att] = []
+                                                    # print(tab1_body_model[model][f'MLN {k}'])
+                                                tab1_body_model[model][f'MLN {k}'][
+                                                    att].append(files[key][logic][p].loc[model, att])
+                                    # save exact metric values
+                                    local_details_metrics_depth_1[model][result_folder][metric][approach][logic][config].append(round(files[approach][logic][config][result].loc[model, metric],4))
+                                    global_details_metrics_depth_1[model][result_folder][metric][approach][logic][config].append(round(files[approach][logic][config][result].loc[model, metric],4))
+
+                                    local_details_metrics_depth_2[model][result_folder][metric][approach][logic].append(round(files[approach][logic][config][result].loc[model, metric],4))
+                                    global_details_metrics_depth_2[model][result_folder][metric][approach][logic].append(round(files[approach][logic][config][result].loc[model, metric],4))
+
+                                    valu = round(
+                                            (
+                                                (
+                                                    round(
+                                                        files[approach][logic][config][result].loc[model, metric], 
+                                                        4
+                                                        ) 
+                                                    - 
+                                                    round(
+                                                        classic_f.loc[model, metric], 
+                                                        4
+                                                        )
+                                                    ) 
+                                                / 
+                                                round(
+                                                    classic_f.loc[model, metric], 
+                                                    4
+                                                    )
+                                                ) * 100, 
+                                            1
+                                            )
+                                    ig =  valu if 'finan' not in metric else  (valu if valu ==0 else -1*valu) 
+                                    # save just gain information
+                                    ig_local_details_metrics_depth_1[model][result_folder][metric][approach][logic][config].append(ig)
+                                    ig_global_details_metrics_depth_1[model][result_folder][metric][approach][logic][config].append(ig)
+
+                                    ig_local_details_metrics_depth_2[model][result_folder][metric][approach][logic].append(ig)
+                                    ig_global_details_metrics_depth_2[model][result_folder][metric][approach][logic].append(ig)
+                        
+                                    if 'accu' in metric:
+                                        list_of_accuracy.append((layer, model,files[approach][logic][config][result].loc[model, metric]))
+
+            # analyse impact of layers and identify the best mlna as k
+            list_of_accuracy = sorted(list_of_accuracy, key=lambda x: abs(x[2]), reverse=False) # best will be at position 0
+            best_mlna_k_per_alpha[result_folder][alpha]['real_best_k'].append(list_of_accuracy[0][0])
+            best_mlna_k_per_alpha[result_folder][alpha]['model'].append(list_of_accuracy[0][1])
+            best_mlna_k_per_alpha[result_folder][alpha]['value'].append(list_of_accuracy[0][2])
+
+        ## on store, call a print table function (gain, metric)
+        ig_local_tables = {key: ig_local_tables[key] + "\n" + mod for key, mod in print_compare_v3(
+            ig_local_details_metrics_depth_1,
+            f'{cwd}/analyzeV1/ig',
+            alpha
+        ).items()}
+        val_local_tables = {key: val_local_tables[key] + "\n" + mod for key, mod in print_compare_v3(
+            val_local_details_metrics_depth_1,
+            f'{cwd}/analyzeV1/val',
+            alpha,
+            True
+        ).items()}
+
+    ## print the global container (gain, metric)
+    ig_global_tables = "\n".join([ mod for _, mod in print_compare_v3(
+        ig_global_details_metrics_depth_1,
+        f'{cwd}/analyzeV1/ig',
+        'all'
+    ).items()])
+    val_global_tables = "\n".join([ mod for _, mod in print_compare_v3(
+        val_global_details_metrics_depth_1,
+        f'{cwd}/analyzeV1/val',
+        'all',
+        True
+    ).items()])
+    create_domain(f'{cwd}/analyzeV1/ig/all_ig/')
+    with open(f'{cwd}/analyzeV1/ig/all_ig/ig_all.tex', "a") as fichier:
+        fichier.write(header+ig_global_tables+footer)
+    create_domain(f'{cwd}/analyzeV1/val/val_all/')
+    with open(f'{cwd}/analyzeV1/val/val_all/val_all.tex', "a") as fichier:
+        fichier.write(header+val_global_tables+footer)
+
+    for key in list(ig_local_tables.keys()):
+        create_domain(f'{cwd}/analyzeV1/ig/{key}/')
+        with open(f'{cwd}/analyzeV1/ig/{key}/{key}.tex', "a") as fichier:
+            fichier.write(header+ig_local_tables[key]+footer)
+        create_domain(f'{cwd}/analyzeV1/val/{key}/')
+        with open(f'{cwd}/analyzeV1/val/{key}/{key}.tex', "a") as fichier:
+            fichier.write(header+val_local_tables[key]+footer)
+
+    joblib.dump(best_mlna_k_per_alpha, f'{cwd}/analyzeV1/best.tex')
+        
 
 
 

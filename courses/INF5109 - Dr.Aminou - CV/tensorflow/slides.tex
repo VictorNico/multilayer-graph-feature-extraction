@@ -1,0 +1,217 @@
+\documentclass{beamer}
+\usetheme{Madrid}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+% \usepackage{beamerthemesplit} // Activate for custom appearance
+\usepackage{tikz}
+\usepackage{xcolor}
+
+
+\title{Tensorflow (Object Detection)}
+\author{Victor Djiembou}
+%\date{\today}
+
+% Generate table of contents before each section
+\AtBeginSection[]{
+  \begin{frame}[plain]
+    \frametitle{Outline}
+    \tableofcontents[currentsection]
+  \end{frame}
+}
+
+\begin{document}
+
+\frame{\titlepage}
+\frame{\tableofcontents}
+
+\section{TensorFlow vs. Keras vs. Scikit\-learn vs. PyTorch}
+\begin{frame}{Comparaison entre TensorFlow et autres outils}
+\begin{table}[]
+\resizebox{\textwidth}{!}{
+\begin{tabular}{|l|c|c|c|c|}
+\hline
+\textbf{Tools} & \textbf{TensorFlow} & \textbf{PyTorch} & \textbf{Scikit-learn} & \textbf{Keras} \\ \hline
+\textbf{Flexibility} & most flexible & most flexible & less flexible & relatively flexible \\ \hline
+\textbf{CPU Support} & yes & yes & yes & yes \\ \hline
+\textbf{GPU Support} & yes & yes & no & yes \\ \hline
+\textbf{Deploiyment} & yes & yes & yes & yes \\ \hline
+\textbf{Community} & Huge & Large & Large & Large \\ \hline
+\textbf{Documentation} & Excellent & Good & Good & Good \\ \hline
+\textbf{Popularity} & Huge & Large & Large & Large \\ \hline
+\textbf{Kernel language} & c++ & c++ & python & python \\ \hline
+\textbf{creation} & 2015 by the Google Brain Team & 2016 by the Facebook AI research Team & 2007 by David Cournapeau & 2015 by François Chollet \\ \hline
+\end{tabular}
+}
+\caption{Best Machine Learning Tools Comparaison}
+\end{table}
+\end{frame}
+
+\subsection{Deep Learning}
+\begin{frame}{Deep Learning}
+TensorFlow and Keras are primarily used for deep learning tasks, which involve training neural networks to recognize patterns in data. 
+
+They are especially useful for tasks such as natural language processing(NLP), speech recognition, and computer vision. 
+
+Both frameworks are highly scalable and optimized for large-scale deep learning, and they support distributed training across multiple machines. 
+
+PyTorch is also well-suited for deep learning tasks, with a dynamic computational graph that provides greater flexibility and control over the neural network building and training process.
+\end{frame}
+
+
+\subsection{Traditional Machine Learning}
+\begin{frame}{Traditional Machine Learning}
+Scikit\-learn is a more traditional machine learning framework used for a wide range of tasks, including classification, regression, and clustering. 
+
+It provides a range of built-in algorithms and tools for these tasks, as well as for data preprocessing and model selection. 
+
+Scikit\-learn is easy to use and learn and is suitable for small to medium-sized datasets.
+\end{frame}
+
+
+\subsection{Ease of Use}
+\begin{frame}{Ease of Use}
+Keras is widely regarded as the easiest to use of the four frameworks. 
+
+It has a user-friendly interface for building and training neural networks and is easy to learn and use, making it ideal for beginners and for rapid prototyping and experimentation. 
+
+TensorFlow is more complex and has a steeper learning curve than Keras, but it provides a low-level API for greater customization and control. 
+
+PyTorch is also relatively easy to use, with a dynamic computational graph that allows for greater flexibility and control. 
+
+Scikit\-learn is generally considered the easiest to use of the traditional machine learning frameworks, with a simple and consistent API and a range of built-in tools and algorithms.
+\end{frame}
+
+
+\subsection{Flexibility}
+\begin{frame}{Flexibility}
+TensorFlow and PyTorch are the most flexible of the four frameworks. 
+
+They provide low-level APIs that allow for greater customization and control over the neural network building and training process, making them ideal for research and experimentation. 
+
+Keras is also relatively flexible, with a high-level API that provides some customization options. 
+
+Scikit\-learn, as a traditional machine learning framework, is less flexible than deep learning frameworks but still provides a range of built-in algorithms and tools for data preprocessing and model selection.
+\end{frame}
+
+
+\subsection{Popularity}
+\begin{frame}{Popularity}
+TensorFlow and Scikit\-learn are the most popular of the four frameworks. 
+
+TensorFlow is widely used in industry, particularly for deep learning tasks, while Scikit\-learn is widely used in academia and industry for traditional machine learning tasks. 
+
+Keras, as a high-level API for TensorFlow and PyTorch, is also widely used in both: academia and industry. 
+
+While still relatively new, PyTorch has seen a rapid rise in popularity in recent years, particularly in the research community.
+\end{frame}
+
+
+\subsection{Performance}
+\begin{frame}{Performance}
+TensorFlow and PyTorch are the most performants of the four frameworks. 
+
+They are optimized for large-scale deep learning and support distributed training across multiple machines, making them ideal for training complex neural networks on large datasets. 
+
+Scikit\-learn is also performant, particularly for smaller datasets, but is not optimized for distributed training. 
+
+Keras, as a high-level API for TensorFlow and PyTorch, inherits their performance characteristics.
+\end{frame}
+
+
+\subsection{Wrapping Up}
+\begin{frame}{Wrapping Up}
+Machine Learning is a subfield of Artificial Intelligence that focuses on creating algorithms capable of learning from raw data to make predictions.
+
+It has become increasingly popular in recent years, thanks to the proliferation of big data and advancements in computing power.
+
+TensorFlow is an open-source ML library developed by Google Brain Team that is widely used for various ML tasks, including classification, regression, and deep learning. 
+
+Keras is an open-source neural network library written in Python, designed to make building and training deep neural networks easy and accessible. 
+
+Scikit\-learn is a popular open-source machine-learning library designed to provide a simple and efficient toolset for various machine-learning tasks, including classification, regression, clustering, and dimensionality reduction. 
+
+PyTorch is an open-source machine-learning library widely used in academia and industry that provides a dynamic computational graph allowing greater flexibility and control over the neural network building and training process. 
+\end{frame}
+
+\section{TensorFlow progression}
+\begin{frame}
+  \frametitle{Progression of TensorFlow}
+  \begin{itemize}
+   \item<1-> \textbf{Stage 1:} Initial Release (2015) \\
+    TensorFlow 0.5 was initially released by Google Brain in 2015 as an open-source machine learning library. It provided a flexible framework for building various types of neural networks.
+
+    \pause
+    \item<2-> \textbf{Stage 2:} Popularity and Community Growth \\
+    TensorFlow 1.0 gained significant popularity due to its powerful features and extensive community support. It became one of the most widely used machine learning frameworks.
+
+    \pause
+    \item<3-> \textbf{Stage 3:} Integration of Keras \\
+    TensorFlow 2.0 integrated the high-level deep learning library Keras into its core in 2019. This integration made TensorFlow more user-friendly and accessible for beginners.
+  \end{itemize}
+\end{frame}
+\begin{frame}
+  \frametitle{Progression of TensorFlow}
+  \begin{itemize}
+    \item<1-> \textbf{Stage 4:} TensorFlow 2.0 and Eager Execution (2019) \\
+    TensorFlow 2.0, released in 2019, introduced Eager Execution as the default mode. Eager Execution simplified the development process by allowing immediate execution of operations, enabling easier debugging and more intuitive code.
+
+    \pause
+    \item<2-> \textbf{Stage 5:} TensorFlow Extended (TFX) (2019)\\
+    TensorFlow 2.3 introduced TensorFlow Extended (TFX) as a production-ready platform for deploying TensorFlow models at scale. TFX provides tools and components for building end-to-end machine learning pipelines.
+
+    \pause
+    \item<3-> \textbf{Stage 6:} TensorFlow Serving and TensorFlow Lite \\
+    TensorFlow Serving and TensorFlow Lite have been ongoing projects, providing model serving and deployment capabilities. TensorFlow Serving is used for serving trained models in production environments, while TensorFlow Lite is designed for running models on resource-constrained devices like mobile and IoT devices.
+
+  \end{itemize}
+\end{frame}
+
+\section{TensorFlow Quiz}
+\begin{frame}[allowframebreaks]
+  \frametitle{TensorFlow Quiz}
+
+  \begin{enumerate}
+    \item \textcolor{black}{Q.} What is TensorFlow?\\
+    \textcolor{red}{A.TensorFlow is an open-source machine learning framework developed by Google.}
+    \item \textcolor{black}{Q.} What is the primary programming language used in TensorFlow?\\
+    \textcolor{red}{A.TensorFlow is primarily programmed using Python.}
+    \item \textcolor{black}{Q.} What is a tensor in TensorFlow?\\
+     \textcolor{red}{A.A tensor is a multi-dimensional array used to represent data in TensorFlow.}
+    \item \textcolor{black}{Q.} What is the purpose of a placeholder in TensorFlow?\\
+    \textcolor{red}{A.Placeholders are used to define the inputs to a TensorFlow computation graph.}
+    \item \textcolor{black}{Q.} What is the purpose of a Variable in TensorFlow?\\
+     \textcolor{red}{A.Variables are used to store and update parameters during the training process in TensorFlow.}
+    \item \textcolor{black}{Q.} What is the difference between a constant and a Variable in TensorFlow?\\
+     \textcolor{red}{A.Constants have fixed values that cannot be changed, while Variables can be updated during training.}
+    \item \textcolor{black}{Q.} How do you create a TensorFlow session?\\
+    \textcolor{red}{A.You can create a TensorFlow session using the \texttt{tf.Session()} function.}
+    \item \textcolor{black}{Q.} What does the term "graph" refer to in TensorFlow?\\
+    \textcolor{red}{A.In TensorFlow, a graph represents a computation network composed of nodes and edges.}
+    \item \textcolor{black}{Q.} What is the purpose of the \texttt{tf.train} module in TensorFlow?\\
+    \textcolor{red}{A.The \texttt{tf.train} module provides various functions and classes for training models in TensorFlow.}
+    \item \textcolor{black}{Q.} How do you define a loss function in TensorFlow?\\
+    \textcolor{red}{A.You can define a loss function using TensorFlow's built-in loss functions or by creating a custom loss function.}
+    \item \textcolor{black}{Q.} What is the purpose of an optimizer in TensorFlow?\\
+    \textcolor{red}{A.Optimizers are used to minimize the loss function and update the model's variables during training.}
+    \item \textcolor{black}{Q.} What is the role of the \texttt{feed\_dict} parameter in TensorFlow?\\
+    \textcolor{red}{A.The \texttt{feed\_dict} parameter is used to feed input data into TensorFlow placeholders during a session run.}
+    \item \textcolor{black}{Q.} How do you save and restore a TensorFlow model?\\
+    \textcolor{red}{A.You can save and restore a TensorFlow model using the \texttt{tf.train.Saver} class.}
+    \item \textcolor{black}{Q.} What is the purpose of the \texttt{tf.data} module in TensorFlow?\\
+    \textcolor{red}{A.The \texttt{tf.data} module provides tools for creating efficient data input pipelines in TensorFlow.}
+    \item \textcolor{black}{Q.} How do you perform element-wise multiplication of two tensors in TensorFlow?\\
+    \textcolor{red}{A.You can perform element-wise multiplication using the \texttt{tf.multiply()} function.}
+    \item \textcolor{black}{Q.} What is the purpose of the \texttt{tf.layers} module in TensorFlow?\\
+    \textcolor{red}{A.The \texttt{tf.layers} module provides a high-level API for creating neural network layers in TensorFlow.}
+    \item \textcolor{black}{Q.} How do you apply dropout regularization in TensorFlow?\\
+    \textcolor{red}{A.You can apply dropout regularization using the \texttt{tf.nn.dropout()} function during training.}
+    \item \textcolor{black}{Q.} How do you evaluate the accuracy of a TensorFlow model?\\
+    \textcolor{red}{A.You can evaluate the accuracy of a model by comparing the predicted outputs with the ground truth labels.}
+    \item \textcolor{black}{Q.} How do you specify the number of training iterations in TensorFlow?\\
+    \textcolor{red}{A.The number of training iterations is typically controlled by running a loop for a specified number of steps or epochs.}
+    \item \textcolor{black}{Q.} What is eager execution in TensorFlow?\\
+    \textcolor{red}{A.Eager execution is a mode in TensorFlow that allows for immediate evaluation of operations, making it easier to debug and interact with the framework.}
+  \end{enumerate}
+\end{frame}
+\end{document}

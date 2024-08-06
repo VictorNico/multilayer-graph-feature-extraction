@@ -2549,8 +2549,21 @@
     <bcf:datasource type="file" datatype="bibtex" glob="false">ARIMA-FR.bib</bcf:datasource>
   </bcf:bibdata>
   <bcf:section number="0">
-    <bcf:citekey order="1" intorder="1" nocite="1">*</bcf:citekey>
-    <bcf:citekey order="2" intorder="1">arima</bcf:citekey>
+    <bcf:citekey order="1" intorder="1">WorldBank2023</bcf:citekey>
+    <bcf:citekey order="2" intorder="1">10.1093/oep/gpac013</bcf:citekey>
+    <bcf:citekey order="3" intorder="1">CriseDesSubprimes2008</bcf:citekey>
+    <bcf:citekey order="4" intorder="1">khemais2016credit</bcf:citekey>
+    <bcf:citekey order="5" intorder="1">dastile2020statistical</bcf:citekey>
+    <bcf:citekey order="6" intorder="1">ziemba2020client</bcf:citekey>
+    <bcf:citekey order="6" intorder="2">dastile2020statistical</bcf:citekey>
+    <bcf:citekey order="7" intorder="1">dastile2020statistical</bcf:citekey>
+    <bcf:citekey order="7" intorder="2">mushava2022novel</bcf:citekey>
+    <bcf:citekey order="8" intorder="1">barabasi2013network</bcf:citekey>
+    <bcf:citekey order="8" intorder="2">lenka2022empirical</bcf:citekey>
+    <bcf:citekey order="8" intorder="3">anis2017investigating</bcf:citekey>
+    <bcf:citekey order="8" intorder="4">mushava2022novel</bcf:citekey>
+    <bcf:citekey order="9" intorder="1" nocite="1">*</bcf:citekey>
+    <bcf:citekey order="10" intorder="1">arima</bcf:citekey>
   </bcf:section>
   <!-- SORTING TEMPLATES -->
   <bcf:sortingtemplate name="ynt">

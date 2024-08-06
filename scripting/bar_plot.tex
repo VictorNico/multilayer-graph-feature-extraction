@@ -1,0 +1,31 @@
+
+\documentclass{article}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\usepackage{amsmath}
+\usepackage{xcolor}
+
+\begin{document}
+
+\begin{tikzpicture}
+
+\begin{axis}[
+width=0.8\linewidth,
+height=0.8\linewidth,
+xlabel={Produit},
+ylabel={Ventes},
+title={Ventes par produit},
+xmajorgrids=true,
+ymajorgrids=true,
+grid style=dashed,
+]
+\addplot +[ybar] coordinates {{ ({B},{150})} }};
+    \addplot +[ybar] coordinates {{ ({D},{120})} }};
+    \addplot +[ybar] coordinates {{ ({A},{100})} }};
+    \addplot +[ybar] coordinates {{ ({E},{90})} }};
+    \addplot +[ybar] coordinates {{ ({C},{80})} }};
+    
+\end{axis}
+\end{tikzpicture}
+
+\end{document}

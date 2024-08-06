@@ -36,7 +36,7 @@ if __name__ == '__main__':
     # parser.add_argument('--to-remove', type=str, nargs='+', required=True, help='Variables à supprimer')
     # parser.add_argument('--encoding', type=str, required=True, help='Encodage du jeu de données')
     # parser.add_argument('--index-col', type=int, required=True, help='Colonne d\'index')
-    # parser.add_argument('--alpha', type=list, required=True, help='Valeur d\'alpha')
+    # parser.add_argument('--alpha', type=float, required=True, help='Valeur d\'alpha')
     # parser.add_argument('--portion', type=float, required=True, help='Portion du jeu de données')
     parser.add_argument('--graph', action="store_true", required=False, help='Afficher les graphiques avec les classes')
     # parser.add_argument('--financial-option-amount', type=str, required=True, help='Colonne pour le montant')
@@ -61,11 +61,11 @@ if __name__ == '__main__':
         all_numeric=False,
         verbose=True,
         fix_imbalance=False,
-        levels=[2],
+        levels=[3],
         to_remove=[],
         encoding="utf-8",
         index_col=None,
-        alphas=[.1,.2],
+        alphas=[.1],
         portion=.1,
         graphWithClass=args.graph,
         financialOption={

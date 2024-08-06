@@ -217,6 +217,15 @@ struct SharedData0 {
     std::atomic<int> completed_threads;
 };
 
+struct bts {
+        std::unordered_map<std::string, std::vector<float>> data_; /** Result Matrix */
+        std::unordered_map<std::string, std::tuple<float, float, bool, bool>>* masks_; /** Result Matrix */
+        std::string y_;
+        std::vector<std::string> columns;
+        std::mutex mutex_;
+};
+
+
 float information_gain_parallel(const std::vector<float>&, const std::vector<bool>&, std::function<float(const std::vector<float>&)> func=gini_impurity);
 
 void separate_data_parallel(const std::vector<float>&, const std::vector<bool>&, std::vector<float>&, std::vector<float>&);
@@ -264,6 +273,8 @@ void DecisionTreeGrowth(
     GrowthShareData& GrowthShareData_,
     int thread_id
     );
+
+void iterate_search_(bts&, int, int);
 
 
 #endif //DTREE_DECISIONTREE_H

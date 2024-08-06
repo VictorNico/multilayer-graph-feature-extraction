@@ -7,10 +7,8 @@
 
 //using namespace std;
 
-std::unordered_map<std::string, std::vector<float>> data_; /** Result Matrix */
-std::unordered_map<std::string, std::tuple<float, float, bool, bool>> masks_; /** Result Matrix */
+
 int num_threads_ = -1; /** Number of thread to use */
-std::string y_;
 
 std::vector<NodeData> stack_trace;
 std::mutex mutex_;
@@ -345,27 +343,20 @@ bool customComparator(float a, float b) {
     }
 }
 
-void iterate_search_(int thread_id) {
+void iterate_search_(bts& data, int thread_id, int num_threads) {
     // Utilisez atomic pour un accès thread-safe aux masks
-    std::atomic<size_t> current_index(thread_id);
-
-    while (current_index < data_.size()) {
-        size_t i = current_index.fetch_add(num_threads_);
-        if (i >= data_.size()) {
-            break;
-        }
-
-        // Itérer sur la map en utilisant un itérateur
-        auto it = data_.begin();
-        std::advance(it, i);
-
-        auto column = it->first; // Obtenir la clé (colonne)
-        auto x = it->second; // Obtenir la valeur (vector<float>)
-        if (column != y_) {
-            auto [ig, split_feature, is_categorical, flag] =
-                max_information_gain_split(x, data_.at(y_));
-            masks_[column] = std::make_tuple(ig, split_feature, is_categorical, flag);
-        }
+    // std::cout << thread_id << "<-- Thread ID" << std::endl;
+    std::atomic<size_t> index(thread_id);
+    for (; index < data.columns.size(); index+=num_threads){
+        // auto column = data.columns[index]; // Obtenir la clé (colonne)
+        std::vector<float> x = data.data_.at(data.columns[index]); // Obtenir la valeur (vector<float>)
+        // std::cout << x.size() << std::endl;       
+        auto [ig, split_feature, is_categorical, flag] = max_information_gain_split(x, data.data_.at(data.y_));
+        // data.mutex_.lock(); // Lock the mutex for accessing data.data_
+        std::lock_guard<std::mutex> lock(data.mutex_);
+        // std::cout << index << "<-- Index : " << thread_id << std::endl;
+        (*data.masks_)[data.columns[index]] = std::make_tuple(ig, split_feature, is_categorical, flag);
+        // data.mutex_.unlock();
     }
 }
 
@@ -373,46 +364,38 @@ std::tuple<std::string, float, float, bool>
 get_best_split(const std::string& y,
                const std::unordered_map<std::string, std::vector<float>>& data
                ) {
-    
     std::unordered_map<std::string, std::tuple<float, float, bool, bool>> masks;
+    std::vector<std::string> columns;
+    for (const auto& [column, x] : data) {
+            if (column != y) {
+                columns.push_back(column);
+            }
+        }
     if ((Logic == 4) || ((Logic == 7) && (num_threads_ - usedThreads) >= 2 )){
-        y_ = y;
-        data_ = data;
     // Créer les threads
+        bts dm {data, &masks, y, columns, std::mutex()};
         std::vector<std::thread> threads;
-        for (int i = 0; i < (num_threads_ - usedThreads); ++i) {
-            threads.emplace_back(iterate_search_, i);
+        // std::cout << "-------------------------"<< std::endl;
+        int nb_threads = data.begin()->second.size() < (num_threads_ - usedThreads) ? data.begin()->second.size() : (num_threads_ - usedThreads);
+        // avalaible_ = num_threads_ - nb_threads;
+        for (int i = 0; i < nb_threads; ++i) {
+            threads.emplace_back(iterate_search_, std::ref(dm), i, nb_threads);
         }
         for (auto& thread : threads) {
             thread.join();
         }
+        
+        
+        
     }
     else{
-        for (const auto& [column, x] : data) {
-            if (column != y) {
-                auto [ig, split_feature, is_categorical, flag] = max_information_gain_split(x, data.at(y));
-                masks[column] = std::make_tuple(ig, split_feature, is_categorical, flag);
-            }
+        for (size_t index = 0; index < columns.size(); ++index){
+            // std::cout << columns[index] << std::endl;
+            auto x = data.at(columns[index]);
+            auto [ig, split_feature, is_categorical, flag] = max_information_gain_split(x, data.at(y));
+            masks[columns[index]] = std::make_tuple(ig, split_feature, is_categorical, flag);
         }
     }
-    
-    // else{
-    //     // std::cout << num_threads_ << std::endl; 
-    //     y_ = y;
-    //     data_ = data;
-    //     masks_ = masks;
-
-    //     std::vector<std::thread> threads(num_threads_);
-
-    //     for (int i = 0; i < num_threads_; ++i) {
-    //         threads[i] = std::thread(iterate_search_, i);
-    //     }
-
-    //     for (auto& thread : threads) {
-    //         thread.join();
-    //     }
-    //     masks = masks_;
-    // }
 
     bool any_valid = false;
     for (const auto& [_, mask] : masks) {
@@ -435,15 +418,11 @@ get_best_split(const std::string& y,
         std::sort(valid_columns.begin(), valid_columns.end(),
         [](const auto& a, const auto& b) { return customComparator(a.second, b.second); });
 
-        // for (const auto& [col, ig]:valid_columns){
-        //     std::cout << col << " " << ig << std::endl;
-        // }
-
         std::string split_variable = valid_columns[0].first;
         float split_value = std::get<1>(masks[split_variable]);
         float split_ig = std::get<0>(masks[split_variable]);
         bool split_numeric = std::get<2>(masks[split_variable]);
-
+        
         return std::make_tuple(split_variable, split_value, split_ig, split_numeric);
     }
 }

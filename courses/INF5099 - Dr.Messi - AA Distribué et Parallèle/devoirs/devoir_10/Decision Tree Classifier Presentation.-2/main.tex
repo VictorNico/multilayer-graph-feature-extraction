@@ -163,17 +163,17 @@
 \section{Algorithme}
 \subsection{Version récursive}
 \begin{frame}
-	\frametitle{\textsc{Version récursive}}
- \vspace{-.4cm}
+%	\frametitle{\textsc{Version récursive}}
+ %\vspace{-.4cm}
 	 \begin{algorithm}[H]
   \tiny{
 \caption{Algorithme de l'arbre de décision recursive (DTR)}
 \label{algo:dtr}
 \begin{algorithmic}[1]
 \REQUIRE $dataset$: Ensemble d'entraînement $D \gets \{(x_1,y_1), \ldots, (x_n,y_n)\}$, $depth$ la profondeur de l'arbre  et le critère d'arrêt
-%\REQUIRE $attributes$: Liste des attributs de l'ensemble de données
-%\REQUIRE $target\_attribute$: Attribut cible (classe)
-%\ENSURE $tree$: Arbre de décision résultant
+\REQUIRE $attributes$: Liste des attributs de l'ensemble de données
+\REQUIRE $target\_attribute$: Attribut cible (classe)
+\ENSURE $tree$: Arbre de décision résultant
 
  \IF{$D,depth$ satisfont le critère d'arrêt}
             \RETURN un noeud avec comme etiquette la classe majoritaire du jeu
@@ -209,7 +209,7 @@
 
 \subsection{Version Iterative}
 \begin{frame}
-	\frametitle{\textsc{Version itérative}}
+	%\frametitle{\textsc{Version itérative}}
 	
 \begin{algorithm}[H]
 \tiny{
@@ -218,7 +218,7 @@
 \begin{algorithmic}[1]
 
     \REQUIRE Ensemble d'entraînement $D \gets \{(x_1,y_1), \ldots, (x_n,y_n)\}$ et le critère d'arrêt
-    %\ENSURE $tree$: Arbre de décision résultant
+    \ENSURE $tree$: Arbre de décision résultant
 
     \STATE  Créer un noeud racine définit Root $\{col, val, ig, cond, left, right\}$
     \STATE Initialiser une pile $T$ vide
@@ -250,16 +250,107 @@
 	
 \end{frame}
 
-\section{Résultats}
+\section{Stratégies de parallélisation}
 \begin{frame}
-	\frametitle{\textsc{Résultat}}
+	\frametitle{\textsc{Stratégies de parallélisation}}
+\begin{itemize}
+\item Environnement UMA
+\item Parallélisation par modulo
+\item Approches (Mask, IG, Best Split, Growth)
+\item Métri	ques (Accuracy, F1-score, Speedup)
+\end{itemize}
+
+\end{frame}
+
+\section{Expérimentation}
+\begin{frame}[allowframebreaks]
+	\frametitle{\textsc{Expérimentation}}
 	%\Background
-     \begin{figure}[H]
+	\begin{table}[H]
+		\caption{Description des données}
+		\begin{center}
+		 \resizebox{\textwidth}{!}{
+			\begin{tabular}{|c|c|c|c|c|c|}
+				\hline
+				& lignes de trainning & lignes de test & nombre de colonnes & nombre d'exemples positif & nombre d'exemples négatif \\ \hline
+				CREDIT RISK & 26064& 6517 & 20 &25473 & 7108  \\ \hline
+				GERMAN & 800 & 200 & 62 & 700 & 300 \\ \hline
+			\end{tabular}}
+		\end{center}
+		\label{def}
+	\end{table}
+	\begin{table}[H]
+		\caption{Description des ressources}
+		\begin{center}
+		 \resizebox{.5\textwidth}{!}{
+			\begin{tabular}{|c|c|}
+				\hline
+				& Description  \\ \hline
+				nombre de coeur & 16  \\ \hline
+				Fréquence d'exécution& 2.4GHz  \\ \hline
+				RAM & 32  \\ \hline
+				OS &   MAC OS Sonama\\ \hline
+				Version cpp & 20\\ \hline
+				Version python & 3.9\\ \hline
+				outil de supervision & htop\\ \hline
+			\end{tabular}}
+		\end{center}
+		\label{def}
+	\end{table}
+	
+	
+	\begin{block}{evaluation du temps}
+   Pour évaluer la qualité de notre parallélisation, nous allons déjà évaluer le gain en temps : $SpeedUp \gets \frac{T_{seq}}{T_{par}}$
+\end{block}
+\begin{block}{evaluation du temps}
+Et pour la qualité de généralisation: $Accuracy \gets \frac{TN + TN}{ TP + FP + TN + FN}$ ; $F1-score \gets \frac{2 \times Precision \times Recall}{Precision \times Recall}$
+\end{block}
+
+
+    \begin{figure}[H]
     \centering
-    \includegraphics[width=0.7\linewidth]{assets/res.png}
-    \caption{Métriques du modèle construit from scratch }
+    \includegraphics[width=0.7\linewidth]{assets/g_speed_up.png}
+    \caption{Speedup sur CREDIT RISK }
     \label{fig:met}
 \end{figure}
+
+    \begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\linewidth]{assets/cr_speed_up.png}
+    \caption{Speedup sur GERMAN }
+    \label{fig:met}
+\end{figure}
+
+\begin{table}[H]
+		\caption{German DT }
+		\begin{center}
+		 \resizebox{.7\textwidth}{!}{
+			\begin{tabular}{|c|c|c|c|c|}
+				\hline
+				& Temps (ms) & Accuracy & F1-score & Profondeur maximal \\ \hline
+				Python sklearn & 388& 0.68 & 0.76296 & indéfinie  \\ \hline
+				Python Sequentiel & 1158& 0.64 & 0.75 & indéfinie  \\ \hline
+				cpp Sequentiel &732 & 0.655 & 0.76125 & indéfinie  \\ \hline
+				cpp Parallèl Best Split &186 & 0.655 & 0.76125 & indéfinie  \\ \hline
+			\end{tabular}}
+		\end{center}
+		\label{def}
+        	\end{table}
+\end{frame}
+
+\section{Discussion}
+\begin{frame}
+	\frametitle{\textsc{Discussion}}
+	\begin{block}{Mask, IG, ID Growth}
+	Sachant $n$ threads, $m$ variables à $k$ valeurs chacune, nous aurons $ n \times m \times k $ création et jointure de threads pour le traitement d'un seul noeud. Ceci a un coût non négligeable.
+	\end{block}
+	
+	\begin{block}{Best Split}
+	Sachant $n$ threads, $m$ variables, nous avons  $ n \times m $ création et jointure de threads pour le traitement d'un seul noeud. Ceci qui est mieux que les autres. et en utilisant juste 2 threads, nous réduisons les coûts et le temps.
+	\end{block}
+	\begin{alertblock}{Meilleur Configuration}
+	Parallelisation de la recherche du meilleur candidat séparateur avec 2 threads pour un speedup de 4.7 et 5.5 pour les jeux de données GERMAN et CREDIT RISK 
+	\end{alertblock}
 \end{frame}
 
 \begin{frame}[plain]

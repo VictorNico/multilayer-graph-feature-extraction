@@ -212,7 +212,8 @@ int main(int argc, char* argv[]) {
     TreeNode* root;
     if (num_threads_ == -1){
         std::cout << "Yo" << std::endl;
-        for (max_depth = -1; max_depth < 30; max_depth+=6){
+        for (max_depth = -1; max_depth < 1; max_depth+=6){
+            usedThreads = 0;
             // seq
             auto startSeq = std::chrono::high_resolution_clock::now();
             root = interativeTrainTree(train_data,className,is_classification,max_depth,min_samples_split,min_information_gain,counter,max_categories);

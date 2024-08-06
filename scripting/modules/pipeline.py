@@ -139,11 +139,11 @@ def make_preprocessing(dataset, to_remove, domain, cwd, target_variable, verbose
     DATA_OHE = make_eda(dataframe=DATA_OHE, verbose=verbose)
     print(f"OHE <----> {OHE}")
     # # label encoding of ordinal data
-    DATA_OHE_LB = ordinal_factor_encoding(
-        DATA_OHE,
-        [target_variable]
-    ) if len([target_variable]) > 0 else DATA_OHE
-
+    # DATA_OHE_LB = ordinal_factor_encoding(
+    #     DATA_OHE,
+    #     [target_variable]
+    # ) if len([target_variable]) > 0 else DATA_OHE
+    DATA_OHE_LB = DATA_OHE
     # standard normalisation of label encoded data to deeve it into interval 0,1
     # DATA_OHE_LB_LBU = numeric_uniform_standardization(
     # 	DATA_OHE,
@@ -1127,6 +1127,8 @@ def build_MlC(
     logic_i_g,
     logic_i_p,
     logic_i_pg,
+    original,
+    name,
     mlnL='/mlna_1'
 ):
     mlc_cf = dict()
@@ -1170,14 +1172,15 @@ def build_MlC(
             y_testi=y_test,
             target_variable=target_variable,
             clfs=clfs,
-            domain=f'MlC_PER_{"C" if graphWithClass is True else "M"}X',
+            domain=f'MlC_PER_{"C" if graphWithClass is True else "M"}X_for_{name}',
             duration_divider=duration_divider,
             rate_divider=rate_divider,
             prefix=domain,
             verbose=verbose,
             cwd=cwd + f'{mlnL}/personalized',
             withCost=withCost,
-            financialOption=financialOption
+            financialOption=financialOption,
+            original = original
         )
     )
     if graphWithClass is True:
@@ -1191,14 +1194,15 @@ def build_MlC(
                 y_testi=y_test,
                 target_variable=target_variable,
                 clfs=clfs,
-                domain=f'MlC_PER_{"C" if graphWithClass is True else "M"}Y',
+                domain=f'MlC_PER_{"C" if graphWithClass is True else "M"}Y_for_{name}',
                 prefix=domain,
                 verbose=verbose,
             duration_divider=duration_divider,
             rate_divider=rate_divider,
                 cwd=cwd + f'{mlnL}/personalized',
                 withCost=withCost,
-                financialOption=financialOption
+                financialOption=financialOption,
+                original = original
             )
         )
         logic_i_p.append(
@@ -1211,14 +1215,15 @@ def build_MlC(
                 y_testi=y_test,
                 target_variable=target_variable,
                 clfs=clfs,
-                domain=f'MlC_PER_{"C" if graphWithClass is True else "M"}XY',
+                domain=f'MlC_PER_{"C" if graphWithClass is True else "M"}XY_for_{name}',
                 prefix=domain,
             duration_divider=duration_divider,
             rate_divider=rate_divider,
                 verbose=verbose,
                 cwd=cwd + f'{mlnL}/personalized',
                 withCost=withCost,
-                financialOption=financialOption
+                financialOption=financialOption,
+                original = original
             )
         )
     logic_i_g.append(
@@ -1231,14 +1236,15 @@ def build_MlC(
             y_testi=y_test,
             target_variable=target_variable,
             clfs=clfs,
-            domain=f'MlC_GLO_{"C" if graphWithClass is True else "M"}X',
+            domain=f'MlC_GLO_{"C" if graphWithClass is True else "M"}X_for_{name}',
             prefix=domain,
             duration_divider=duration_divider,
             rate_divider=rate_divider,
             verbose=verbose,
             cwd=cwd + f'{mlnL}/global',
             withCost=withCost,
-            financialOption=financialOption
+            financialOption=financialOption,
+             original = original
         )
     )
     logic_i_pg.append(
@@ -1253,12 +1259,13 @@ def build_MlC(
             rate_divider=rate_divider,
             target_variable=target_variable,
             clfs=clfs,
-            domain=f'MlC_GAP_{"C" if graphWithClass is True else "M"}X',
+            domain=f'MlC_GAP_{"C" if graphWithClass is True else "M"}X_for_{name}',
             prefix=domain,
             verbose=verbose,
             cwd=cwd + f'{mlnL}/mixed',
             withCost=withCost,
-            financialOption=financialOption
+            financialOption=financialOption,
+            original = original
         )
     )
     if graphWithClass is True:
@@ -1274,12 +1281,13 @@ def build_MlC(
             rate_divider=rate_divider,
                 target_variable=target_variable,
                 clfs=clfs,
-                domain=f'MlC_GAP_{"C" if graphWithClass is True else "M"}Y',
+                domain=f'MlC_GAP_{"C" if graphWithClass is True else "M"}Y_for_{name}',
                 prefix=domain,
                 verbose=verbose,
                 cwd=cwd + f'{mlnL}/mixed',
                 withCost=withCost,
-                financialOption=financialOption
+                financialOption=financialOption,
+                original = original
             )
         )
         logic_i_pg.append(
@@ -1294,12 +1302,13 @@ def build_MlC(
             rate_divider=rate_divider,
                 target_variable=target_variable,
                 clfs=clfs,
-                domain=f'MlC_GAP_{"C" if graphWithClass is True else "M"}XY',
+                domain=f'MlC_GAP_{"C" if graphWithClass is True else "M"}XY_for_{name}',
                 prefix=domain,
                 verbose=verbose,
                 cwd=cwd + f'{mlnL}/mixed',
                 withCost=withCost,
-                financialOption=financialOption
+                financialOption=financialOption,
+                original = original
             )
         )
 
@@ -1327,6 +1336,8 @@ def build_MCA(
     logic_i_pg,
     mlna,
     mlc_cf,
+    original,
+    name,
     mlnL='/mlna_1'
 ):
     """
@@ -1371,12 +1382,13 @@ def build_MCA(
             rate_divider=rate_divider,
             target_variable=target_variable,
             clfs=clfs,
-            domain=f'MCA_PER_{"C" if graphWithClass is True else "M"}X',
+            domain=f'MCA_PER_{"C" if graphWithClass is True else "M"}X_for_{name}',
             prefix=domain,
             verbose=verbose,
             cwd=cwd + f'{mlnL}/personalized',
             withCost=withCost,
-            financialOption=financialOption
+            financialOption=financialOption,
+            original = original
         )
     )
     if graphWithClass is True:
@@ -1392,12 +1404,13 @@ def build_MCA(
             rate_divider=rate_divider,
                 target_variable=target_variable,
                 clfs=clfs,
-                domain=f'MCA_PER_{"C" if graphWithClass is True else "M"}Y',
+                domain=f'MCA_PER_{"C" if graphWithClass is True else "M"}Y_for_{name}',
                 prefix=domain,
                 verbose=verbose,
                 cwd=cwd + f'{mlnL}/personalized',
                 withCost=withCost,
-                financialOption=financialOption
+                financialOption=financialOption,
+                original = original
             )
         )
         logic_i_p.append(
@@ -1412,12 +1425,13 @@ def build_MCA(
             rate_divider=rate_divider,
                 target_variable=target_variable,
                 clfs=clfs,
-                domain=f'MCA_PER_{"C" if graphWithClass is True else "M"}XY',
+                domain=f'MCA_PER_{"C" if graphWithClass is True else "M"}XY_for_{name}',
                 prefix=domain,
                 verbose=verbose,
                 cwd=cwd + f'{mlnL}/personalized',
                 withCost=withCost,
-                financialOption=financialOption
+                financialOption=financialOption,
+                original = original
             )
         )
     logic_i_g.append(
@@ -1432,12 +1446,13 @@ def build_MCA(
             rate_divider=rate_divider,
             target_variable=target_variable,
             clfs=clfs,
-            domain=f'MCA_GLO_{"C" if graphWithClass is True else "M"}X',
+            domain=f'MCA_GLO_{"C" if graphWithClass is True else "M"}X_for_{name}',
             prefix=domain,
             verbose=verbose,
             cwd=cwd + f'{mlnL}/global',
             withCost=withCost,
-            financialOption=financialOption
+            financialOption=financialOption,
+            original = original
         )
     )
     logic_i_pg.append(
@@ -1452,12 +1467,13 @@ def build_MCA(
             y_testi=y_test,
             target_variable=target_variable,
             clfs=clfs,
-            domain=f'MCA_GAP_{"C" if graphWithClass is True else "M"}X',
+            domain=f'MCA_GAP_{"C" if graphWithClass is True else "M"}X_for_{name}',
             prefix=domain,
             verbose=verbose,
             cwd=cwd + f'{mlnL}/mixed',
             withCost=withCost,
-            financialOption=financialOption
+            financialOption=financialOption,
+            original = original
         )
     )
     if graphWithClass is True:
@@ -1473,12 +1489,13 @@ def build_MCA(
                 y_testi=y_test,
                 target_variable=target_variable,
                 clfs=clfs,
-                domain=f'MCA_GAP_{"C" if graphWithClass is True else "M"}Y',
+                domain=f'MCA_GAP_{"C" if graphWithClass is True else "M"}Y_for_{name}',
                 prefix=domain,
                 verbose=verbose,
                 cwd=cwd + f'{mlnL}/mixed',
                 withCost=withCost,
-                financialOption=financialOption
+                financialOption=financialOption,
+                original = original
             )
         )
         logic_i_pg.append(
@@ -1493,12 +1510,13 @@ def build_MCA(
             rate_divider=rate_divider,
                 target_variable=target_variable,
                 clfs=clfs,
-                domain=f'MCA_GAP_{"C" if graphWithClass is True else "M"}XY',
+                domain=f'MCA_GAP_{"C" if graphWithClass is True else "M"}XY_for_{name}',
                 prefix=domain,
                 verbose=verbose,
                 cwd=cwd + f'{mlnL}/mixed',
                 withCost=withCost,
-                financialOption=financialOption
+                financialOption=financialOption,
+                original = original
             )
         )
 
@@ -1523,6 +1541,7 @@ def make_mlna_1_variable_v2(
         duration_divider,
         rate_divider,
         financialOption,
+        original,
         graphWithClass=False
 ):
     ## visualization of result
@@ -1704,6 +1723,8 @@ def make_mlna_1_variable_v2(
             logic_i_g=logic_i_g,
             logic_i_pg=logic_i_pg,
             mlnL='/mlna_1',
+            original = original,
+            name=nominal_factor_colums[i]
         )
         extracts_g = None
         extracts_p = None
@@ -1741,7 +1762,9 @@ def make_mlna_1_variable_v2(
             logic_i_pg=logic_i_pg,
             mlna=mlna,
             mlc_cf=mlc_cf,
-            mlnL='/mlna_1'
+            mlnL='/mlna_1',
+            original = original,
+            name=nominal_factor_colums[i]
         )
 
         bestp = logic_i_p[5 if graphWithClass else 1][1].sort_values(
@@ -1852,6 +1875,7 @@ def make_mlna_k_variable_v2(
         alpha,
         withCost,
         financialOption,
+        original,
         graphWithClass=True
 ):
     # local eval storage
@@ -1864,7 +1888,7 @@ def make_mlna_k_variable_v2(
     PERSONS = get_persons(x_train)
     PERSONS_T = get_persons(x_test)
 
-    for k in list(set([len(OHE)])):  # for 1<k<|OHE[i]|+2
+    for k in list([2]):  # for 1<k<|OHE[i]|+2
         # for k in [2]: # for 1<k<|OHE[i]|+2
         # for k in range(2:len(OHE)+1: # for 1<k<|OHE[i]|+2
         for layer_config in get_combinations(range(len(OHE)), k):  # create subsets of k index of OHE and fetch it
@@ -1968,21 +1992,29 @@ def make_mlna_k_variable_v2(
             ########################################
             if graphWithClass is False:
                 # Deleting a class descriptor using del
-                for key in list(extracts_g_t.keys()):
+                # for key in list(extracts_g_t.keys()):
+                #     if 'Y' in key:
+                #         del extracts_g_t[key]
+                #         del extracts_g[key]
+                # for key in list(extracts_p_t.keys()):
+                #     if 'Y' in key:
+                #         del extracts_p_t[key]
+                #         del extracts_p_t[key]
+
+                # Deleting a class descriptor using del
+                for key in list(extracts_g.keys()):
                     if 'Y' in key:
                         del extracts_g_t[key]
                         del extracts_g[key]
-                for key in list(extracts_p_t.keys()):
+                for key in list(extracts_p.keys()):
                     if 'Y' in key:
-                        del extracts_p_t[key]
+                        del extracts_p[key]
                         del extracts_p_t[key]
 
             # get the max value of each descriptor in both train and test dataset
-            maxGdesc = get_maximun_std_descriptor(extracts_g, extracts_g_t, extracts_g.keys())
-            maxPdesc = get_maximun_std_descriptor(extracts_p, extracts_p_t, extracts_p.keys())
-            print(f"{maxGDesc} <------> {maxPDesc}")
-            standard_extraction(extracts_g, extracts_g.keys(),maxGdesc)
-            standard_extraction(extracts_p, extracts_p.keys(),maxPdesc)
+            maxGDesc = standard_extraction(extracts_g, extracts_g.keys())
+            maxPDesc = standard_extraction(extracts_p, extracts_p.keys())
+            # print(f"{maxGDesc} <------> {maxPDesc}")
             standard_extraction(extracts_g_t, extracts_g.keys(), maxGDesc)
             standard_extraction(extracts_p_t, extracts_p.keys(), maxPDesc)
 
@@ -2028,13 +2060,15 @@ def make_mlna_k_variable_v2(
                 domain=domain,
                 verbose=verbose,
                 cwd=cwd,
-            duration_divider=duration_divider,
-            rate_divider=rate_divider,
+                duration_divider=duration_divider,
+                rate_divider=rate_divider,
                 withCost=withCost,
                 financialOption=financialOption,
                 logic_i_g=logic_i_g,
                 logic_i_pg=logic_i_pg,
                 mlnL= f'/mlna_{k}',
+                original = original,
+                name=case_k
             )
             extracts_g = None
             extracts_p = None
@@ -2064,8 +2098,8 @@ def make_mlna_k_variable_v2(
                 domain=domain,
                 verbose=verbose,
                 cwd=cwd,
-            duration_divider=duration_divider,
-            rate_divider=rate_divider,
+                duration_divider=duration_divider,
+                rate_divider=rate_divider,
                 withCost=withCost,
                 financialOption=financialOption,
                 logic_i_g=logic_i_g,
@@ -2073,7 +2107,9 @@ def make_mlna_k_variable_v2(
                 logic_i_pg=logic_i_pg,
                 mlna=mlna,
                 mlc_cf=mlc_cf,
-                mlnL=f'/mlna_{k}'
+                mlnL=f'/mlna_{k}',
+                original= original,
+                name=case_k
             )
 
             ########### END
@@ -2163,6 +2199,7 @@ def make_mlna_top_k_variable_v2(
         duration_divider,
         rate_divider,
         financialOption,
+        original,
         graphWithClass=False,
         topR=[]
 ):
@@ -2355,6 +2392,8 @@ def make_mlna_top_k_variable_v2(
             logic_i_g=logic_i_g,
             logic_i_pg=logic_i_pg,
             mlnL=f'/mlna_{k}_b',
+            original = original,
+            name=case_k
         )
         extracts_g = None
         extracts_p = None
@@ -2393,7 +2432,9 @@ def make_mlna_top_k_variable_v2(
             logic_i_pg=logic_i_pg,
             mlna=mlna,
             mlc_cf=mlc_cf,
-            mlnL=f'/mlna_{k}_b'
+            mlnL=f'/mlna_{k}_b',
+            original = original,
+            name=case_k
         )
 
         ########### END
@@ -5088,6 +5129,7 @@ def make_builder(
         duration_divider,
         rate_divider,
         financialOption,
+        original,
         domain='classic',
         DATA_OVER=None,
         withCost=True,
@@ -5136,7 +5178,7 @@ def make_builder(
 
     # get evaluation storage structure
     STORE_STD = init_training_store(x_train, withCost=withCost)
-
+    # print(original)
     # run classic ML on default data
     store = train(
         clfs=clfs,
@@ -5151,7 +5193,8 @@ def make_builder(
         duration_divider=duration_divider,
         rate_divider=rate_divider,
         withCost=withCost,
-        financialOption=financialOption
+        financialOption=financialOption,
+        original = original
     )
     link_to_original = save_dataset(
         cwd=cwd,
@@ -5271,10 +5314,12 @@ def mlnaPipeline(
     # print(dataset.shape)
     dataset = random_sample_merge_v2(df=dataset, target_column=target_variable, percentage=portion)
     dataset.reset_index(drop=True, inplace=True)
+
     print(f"loaded dataset dim: {dataset.shape}") if verbose else None
     # print(dataset.shape)
     # dataset = make_eda(dataframe=dataset, verbose=verbose)
     dataset = make_eda(dataframe=dataset, verbose=verbose)
+    dataset_copy = dataset.copy(deep=True)
     # print(dataset.shape)
     # preprocessing
     # (
@@ -5304,9 +5349,11 @@ def mlnaPipeline(
         )
         # split data in training and test lot
         x_train, x_test, y_train, y_test = test_train(dataframe=promise[7], target=target_variable, reset_index=False)
+        x1_train = dataset_copy.loc[list(x_train.index)]
+        x1_test = dataset_copy.loc[list(x_test.index)]
         save_model(
             cwd=cwd + f'/outputs/{domain}/mlna_preprocessing',
-            clf=(promise, x_train, x_test, y_train, y_test),
+            clf=(promise, x_train, x_test, y_train, y_test,x1_train, x1_test),
             prefix="",
             clf_name="preprocessing"
         )
@@ -5316,7 +5363,7 @@ def mlnaPipeline(
              os.walk(cwd + f'/outputs/{domain}/mlna_preprocessing/model_storage')
              for file in files if
              'preprocessing' in file][0]
-        (promise, x_train, x_test, y_train, y_test) = read_model(
+        (promise, x_train, x_test, y_train, y_test,x1_train, x1_test) = read_model(
             cwd + f'/outputs/{domain}/mlna_preprocessing/model_storage/{name}')
         print('loaded preprocessing model', len(promise))
     # print(promise[7].shape)
@@ -5358,7 +5405,8 @@ def mlnaPipeline(
             x_traini=x_train,
             x_testi=x_test,
             y_traini=y_train,
-            y_testi=y_test
+            y_testi=y_test,
+            original = (x1_train, x1_test)
         )
     else:
         name = [file for _, _, files in os.walk(f"{cwd}/outputs/{domain}/data_selection_storage") for file in files if
@@ -5404,7 +5452,8 @@ def mlnaPipeline(
                     alpha=alpha,
                     graphWithClass=graphWithClass,
                     withCost=withCost,
-                    financialOption=financialOption
+                    financialOption=financialOption,
+                    original = (x1_train, x1_test)
                 )
                 outperformers = dict(sorted(outperformers.items(), key=lambda x: x[1], reverse=True))
                 bestK = bestThreshold(list(outperformers)) + 1 if len(outperformers) > 2 else len(outperformers)
@@ -5468,7 +5517,8 @@ def mlnaPipeline(
                     graphWithClass=graphWithClass,
                     topR=list(outperformers.keys()),
                     withCost=withCost,
-                    financialOption=financialOption
+                    financialOption=financialOption,
+                    original = (x1_train, x1_test)
                 )
 
         # 2) build an MLN on just k variable, 1 < k <= len of OHE
@@ -5495,7 +5545,8 @@ def mlnaPipeline(
                 alpha=alpha,
                 graphWithClass=graphWithClass,
                 withCost=withCost,
-                financialOption=financialOption
+                financialOption=financialOption,
+                original = (x1_train, x1_test)
             )
         # ]
 

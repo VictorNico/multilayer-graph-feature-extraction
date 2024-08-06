@@ -174,11 +174,12 @@ std::tuple<
 }
 
 void write_dataset(
-        const std::unordered_map<std::string, std::vector<float>>& train_data,
-        const std::unordered_map<std::string, std::vector<float>>& test_data,
-        const std::vector<float>& y_train,
-        const std::vector<float>& y_test,
-        const std::string& output_dir, const std::string& className) {
+        const std::unordered_map<std::string, std::vector<float>> train_data,
+        const std::unordered_map<std::string, std::vector<float>> test_data,
+        const std::vector<float> y_train,
+        const std::vector<float> y_test,
+        const std::string output_dir, 
+        const std::string className) {
     // Créer le répertoire de sortie s'il n'existe pas déjà
     std::filesystem::create_directories(output_dir);
 
@@ -261,7 +262,12 @@ TreeNode* loadTreeNode(std::ifstream& infile) {
     return node;
 }
 
-void saveMetricsToCSV(const std::string& filename, const std::vector<std::string>& metricNames, const std::vector<double>& metricValues, const std::string& className, const std::string& version) {
+void saveMetricsToCSV(
+    const std::string filename, 
+    const std::vector<std::string> metricNames, 
+    const std::vector<double> metricValues, 
+    const std::string className, 
+    const std::string version) {
     // Vérifier que le nombre de métriques correspond
     if (metricNames.size() != metricValues.size()) {
         std::cerr << "Nombre de noms de métriques et de valeurs de métriques différents." << std::endl;
