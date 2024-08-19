@@ -1,9 +1,14 @@
 """
     Author: VICTOR DJIEMBOU
-    addedAt: 02/12/2023
+    addedAt: 29/11/2023
     changes:
+        - 29/11/2023:
+            - add pipeline call with 0 hyperparameters
+        - 01/12/2023:
+            - update parameters call by adding cwd, domain, dataset_link, target_variable, dataset_delimiter
         - 02/12/2023:
-            - add pipeline called
+            - update parameters call by adding all_nominal, all_numeric, verbose, fix_imbalance, levels, to_remove, encoding, index_col
+
 """
 
 
@@ -56,33 +61,29 @@ if __name__ == '__main__':
     #print_hi('PyCharm')
     mlnaPipeline(
         cwd= os.getcwd(),
-        domain= 'AFB',
-        dataset_link= './datasets/New_datas_first.xlsx',
-        target_variable= 'ENIMPAYEOUPAS',
+        domain= 'LDD',
+        dataset_link= './datasets/private/3. Kaggle/Loan Default Dataset/Loan_Default.csv',
+        target_variable= 'Status',
         dataset_delimiter=',', 
         all_nominal=True, 
         all_numeric=False, 
         verbose=True, 
         fix_imbalance=False, 
-        levels=[
-            2,
-            # 4
-        ],
-        to_remove= ['Type'], 
+        levels=[2],
+        to_remove= ['ID','year'], 
         encoding="utf-8",
         index_col=None,
         alphas=[args.alpha],
         portion=1.,
         graphWithClass=args.graph,
         financialOption={
-            'amount':'Montant',
-            'rate':'Taux',
-            'duration':'Nbreech.',
+            'amount': 'loan_amount',
+            'rate': 'rate_of_interest',
+            'duration': 'term'
         },
-        duration_divider=12,# put duration in year
-        rate_divider=100# put rate in pourcentage
-
+        duration_divider=12,
+        rate_divider=100
         )
-    contenu = f'END OF 222 AT {time.strftime("%Y_%m_%d_%H_%M_%S")} \n'
+    contenu = f'END OF 333 AT {time.strftime("%Y_%m_%d_%H_%M_%S")} \n'
     with open("process.dtvni", "a") as fichier:
         fichier.write(contenu)
