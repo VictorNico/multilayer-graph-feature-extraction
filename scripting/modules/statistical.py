@@ -218,6 +218,9 @@ plot_header = """\\documentclass[varwidth=true, border=2pt]{standalone}
 footer = """
     \\end{document}  """
 
+# add cols for metric
+dicto = {'accuracy':'Acc', 'f1-score':'F1', 'precision1':'P1', 'recall1':'R1', 'f1-score1':'F11', 'precision0':'P0', 'recall0':'R0', 'f1-score0':'F10', 'financial-cost':'Cost'}
+
 ############# End declaration
 ########################################################
 # --------------------------------------------------------------------------------------MixingUtilsFunction---------------------------------------------------------
@@ -1043,7 +1046,9 @@ def print_compare_v3_2(
     metrics,
     configs,
     result,
-    valll=False
+    valll=False,
+    total_digits= 4,
+    decimal_digits= 1
 ):
     # fetch model name
     tables = {folder:'' for folder in list(store[list(store.keys())[0]].keys())}
@@ -1126,7 +1131,7 @@ def print_compare_v3_2(
         counterStore_2 = deepcopy(counterStore)
         # print(counterStore)
         # having done this, we now need a function that will return max of the metrics in a config with a given logic
-        max_config = lambda store, mod, folder, metric, act: (set([act(store[mod][folder][metric][app][logic][config]) for app in store[mod][folder][metric].keys() for logic in store[mod][folder][metric][app].keys() for config in store[mod][folder][metric][app][logic].keys()]))
+        max_config = lambda store, mod, folder, metric, act: (([act(store[mod][folder][metric][app][logic][config]) for app in store[mod][folder][metric].keys() for logic in store[mod][folder][metric][app].keys() for config in store[mod][folder][metric][app][logic].keys()]))
 
         # fetch on model
         for mi, model in enumerate(list(store.keys())): # LDA, LR, SVM, DT, RF, XGB
@@ -1141,20 +1146,24 @@ def print_compare_v3_2(
                         for ci,config in enumerate(list(store[model][folder][metric][approach][logic].keys())): # MX, CX, CY, CXY 
                             # print(folder, model, approach, metric, logic, config)
                             act = max if valll is False else (min if "financial-cost" in metric else max)
-                            act_b = sorted(list(max_config(store, model, folder, metric, act)), reverse= (False if ((valll == True) and ("financial-cost" in metric )) else True))
+                            act_b = sorted(list(set(max_config(store, model, folder, metric, act))), reverse= (False if ((valll == True) and ("financial-cost" in metric )) else True))
                             pos = act_b.index(act(store[model][folder][metric][approach][logic][config]))
 
-                            val = "\\textbf{"+str(act(store[model][folder][metric][approach][logic][config]))+"}" if (pos == 0) and (act(store[model][folder][metric][approach][logic][config]) != 0.0) else (
-                                "\\underline{"+str(act(store[model][folder][metric][approach][logic][config]))+"}" if (pos == 1) and (act(store[model][folder][metric][approach][logic][config]) != 0.0) else (
-                                    "\\textit{"+str(act(store[model][folder][metric][approach][logic][config]))+"}" if (pos == 2) and (act(store[model][folder][metric][approach][logic][config]) != 0.0) else 
-                                    str(act(store[model][folder][metric][approach][logic][config]))
+                            # Adjust integer part to the required digits
+                            int_part = str(int(act(store[model][folder][metric][approach][logic][config]))).zfill(total_digits - decimal_digits) if total_digits != None else None
+                            form = f"{int_part}.{str(act(store[model][folder][metric][approach][logic][config])).split('.')[1][:decimal_digits]}" if total_digits != None else str(round(act(store[model][folder][metric][approach][logic][config]),1))
+                            val = "\\textbf{"+ form+"}" if (pos == 0) and (act(store[model][folder][metric][approach][logic][config]) != 0.0) else (
+                                "\\underline{"+form+"}" if (pos == 1) and (act(store[model][folder][metric][approach][logic][config]) != 0.0) else (
+                                    "\\textit{"+form+"}" if (pos == 2) and (act(store[model][folder][metric][approach][logic][config]) != 0.0) else 
+                                    form
                                     )
                                 )
 
                             lines+= f"& {val}"
-                            counterStore[metric][logic][config].append(pos == 0)
-                            counterStore_1[metric][logic][config].append(pos == 1)
-                            counterStore_2[metric][logic][config].append(pos == 2)
+                            bests = max_config(store, model, folder, metric, act)
+                            counterStore[metric][logic][config].append(1/bests.count(act(store[model][folder][metric][approach][logic][config])) if pos == 0 else 0)
+                            counterStore_1[metric][logic][config].append(1/bests.count(act(store[model][folder][metric][approach][logic][config])) if pos == 1 else 0)
+                            counterStore_2[metric][logic][config].append(1/bests.count(act(store[model][folder][metric][approach][logic][config])) if pos == 2 else 0)
                 # ---------------------------------------
                 if (ai != len(store[model][folder][metrics[0]].keys())-1):
                     start = 2
@@ -1175,13 +1184,13 @@ def print_compare_v3_2(
         maxim = lambda dictio, metric, logic: (max([ sum(dictio[metric][logic][config]) for config in dictio[metric][logic].keys() ]))
         if 1 in result:
             lines += """
-            \\multicolumn{2}{|c|}{\\textbf{Total 1st Place}}"""
+            \\multicolumn{2}{|c|}{\\textbf{Total}}"""
 
             for j, metric in enumerate(metrics):
                 lines += """ & """
                 for logic in store[list(store.keys())[0]][folder][metric]['MlC'].keys():
                     for config in store[list(store.keys())[0]][folder][metric]['MlC'][logic].keys():
-                        lines += """ & """+str(sum(counterStore[metric][logic][config])) if sum(counterStore[metric][logic][config]) != maxim(counterStore, metric,logic) else """ & \\textbf{"""+str(sum(counterStore[metric][logic][config]))+"}"
+                        lines += """ & """+str(round(sum(counterStore[metric][logic][config]),1)) if sum(counterStore[metric][logic][config]) != maxim(counterStore, metric,logic) else """ & \\textbf{"""+str(round(sum(counterStore[metric][logic][config]),1))+"}"
 
             lines+= " \\\\ "
             lines+= " \\cline{1-"+str(nb_cols)+"}"
@@ -1194,7 +1203,7 @@ def print_compare_v3_2(
                 lines += """ & """
                 for logic in store[list(store.keys())[0]][folder][metric]['MlC'].keys():
                     for config in store[list(store.keys())[0]][folder][metric]['MlC'][logic].keys():
-                        lines += """ & """+str(sum(counterStore_1[metric][logic][config])) if sum(counterStore_1[metric][logic][config]) != maxim(counterStore_1, metric,logic) else """ & \\textbf{"""+str(sum(counterStore_1[metric][logic][config]))+"}"
+                        lines += """ & """+str(round(sum(counterStore_1[metric][logic][config]),1)) if sum(counterStore_1[metric][logic][config]) != maxim(counterStore_1, metric,logic) else """ & \\textbf{"""+str(round(sum(counterStore_1[metric][logic][config]),1))+"}"
 
             lines+= " \\\\ "
             lines+= " \\cline{1-"+str(nb_cols)+"}"
@@ -1207,7 +1216,7 @@ def print_compare_v3_2(
                 lines += """ & """
                 for logic in store[list(store.keys())[0]][folder][metric]['MlC'].keys():
                     for config in store[list(store.keys())[0]][folder][metric]['MlC'][logic].keys():
-                        lines += """ & """+str(sum(counterStore_2[metric][logic][config])) if sum(counterStore_2[metric][logic][config]) != maxim(counterStore_2, metric,logic) else """ & \\textbf{"""+str(sum(counterStore_2[metric][logic][config]))+"}"
+                        lines += """ & """+str(round(sum(counterStore_2[metric][logic][config]),1)) if sum(counterStore_2[metric][logic][config]) != maxim(counterStore_2, metric,logic) else """ & \\textbf{"""+str(round(sum(counterStore_2[metric][logic][config]),1))+"}"
 
             lines+= " \\\\ "
             lines+= " \\cline{1-"+str(nb_cols)+"}"
@@ -1222,6 +1231,211 @@ def print_compare_v3_2(
         tables[folder] = table
         create_domain(f"{output_path}/tableaux/{str(alpha).replace('.','_')}")
         filename1 = f"{output_path}/tableaux/{str(alpha).replace('.','_')}/tab_alpha_{str(alpha).replace('.','_')}_{folder}.tex"
+        _file = open(filename1, "w")
+        _file.write(table)
+        _file.close()
+    return tables
+
+
+"""
+    Cette fonction compare les impacts de la valeur d'alpha 
+"""
+def print_compare_v3_3(
+    store,
+    output_path,
+    alpha,
+    metrics,
+    configs,
+    result,
+    valll=False,
+    total_digits= 4,
+    decimal_digits= 1
+):
+    
+    alphas = sorted(list(store.keys()))
+    models = list(store[alphas[0]].keys())
+    folders = list(store[alphas[0]][models[0]].keys())
+    # fetch model name
+    tables = {folder:'' for folder in folders}
+    for folder in list(tables.keys()):
+        # add the resize box to ensure the scale of the table will be contain's inside the width space avalable.
+        # start setting up the tabular dimensions setting
+        table_header = """
+        %\\begin{sidewaystable}
+        \\resizebox{\\textwidth}{!}{
+
+        \\begin{tabular}{|c|c|"""
+
+        # setup information columns headears
+        nbMCol =  (len(alphas)+1)*len(metrics)
+        table_header+= "r|"*nbMCol
+        # add col for total results
+        table_header+= "} "
+        # add separator clines
+        nb_cols = (2+nbMCol)
+        table_header+= " \\cline{1-"+str(nb_cols)+"}" # corresponding to the number of columns
+
+
+        # build the first line: metrics' line
+        lines = ''
+        # add the blank block
+        lines += """
+        \\multicolumn{2}{|c|}{"""+folder+"""}"""
+        # add cols for metric
+        dicto = {'accuracy':'Acc', 'f1-score':'F1', 'precision1':'P1', 'recall1':'R1', 'f1-score1':'F11', 'precision0':'P0', 'recall0':'R0', 'f1-score0':'F10', 'financial-cost':'Cost'}
+        for metric in metrics:
+            lines+= " & \\multicolumn{"+str(nbMCol//len(metrics))+"}{|c|}{"+dicto[metric]+"}"
+        # add the total name
+        lines+= " \\\\ "
+        lines+= " \\cline{3-"+str(nb_cols)+"""}
+        """
+
+        # build the second line: logics' line
+        # add the blank block
+        lines += """\\multicolumn{2}{|c|}{} """
+        # add alphas
+        for metric in metrics:
+            lines+= " & Classic"
+            for alpha in alphas:
+                lines+= f" & {alpha}"
+
+        # add the total name
+        lines+= " \\\\ "
+        lines+= " \\cline{1-"+str(nb_cols)+"""}
+
+        """
+
+        
+
+        # here we need to define a structure that will keep track of the number of times a config has the best result for a given metric
+        counterStore= {}
+        for metric in metrics:
+            counterStore[metric] = {}
+            for alpha in alphas:
+                counterStore[metric][alpha] = []
+
+        counterStore_1 = deepcopy(counterStore)
+        counterStore_2 = deepcopy(counterStore)
+
+        # having done this, we now need a function that will return max of the metrics in a config with a given logic
+        max_config = lambda store, alpha, mod, folder, metric, act: (
+        act(
+            [
+            act(store[alpha][mod][folder][metric][app][logic][config]) 
+            for app in store[alpha][mod][folder][metric].keys() 
+            for logic in store[alpha][mod][folder][metric][app].keys() 
+            for config in store[alpha][mod][folder][metric][app][logic].keys()
+            ]
+            )
+        )
+
+        get_all_max_config = lambda store, mod, folder, metric, act: (
+        (
+            [
+            act(store[alpha][mod][folder][metric][app][logic][config]) 
+            for alpha in store.keys()
+            for app in store[alpha][mod][folder][metric].keys() 
+            for logic in store[alpha][mod][folder][metric][app].keys() 
+            for config in store[alpha][mod][folder][metric][app][logic].keys()
+            ]
+            )
+        )
+
+        # fetch on model
+        for mi, model in enumerate(models): 
+            # print(store[alphas[0]].keys(),[alphas[0]],[model],[folder],[metrics[0]], "=----------=\n")
+            lines+= """
+            \\multirow{"""+str(len(list(store[alphas[0]][model][folder][metrics[0]].keys())))+"""}{*}{"""+model+"""}"""
+            for ai, approach in enumerate(list(store[alphas[0]][model][folder][metrics[0]].keys())): # MlC, MCA
+                lines+= f""" & {approach}"""
+                for i, metric in enumerate(metrics):
+                    lines+= """ & \\multirow{2}{*}{"""+str(round(store[alphas[0]][model][folder]['classic'].loc[model, metric],4))+"""}""" if ai == 0 else """ &"""
+                    for ali,alpha in enumerate(alphas):
+                        act = max if valll is False else (min if "financial-cost" in metric else max)
+                        act_b = sorted(list(set(get_all_max_config(store, model, folder, metric, act))), reverse= (False if ((valll == True) and ("financial-cost" in metric )) else True))
+                        pos = act_b.index(max_config(store, alpha, model, folder, metric, act))
+
+                        # Adjust integer part to the required digits
+                        int_part = str(int(max_config(store, alpha, model, folder, metric, act))).zfill(total_digits - decimal_digits) if total_digits != None else None
+                        form = f"{int_part}.{str(max_config(store, alpha, model, folder, metric, act)).split('.')[1][:decimal_digits]}" if total_digits != None else str(round(max_config(store, alpha, model, folder, metric, act),2))
+                        val = "\\textbf{"+form+"}" if (pos == 0) and (max_config(store, alpha, model, folder, metric, act) != 0.0) else (
+                            "\\underline{"+form+"}" if (pos == 1) and (max_config(store, alpha, model, folder, metric, act) != 0.0) else (
+                                "\\textit{"+form+"}" if (pos == 2) and (max_config(store, alpha, model, folder, metric, act) != 0.0) else 
+                                form
+                                )
+                            )
+
+                        lines+= f"& {val}"
+                        bests = get_all_max_config(store, model, folder, metric, act)
+                        counterStore[metric][alpha].append(1/bests.count(max_config(store, alpha, model, folder, metric, act)) if pos == 0 else 0)
+                        counterStore_1[metric][alpha].append(1/bests.count(max_config(store, alpha, model, folder, metric, act)) if pos == 1 else 0)
+                        counterStore_2[metric][alpha].append(1/bests.count(max_config(store, alpha, model, folder, metric, act)) if pos == 2 else 0)
+                # ---------------------------------------
+                if (ai != len(store[alphas[0]][model][folder][metrics[0]].keys())-1):
+                    start = 2
+                    prog = (nbMCol//len(metrics))
+                    # print(start)
+                    lines+= """\\\\ """
+                    for _ in range(len(metrics)):
+                        lines+= """ \\cline{"""+str(start)+"-"+str(start)+"""} \\cline{"""+str(start+2)+"""-"""+str(start+(nbMCol//len(metrics)))+"""}"""
+                        start = start+prog
+                    lines+= """
+
+                    """
+                else:
+                    lines+= """\\\\ """+ """ \\cline{1-"""+str(nb_cols)+"""}
+
+                        """ 
+
+        # total's line
+        # print(result)
+        maxim = lambda dictio, metric: (max([ sum(dictio[metric][alpha]) for alpha in dictio[metric].keys() ]))
+        if 1 in result:
+            lines += """
+            \\multicolumn{2}{|c|}{\\textbf{Total}}"""
+
+            for j, metric in enumerate(metrics):
+                lines += """ & """
+                for alpha in alphas:
+                    lines += """ & """+str(round(sum(counterStore[metric][alpha]),1)) if sum(counterStore[metric][alpha]) != maxim(counterStore, metric) else """ & \\textbf{"""+str(round(sum(counterStore[metric][alpha]),1))+"}"
+
+            lines+= " \\\\ "
+            lines+= " \\cline{1-"+str(nb_cols)+"}"
+
+        if 2 in result:
+            lines += """
+            \\multicolumn{2}{|c|}{\\textbf{Total 2nd Place}}"""
+
+            for j, metric in enumerate(metrics):
+                lines += """ & """
+                for alpha in alphas:
+                    lines += """ & """+str(round(sum(counterStore_1[metric][alpha]),1)) if sum(counterStore_1[metric][alpha]) != maxim(counterStore_1, metric) else """ & \\textbf{"""+str(round(sum(counterStore_1[metric][alpha]),1))+"}"
+
+            lines+= " \\\\ "
+            lines+= " \\cline{1-"+str(nb_cols)+"}"
+
+        if 3 in result:
+            lines += """
+            \\multicolumn{2}{|c|}{\\textbf{Total 3th Place}}"""
+
+            for j, metric in enumerate(metrics):
+                lines += """ & """
+                for alpha in alphas:
+                    lines += """ & """+str(round(sum(counterStore_2[metric][alpha]),1)) if sum(counterStore_2[metric][alpha]) != maxim(counterStore_2, metric) else """ & \\textbf{"""+str(round(sum(counterStore_2[metric][alpha]),1))+"}"
+
+            lines+= " \\\\ "
+            lines+= " \\cline{1-"+str(nb_cols)+"}"
+
+        lines+= """
+
+        \\end{tabular}
+        }
+        %\\end{sidewaystable}"""
+
+        table = table_header + lines
+        tables[folder] = table
+        create_domain(f"{output_path}/alpha/{folder}")
+        filename1 = f"{output_path}/alpha/{folder}/tab_alpha_{folder}.tex"
         _file = open(filename1, "w")
         _file.write(table)
         _file.close()
@@ -3957,9 +4171,12 @@ def generate_report_tables_v3_2(
     approachs=['MlC','MCA'],
     configs=['MX','CX','CY','CXY'],
     metrics=['accuracy','f1-score','precision1','recall1','f1-score1','precision0','recall0','f1-score0','financial-cost'],
+    metrics1=[],
     _type='qualitative',
     alphas=[0.85],
-    result_=[1]
+    result_=[1],
+    total_digits= 4,
+    decimal_digits= 1
 ):
     """
     Analyzer Launcher
@@ -4012,9 +4229,19 @@ def generate_report_tables_v3_2(
     val_global_details_metrics_depth_1 = {
     }
 
+    ig_global_details_metrics_depth_1a = {
+    }
+    val_global_details_metrics_depth_1a = {
+    }
+
     ig_global_details_metrics_depth_2 = {
     }
     val_global_details_metrics_depth_2 = {
+    }
+
+    ig_global_details_metrics_depth_2a = {
+    }
+    val_global_details_metrics_depth_2a = {
     }
 
     best_mlna_k_per_alpha = {
@@ -4202,7 +4429,10 @@ def generate_report_tables_v3_2(
             alpha,
             metrics,
             _totalConfigs,
-            result_
+            result_,
+            False,
+            total_digits= total_digits,
+            decimal_digits= decimal_digits
         ).items()}
         val_local_tables = {key: val_local_tables[key] + "\n" + mod for key, mod in print_compare_v3_2(
             val_local_details_metrics_depth_1,
@@ -4211,9 +4441,12 @@ def generate_report_tables_v3_2(
             metrics,
             _totalConfigs,
             result_,
-            True
+            True,
+            total_digits= total_digits,
+            decimal_digits= decimal_digits
         ).items()}
-
+        ig_global_details_metrics_depth_1a[alpha] = ig_local_details_metrics_depth_1
+        val_global_details_metrics_depth_1a[alpha] = val_local_details_metrics_depth_1
     ## print the global container (gain, metric)
     ig_global_tables = "\n \\vspace{0.02cm} \\vspace{0.02cm}".join([ mod for _, mod in print_compare_v3_2(
         ig_global_details_metrics_depth_1,
@@ -4221,7 +4454,10 @@ def generate_report_tables_v3_2(
         'all',
         metrics,
         _totalConfigs,
-        result_
+        result_,
+        False,
+        total_digits= total_digits,
+        decimal_digits= decimal_digits
     ).items()])
 
     val_global_tables = "\n \\vspace{0.02cm} \\vspace{0.02cm}".join([ mod for _, mod in print_compare_v3_2(
@@ -4231,8 +4467,11 @@ def generate_report_tables_v3_2(
         metrics,
         _totalConfigs,
         result_,
-        True
+        True,
+        total_digits= total_digits,
+        decimal_digits= decimal_digits
     ).items()])
+
     
     create_domain(f'{cwd}/{outputPath}/ig/all_ig/')
     with open(f'{cwd}/{outputPath}/ig/all_ig/ig_all.tex', "w") as fichier:
@@ -4245,6 +4484,51 @@ def generate_report_tables_v3_2(
                 \\end{figure}"""+footer)
     create_domain(f'{cwd}/{outputPath}/val/val_all/')
     with open(f'{cwd}/{outputPath}/val/val_all/val_all.tex', "w") as fichier:
+        fichier.write(header+"""
+                \\begin{figure}[H]
+                \\begin{center}"""+val_global_tables+"""
+                \\caption{default}
+                \\label{default}
+                \\end{center}
+                \\end{figure}"""+footer)
+
+
+    ig_global_tables = "\n \\vspace{0.02cm} \\vspace{0.02cm}".join([ mod for _, mod in print_compare_v3_3(
+        ig_global_details_metrics_depth_1a,
+        f'{cwd}/{outputPath}/ig',
+        'all',
+        metrics1,
+        _totalConfigs,
+        result_,
+        False,
+        total_digits= total_digits,
+        decimal_digits= decimal_digits
+    ).items()])
+
+    val_global_tables = "\n \\vspace{0.02cm} \\vspace{0.02cm}".join([ mod for _, mod in print_compare_v3_3(
+        val_global_details_metrics_depth_1a,
+        f'{cwd}/{outputPath}/val',
+        'all',
+        metrics1,
+        _totalConfigs,
+        result_,
+        True,
+        total_digits= total_digits,
+        decimal_digits= decimal_digits
+    ).items()])
+    
+    
+    create_domain(f'{cwd}/{outputPath}/ig/alpha/all_ig/')
+    with open(f'{cwd}/{outputPath}/ig/alpha/all_ig/ig_all.tex', "w") as fichier:
+        fichier.write(header+"""
+                \\begin{figure}[H]
+                \\begin{center}"""+ig_global_tables+"""
+                \\caption{default}
+                \\label{default}
+                \\end{center}
+                \\end{figure}"""+footer)
+    create_domain(f'{cwd}/{outputPath}/val/alpha/val_all/')
+    with open(f'{cwd}/{outputPath}/val/alpha/val_all/val_all.tex', "w") as fichier:
         fichier.write(header+"""
                 \\begin{figure}[H]
                 \\begin{center}"""+val_global_tables+"""
@@ -4270,6 +4554,18 @@ def generate_report_tables_v3_2(
         best_mlna_k_per_alpha,
         f'{cwd}/{outputPath}/descriptComp',
     ) 
+    print_compare_k_att_selection_v2_1(
+        val_global_details_metrics_depth_1a,
+        f'{cwd}/{outputPath}/descriptComp',
+        metrics,
+        valll=True
+    )
+    print_compare_k_att_selection_v2_1(
+        ig_global_details_metrics_depth_1a,
+        f'{cwd}/{outputPath}/descriptComp',
+        metrics,
+        valll=False
+    )
 
 """
     Impact performance analytic for MLN1 and MLN2
@@ -5181,11 +5477,19 @@ def generate_g_b_impact_table(
 def print_compare_bchart(
     store,
     output_path,
+    outputs_name,
     alpha,
     top
 ):
     # fetch model name
-    tables = {model:'' for model in list(store.keys())}
+    models = list(store.keys())
+    folders = list(store[models[0]].keys())
+    tables = {model:'' for model in models}
+
+    summary = {model:{folder: {'GLO':0,'PER':0,'PER_Y':0} for folder in folders} for model in models}
+
+    lambda_function = lambda dictionary, pattern: sum(1 for key in dictionary.keys() if re.match(pattern, key))
+    counter = {'GLO':0,'PER':0,'PER_Y':0}
     for model in list(store.keys()):
         """
         \\begin{bchart}[min=50,max=100,step=10,unit=\\%]
@@ -5209,8 +5513,24 @@ def print_compare_bchart(
         """
         tables[model]+= tab
         for i, folder in enumerate(store[model].keys()):
+            classic_f = [
+                load_data_set_from_url(path=file, sep='\t', encoding='utf-8', index_col=0, na_values=None)
+                for file in get_filenames(
+                    root_dir=f'{os.getcwd()}/{outputs_name}/{folder}/data_selection_storage',
+                    func=C_F,
+                    verbose=False
+                )
+            ][-1]
+            columns = len(list(classic_f.columns))-11 # 11 METRICS
             # sort the dict
             data = dict(sorted(store[model][folder].items(), key=lambda x: abs(x[1]), reverse=True)[:top])
+            summary[model][folder]['GLO'] = lambda_function(data, r'^.*_GLO$')
+            summary[model][folder]['PER'] = lambda_function(data, r'^(?!Y).*_PER$')
+            summary[model][folder]['PER_Y'] = lambda_function(data, r'^Y.*_PER$')
+            summary[model][folder]['nbAtt'] = columns
+            counter['GLO'] += 1 if summary[model][folder]['GLO'] >= 4 else 0
+            counter['PER'] += 1 if summary[model][folder]['PER'] >= 4 else 0
+            counter['PER_Y'] += 1 if summary[model][folder]['PER_Y'] >= 4 else 0
             # identify a max and min importance value
             # print(data.items())
             data1 = dict(sorted(data.items(), key=lambda x: x[1], reverse=True))
@@ -5244,7 +5564,83 @@ def print_compare_bchart(
         _file = open(filename1, "w")
         _file.write(bchar_header+tables[model]+footer)
         _file.close()
+    # ----------------------------- print the summary ---------------------------- 
+    table_header = """
+    %\\begin{sidewaystable}
+    \\resizebox{\\textwidth}{!}{
 
+    \\begin{tabular}{|c|c|"""
+
+    # setup information columns headears
+    nbMCol =  7
+    table_header+= "r|"*nbMCol
+    # add col for total results
+    table_header+= "} "
+    # add separator clines
+    nb_cols = (2+nbMCol)
+    table_header+= " \\cline{1-"+str(nb_cols)+"}" # corresponding to the number of columns
+
+
+    # build the first line: metrics' line
+    lines = ''
+    # add the blank block
+    lines += """
+    \\multicolumn{2}{|c|}{}"""
+    # add cols for metric
+    for model in models:
+        lines+= " & \\textbf{"+model+"}"
+    # add the total name
+    lines+= " & \\textbf{TOTAL} \\\\ "
+    lines+= " \\cline{1-"+str(nb_cols)+"""}
+    """
+
+    # lambda function for sum
+    sum_type = lambda store, folder, type: sum([store[model][folder][type] for model in store.keys()])
+    max_sum_type = lambda store, folder, types: max([sum([store[model][folder][type] for model in store.keys()]) for type in types])
+    sum_mod = lambda store, model, types: sum([store[model][folder][type] for folder in store[model].keys() for type in types])
+    max_sum_mod = lambda store, types: max([sum([store[model][folder][type]  for folder in store[model].keys() for type in types]) for model in store.keys()])
+    # fetch folders
+    for folder in folders:
+        lines+= """
+        \\multirow{3}{*}{\\textbf{"""+folder+""" ("""+ str(summary[models[0]][folder]['nbAtt'])+""" + 19)}}
+        """
+        # fetch descriptors type
+        for di, desc in enumerate(counter.keys()):
+            lines+= """& """+ str(desc).replace('_','\\_')
+            # fetch models
+            for model in models:
+                # add desc info for each model
+                lines+= """& """+ str(summary[model][folder][desc])
+            # add total of the current
+            lines+= """& """+ str(sum_type(summary, folder, desc)) if max_sum_type(summary, folder, counter.keys()) != sum_type(summary, folder, desc) else "& \\textbf{"+str(sum_type(summary, folder, desc))+"}"
+            # back to next line
+            lines+= " \\\\ "
+            lines+= " \\cline{1-"+str(nb_cols)+"""}
+            """ if di == len(counter.keys())-1 else " \\cline{2-"+str(nb_cols)+"""}
+            """
+    # add total line
+    lines += """
+    \\multicolumn{2}{|c|}{\\textbf{TOTAL}}"""
+    for model in models:
+        lines+= " & "+ str(sum_mod(summary, model, counter.keys())) if sum_mod(summary, model, counter.keys()) != max_sum_mod(summary, counter.keys()) else "& \\textbf{"+ str(sum_mod(summary, model, counter.keys()))+"}"
+    lines+= " & "
+    lines+= " \\\\ "
+    lines+= " \\cline{1-"+str(nb_cols)+"""}
+    \\end{tabular}}"""
+
+    create_domain(f"{output_path}/bchart/{str(alpha).replace('.','_')}/summary")
+
+    with open(f"{output_path}/bchart/{str(alpha).replace('.','_')}/summary/summary.tex", "w") as fichier:
+        fichier.write(
+            header+"""
+            \\begin{table}[H]
+            \\center"""+table_header+lines+"""
+            \\caption{Nombre d'attributs de type GLO, PER et PER\\_Y des graphes multicouches qui sont présents dans le Top-20 des attributs qui contribuent le plus aux décisions des modèles de prédiction dans les différents jeux de données. Entre parenthèse, c'est le nombre total d'attributs du jeu de données associé.}
+            \\label{tab:recapTab}
+            \\end{table}"""+footer
+            )
+    # ------------------------------------------------------------------------------------
+    return (summary,counter)
 
 def print_compare_k_att_selection(
     store,
@@ -5259,10 +5655,10 @@ def print_compare_k_att_selection(
     for i,alpha in enumerate(store[folders[0]].keys()):
         # define lines plots form
         real_line = """\\addplot table[x=dataset,y=k] {
-            dataset k
+            dataset k \\\\
             """
         predicted_line = """\\addplot table[x=dataset,y=k] {
-            dataset k
+            dataset k \\\\
             """
 
         plot = """\\begin{tikzpicture}
@@ -5330,7 +5726,7 @@ def print_compare_k_att_selection_v2(
     for j,(key, folder) in enumerate(store.items()):
         # define lines plots form
         lines = """\\addplot table[x=k,y=Accuracy,row sep=crcr] {
-            k Accuracy
+            k Accuracy \\\\
         """
 
         plot = """
@@ -5394,6 +5790,116 @@ def print_compare_k_att_selection_v2(
     filename1 = f"{output_path}/selection/perf/plots_perf.tex"
     _file = open(filename1, "w")
     _file.write(plot_header+gplot+footer)
+    _file.close()
+
+
+"""
+    pour chaque metriques, pour chaque jeu de données, pour chaque modèle, imprimer un plot de l'impact de alpha sur les performances des modèles
+"""
+def print_compare_k_att_selection_v2_1(
+    store,
+    output_path,
+    metrics,
+    valll=False
+):
+    
+
+    max_config = lambda store, alpha, mod, folder, metric, act: (
+        act(
+            [
+            act(store[alpha][mod][folder][metric][app][logic][config]) 
+            for app in store[alpha][mod][folder][metric].keys() 
+            for logic in store[alpha][mod][folder][metric][app].keys() 
+            for config in store[alpha][mod][folder][metric][app][logic].keys()
+            ]
+            )
+        )
+    
+    alphas = sorted(list(store.keys()))
+    models = list(store[alphas[0]].keys())
+    folders = list(store[alphas[0]][models[0]].keys())
+
+    
+    plots = ""
+    # fetch metrics
+    for metric in metrics:
+        # define the stat function
+        act = max if valll is False else (min if "financial-cost" in metric else max)
+        # define the tabular of the metric
+        gplot = """\\resizebox{\\textwidth}{!}{
+        \\begin{tabular}{"""+("c"*(len(store[alphas[0]][models[0]][folders[0]].keys())//2))+"""}
+        """
+        # fetch data folders
+        for i, folder in enumerate(folders):
+            # define lines plots form
+            lines = """\\addplot table[x=alpha,y="""+dicto[metric]+""",row sep=crcr] {
+                alpha """+dicto[metric]+""" \\\\
+            """
+
+            plot = """
+                \\begin{tikzpicture}
+                \\begin{axis}[
+                    xlabel=alpha,
+                    ylabel={"""+dicto[metric]+"""},
+                    symbolic x coords={0, """+str(", ".join(str(alpha) for alpha in alphas))+"""}, % Define symbolic x labels
+                    xtick=data, % Get x tick marks from data
+                    x tick label style={% Change x tick label style
+                        /pgf/number format/set thousands separator={}%
+                    },
+                    y tick label style={% Change y tick label style
+                        /pgf/number format/fixed, % Use fixed-point notation
+                        /pgf/number format/precision=3, % Precision to 3 decimal places
+                        %/pgf/number format/fixed zerofill % Fill with zeros if needed
+                    },
+                    %title={Impact of alpha ($\\alpha$) on  """+",".join(models)+" for "+dicto[metric]+""" metric},% Plot title
+                    title={"""+folder+""" },% Plot title
+                    tick align=outside, % Ticks on the outside
+                    enlargelimits = upper,
+                    xmin=0, % Ensure x-axis starts at 0
+                    %ymin=0, % Ensure y-axis starts at 0
+                    legend pos = outer north east
+                ]
+            """
+            # fetch models
+            for model in models:
+                # add line container
+                plot +=lines
+                # fetch alphas
+                for alpha in alphas:
+                    # get the max value of the actual config
+
+                    # add line content
+                    plot += f"""{alpha} {max_config(store, alpha, model, folder, metric, act)} \\\\
+                    """
+                # end the model line
+                plot+= """};
+                    \\addlegendentry{$\\alpha = """+str(model)+"""$}
+                """   if (i == len(folders)-1) or True else """};
+                """ 
+            # close the folder plot 
+            gplot+=(plot+"""
+                \\end{axis}
+                \\end{tikzpicture}
+                &
+                    """) if (i+1)%2 != 0 else (plot+"""
+                \\end{axis}
+                \\end{tikzpicture}
+                \\\\
+                    """) 
+        # close the metric ch
+        gplot+="""\\end{tabular}}
+                """
+        plots+=gplot+"""
+                """
+        create_domain(f"{output_path}/alpha/perf{valll}/perf{metric}")
+        filename1 = f"{output_path}/alpha/perf{valll}/perf{metric}/plots_perf.tex"
+        _file = open(filename1, "w")
+        _file.write(plot_header+gplot+"}"+footer)
+        _file.close()
+    create_domain(f"{output_path}/alpha/perf{valll}/all")
+    filename1 = f"{output_path}/alpha/perf{valll}/all/plots_perf.tex"
+    _file = open(filename1, "w")
+    _file.write(plot_header+plots+"}"+footer)
     _file.close()
 
 
@@ -5583,14 +6089,21 @@ def generate_descriptor_ranking(
             # Normaliser les valeurs
             global_details_metrics_depth_1[model][folder] = {k: v / total_sum for k, v in global_details_metrics_depth_1[model][folder].items()}
     ## print the global container (gain, metric)
-    print_compare_bchart(
+    return print_compare_bchart(
         global_details_metrics_depth_1,
         f'{cwd}/descriptComp/',
+        outputs_name,
         "all",
         20
     )
     
         
+
+
+
+
+
+
 
 
 
