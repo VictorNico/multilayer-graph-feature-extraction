@@ -26,6 +26,7 @@ import re
 import time
 from copy import deepcopy
 import tabulate
+from collections import Counter
 
 ########### End Module
 ################################################
@@ -279,6 +280,9 @@ get_quantitative_from_cols = lambda x: (list(set([
     var.split("___")[1] for var in x if ("___" in var)
     ]
 )))
+
+# Valeur de epsilon
+epsilon = 1e-8
 # --------------------------------------------------------------------------------------RessourcesLoading---------------------------------------------------------
 
 # ################################################################
@@ -1257,6 +1261,7 @@ def print_compare_v3_3(
     folders = list(store[alphas[0]][models[0]].keys())
     # fetch model name
     tables = {folder:'' for folder in folders}
+    counter = {metric: {alpha:0 for alpha in alphas} for metric in metrics }
     for folder in list(tables.keys()):
         # add the resize box to ensure the scale of the table will be contain's inside the width space avalable.
         # start setting up the tabular dimensions setting
@@ -1317,12 +1322,12 @@ def print_compare_v3_3(
         counterStore_1 = deepcopy(counterStore)
         counterStore_2 = deepcopy(counterStore)
 
-        # having done this, we now need a function that will return max of the metrics in a config with a given logic
-        max_config = lambda store, alpha, mod, folder, metric, act: (
+        # having done this, we now need a function that will return max of the metrics in a config with a given approach
+        max_config = lambda store, alpha, mod, folder, metric, app, act: (
         act(
             [
             act(store[alpha][mod][folder][metric][app][logic][config]) 
-            for app in store[alpha][mod][folder][metric].keys() 
+            # for app in store[alpha][mod][folder][metric].keys() 
             for logic in store[alpha][mod][folder][metric][app].keys() 
             for config in store[alpha][mod][folder][metric][app][logic].keys()
             ]
@@ -1353,23 +1358,23 @@ def print_compare_v3_3(
                     for ali,alpha in enumerate(alphas):
                         act = max if valll is False else (min if "financial-cost" in metric else max)
                         act_b = sorted(list(set(get_all_max_config(store, model, folder, metric, act))), reverse= (False if ((valll == True) and ("financial-cost" in metric )) else True))
-                        pos = act_b.index(max_config(store, alpha, model, folder, metric, act))
+                        pos = act_b.index(max_config(store, alpha, model, folder, metric, approach, act))
 
                         # Adjust integer part to the required digits
                         int_part = str(int(max_config(store, alpha, model, folder, metric, act))).zfill(total_digits - decimal_digits) if total_digits != None else None
-                        form = f"{int_part}.{str(max_config(store, alpha, model, folder, metric, act)).split('.')[1][:decimal_digits]}" if total_digits != None else str(round(max_config(store, alpha, model, folder, metric, act),2))
-                        val = "\\textbf{"+form+"}" if (pos == 0) and (max_config(store, alpha, model, folder, metric, act) != 0.0) else (
-                            "\\underline{"+form+"}" if (pos == 1) and (max_config(store, alpha, model, folder, metric, act) != 0.0) else (
-                                "\\textit{"+form+"}" if (pos == 2) and (max_config(store, alpha, model, folder, metric, act) != 0.0) else 
+                        form = f"{int_part}.{str(max_config(store, alpha, model, folder, metric, act)).split('.')[1][:decimal_digits]}" if total_digits != None else str(round(max_config(store, alpha, model, folder, metric, approach, act),2))
+                        val = "\\textbf{"+form+"}" if (pos == 0) and (max_config(store, alpha, model, folder, metric, approach, act) != 0.0) else (
+                            "\\underline{"+form+"}" if (pos == 1) and (max_config(store, alpha, model, folder, metric, approach, act) != 0.0) else (
+                                "\\textit{"+form+"}" if (pos == 2) and (max_config(store, alpha, model, folder, metric, approach, act) != 0.0) else 
                                 form
                                 )
                             )
 
                         lines+= f"& {val}"
                         bests = get_all_max_config(store, model, folder, metric, act)
-                        counterStore[metric][alpha].append(1/bests.count(max_config(store, alpha, model, folder, metric, act)) if pos == 0 else 0)
-                        counterStore_1[metric][alpha].append(1/bests.count(max_config(store, alpha, model, folder, metric, act)) if pos == 1 else 0)
-                        counterStore_2[metric][alpha].append(1/bests.count(max_config(store, alpha, model, folder, metric, act)) if pos == 2 else 0)
+                        counterStore[metric][alpha].append(1/(bests.count(max_config(store, alpha, model, folder, metric, approach, act))) if pos == 0 else 0)
+                        counterStore_1[metric][alpha].append(1/(bests.count(max_config(store, alpha, model, folder, metric, approach, act))) if pos == 1 else 0)
+                        counterStore_2[metric][alpha].append(1/(bests.count(max_config(store, alpha, model, folder, metric, approach, act))) if pos == 2 else 0)
                 # ---------------------------------------
                 if (ai != len(store[alphas[0]][model][folder][metrics[0]].keys())-1):
                     start = 2
@@ -1390,6 +1395,7 @@ def print_compare_v3_3(
         # total's line
         # print(result)
         maxim = lambda dictio, metric: (max([ sum(dictio[metric][alpha]) for alpha in dictio[metric].keys() ]))
+        
         if 1 in result:
             lines += """
             \\multicolumn{2}{|c|}{\\textbf{Total}}"""
@@ -1397,11 +1403,12 @@ def print_compare_v3_3(
             for j, metric in enumerate(metrics):
                 lines += """ & """
                 for alpha in alphas:
-                    lines += """ & """+str(round(sum(counterStore[metric][alpha]),1)) if sum(counterStore[metric][alpha]) != maxim(counterStore, metric) else """ & \\textbf{"""+str(round(sum(counterStore[metric][alpha]),1))+"}"
+                    counter[metric][alpha]+= round(sum(counterStore[metric][alpha]),1)
+                    lines += """ & """+str(round(sum(counterStore[metric][alpha]),1)) if round(sum(counterStore[metric][alpha]),1) != round(maxim(counterStore, metric),1) else """ & \\textbf{"""+str(round(sum(counterStore[metric][alpha]),1))+"}"
 
             lines+= " \\\\ "
             lines+= " \\cline{1-"+str(nb_cols)+"}"
-
+        
         if 2 in result:
             lines += """
             \\multicolumn{2}{|c|}{\\textbf{Total 2nd Place}}"""
@@ -1439,6 +1446,7 @@ def print_compare_v3_3(
         _file = open(filename1, "w")
         _file.write(table)
         _file.close()
+    print(counter)
     return tables
 
 def print_g_b_impact_table(
@@ -4277,8 +4285,11 @@ def generate_report_tables_v3_2(
                 [file for _, _, files in os.walk(
                     f'{cwd}/{outputs_name}/{result_folder}/{alpha}/{_type}/model_storage')
                  for file in files if
-                 '_best_features' in file][0]
-            best_mlna_k_per_alpha[result_folder][alpha]['predicted_best_k'].append(read_model(f'{cwd}/{outputs_name}/{result_folder}/{alpha}/{_type}/model_storage/{name}')["bestK"])
+                 '_best_features' in file][0] if len([file for _, _, files in os.walk(
+                    f'{cwd}/{outputs_name}/{result_folder}/{alpha}/{_type}/model_storage')
+                 for file in files if
+                 '_best_features' in file]) != 0 else None
+            best_mlna_k_per_alpha[result_folder][alpha]['predicted_best_k'].append(read_model(f'{cwd}/{outputs_name}/{result_folder}/{alpha}/{_type}/model_storage/{name}')["bestK"]) if name != None else None
             ## get classic model
             classic_f = [
                 load_data_set_from_url(path=file, sep='\t', encoding='utf-8', index_col=0, na_values=None)
@@ -4395,10 +4406,7 @@ def generate_report_tables_v3_2(
                                                             )
                                                         ) 
                                                     / 
-                                                    round(
-                                                        classic_f.loc[model, metric], 
-                                                        4
-                                                        )
+                                                    (round(classic_f.loc[model, metric],4) if round(classic_f.loc[model, metric],4) > 0 else epsilon)
                                                     ) * 100, 
                                                 1
                                                 )
@@ -4414,11 +4422,12 @@ def generate_report_tables_v3_2(
                                             list_of_accuracy.append((layer, model,files[approach][logic][config][result].loc[model, metric]))
 
             # analyse impact of layers and identify the best mlna as k
-            best_mlna_k_per_alpha[result_folder][alpha]['list']= list_of_accuracy
-            list_of_accuracy = sorted(list_of_accuracy, key=lambda x: abs(x[2]), reverse=False) # best will be at position 0
-            best_mlna_k_per_alpha[result_folder][alpha]['real_best_k'].append(list_of_accuracy[0][0])
-            best_mlna_k_per_alpha[result_folder][alpha]['model'].append(list_of_accuracy[0][1])
-            best_mlna_k_per_alpha[result_folder][alpha]['value'].append(list_of_accuracy[0][2])
+            if not(name is None):
+                best_mlna_k_per_alpha[result_folder][alpha]['list']= list_of_accuracy
+                list_of_accuracy = sorted(list_of_accuracy, key=lambda x: abs(x[2]), reverse=False) # best will be at position 0
+                best_mlna_k_per_alpha[result_folder][alpha]['real_best_k'].append(list_of_accuracy[0][0])
+                best_mlna_k_per_alpha[result_folder][alpha]['model'].append(list_of_accuracy[0][1])
+                best_mlna_k_per_alpha[result_folder][alpha]['value'].append(list_of_accuracy[0][2])
 
         ## on store, call a print table function (gain, metric)
         # print(ig_local_details_metrics_depth_1)
@@ -4576,6 +4585,7 @@ def generate_report_tables_v3_2(
 def generate_g_b_impact_table(
     outputs_name=None, 
     cwd=None, 
+    outputPath='result_lts',
     layers=[1], 
     _type='qualitative',
     alphas=[0.85]
@@ -5427,7 +5437,7 @@ def generate_g_b_impact_table(
                         isRand= True if k != 1 else False,
                         match=match
                     )
-                    
+
                     # Loop on approach
                     for approach in  ['MlC','MCA']:
                         # Loop on Logic
@@ -5458,7 +5468,7 @@ def generate_g_b_impact_table(
     # call the printer function
     print_g_b_impact_table(
         metrics_impact,
-        f'{cwd}/analyzeV1',
+        f'{cwd}/{outputPath}',
         'all',
         True
         )
@@ -5489,7 +5499,8 @@ def print_compare_bchart(
     summary = {model:{folder: {'GLO':0,'PER':0,'PER_Y':0} for folder in folders} for model in models}
 
     lambda_function = lambda dictionary, pattern: sum(1 for key in dictionary.keys() if re.match(pattern, key))
-    counter = {'GLO':0,'PER':0,'PER_Y':0}
+    counter1 = {'GLO':0,'PER':0,'PER_Y':0}
+    top_2 = []
     for model in list(store.keys()):
         """
         \\begin{bchart}[min=50,max=100,step=10,unit=\\%]
@@ -5524,13 +5535,14 @@ def print_compare_bchart(
             columns = len(list(classic_f.columns))-11 # 11 METRICS
             # sort the dict
             data = dict(sorted(store[model][folder].items(), key=lambda x: abs(x[1]), reverse=True)[:top])
+            top_2.extend(list(data.keys())[:1])
             summary[model][folder]['GLO'] = lambda_function(data, r'^.*_GLO$')
             summary[model][folder]['PER'] = lambda_function(data, r'^(?!Y).*_PER$')
             summary[model][folder]['PER_Y'] = lambda_function(data, r'^Y.*_PER$')
             summary[model][folder]['nbAtt'] = columns
-            counter['GLO'] += 1 if summary[model][folder]['GLO'] >= 4 else 0
-            counter['PER'] += 1 if summary[model][folder]['PER'] >= 4 else 0
-            counter['PER_Y'] += 1 if summary[model][folder]['PER_Y'] >= 4 else 0
+            counter1['GLO'] += 1 if summary[model][folder]['GLO'] >= 4 else 0
+            counter1['PER'] += 1 if summary[model][folder]['PER'] >= 4 else 0
+            counter1['PER_Y'] += 1 if summary[model][folder]['PER_Y'] >= 4 else 0
             # identify a max and min importance value
             # print(data.items())
             data1 = dict(sorted(data.items(), key=lambda x: x[1], reverse=True))
@@ -5605,24 +5617,24 @@ def print_compare_bchart(
         \\multirow{3}{*}{\\textbf{"""+folder+""" ("""+ str(summary[models[0]][folder]['nbAtt'])+""" + 19)}}
         """
         # fetch descriptors type
-        for di, desc in enumerate(counter.keys()):
+        for di, desc in enumerate(counter1.keys()):
             lines+= """& """+ str(desc).replace('_','\\_')
             # fetch models
             for model in models:
                 # add desc info for each model
                 lines+= """& """+ str(summary[model][folder][desc])
             # add total of the current
-            lines+= """& """+ str(sum_type(summary, folder, desc)) if max_sum_type(summary, folder, counter.keys()) != sum_type(summary, folder, desc) else "& \\textbf{"+str(sum_type(summary, folder, desc))+"}"
+            lines+= """& """+ str(sum_type(summary, folder, desc)) if max_sum_type(summary, folder, counter1.keys()) != sum_type(summary, folder, desc) else "& \\textbf{"+str(sum_type(summary, folder, desc))+"}"
             # back to next line
             lines+= " \\\\ "
             lines+= " \\cline{1-"+str(nb_cols)+"""}
-            """ if di == len(counter.keys())-1 else " \\cline{2-"+str(nb_cols)+"""}
+            """ if di == len(counter1.keys())-1 else " \\cline{2-"+str(nb_cols)+"""}
             """
     # add total line
     lines += """
     \\multicolumn{2}{|c|}{\\textbf{TOTAL}}"""
     for model in models:
-        lines+= " & "+ str(sum_mod(summary, model, counter.keys())) if sum_mod(summary, model, counter.keys()) != max_sum_mod(summary, counter.keys()) else "& \\textbf{"+ str(sum_mod(summary, model, counter.keys()))+"}"
+        lines+= " & "+ str(sum_mod(summary, model, counter1.keys())) if sum_mod(summary, model, counter1.keys()) != max_sum_mod(summary, counter1.keys()) else "& \\textbf{"+ str(sum_mod(summary, model, counter1.keys()))+"}"
     lines+= " & "
     lines+= " \\\\ "
     lines+= " \\cline{1-"+str(nb_cols)+"""}
@@ -5640,7 +5652,7 @@ def print_compare_bchart(
             \\end{table}"""+footer
             )
     # ------------------------------------------------------------------------------------
-    return (summary,counter)
+    return (summary,counter1, dict(Counter(top_2)))
 
 def print_compare_k_att_selection(
     store,
@@ -5685,12 +5697,13 @@ def print_compare_k_att_selection(
             """
         # fetch folder
         for key, folder in store.items():
-            # add line content
-            real_line += str(key).replace("_","")+f""" {store[key][alpha]["real_best_k"][0]}
-                """
+            if len(store[key][alpha]["real_best_k"]) != 0:
+                # add line content
+                real_line += str(key).replace("_","")+f""" {store[key][alpha]["real_best_k"][0]}
+                    """
 
-            predicted_line += str(key).replace("_","")+f""" {store[key][alpha]["predicted_best_k"][0]}
-                """
+                predicted_line += str(key).replace("_","")+f""" {store[key][alpha]["predicted_best_k"][0]}
+                    """
 
         plot+= real_line+"""};
             \\addlegendentry{real}
@@ -5758,19 +5771,20 @@ def print_compare_k_att_selection_v2(
             plot +=lines
             # print(store[key][alpha]["list"])
             lay = {}
-            for (layer, _, acc) in store[key][alpha]["list"]:
-                if not(layer in list(lay.keys())):
-                    lay[layer] = acc
-                else:
-                    lay[layer] = max(lay[layer],acc)
-            for (layer, acc) in lay.items():
-                # add line content
-                plot += f"""{layer} {acc} \\\\
-                """
+            if 'list' in store[key][alpha].keys():
+                for (layer, _, acc) in store[key][alpha]["list"]:
+                    if not(layer in list(lay.keys())):
+                        lay[layer] = acc
+                    else:
+                        lay[layer] = max(lay[layer],acc)
+                for (layer, acc) in lay.items():
+                    # add line content
+                    plot += f"""{layer} {acc} \\\\
+                    """
 
-            plot+= """};
-                \\addlegendentry{$\\alpha = """+str(alpha)+"""$}
-            """ 
+                plot+= """};
+                    \\addlegendentry{$\\alpha = """+str(alpha)+"""$}
+                """ 
 
         gplot+=(plot+"""
                 \\end{axis}
@@ -5911,6 +5925,7 @@ def print_compare_k_att_selection_v2_1(
 def generate_descriptor_ranking(
     outputs_name=None, 
     cwd=None, 
+    outputPath='result_lts',
     layers=[1], 
     _type='qualitative',
     alphas=[0.85]
@@ -5932,6 +5947,7 @@ def generate_descriptor_ranking(
     ## identify the name of results folder
     data_result_folder_name = [dirnames for _, dirnames, _ in os.walk(f'{cwd}/{outputs_name}')][0]
     print(data_result_folder_name)
+    data_result_folder_name = list(set(data_result_folder_name)-set(['LFD']))
     ## init a global container for containing the results of all results folder
 
     
@@ -6091,13 +6107,11 @@ def generate_descriptor_ranking(
     ## print the global container (gain, metric)
     return print_compare_bchart(
         global_details_metrics_depth_1,
-        f'{cwd}/descriptComp/',
+        f'{cwd}/{outputPath}/',
         outputs_name,
         "all",
         20
     )
-    
-        
 
 
 

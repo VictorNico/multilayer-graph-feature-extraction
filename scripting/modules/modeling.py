@@ -228,7 +228,7 @@ def train_classifier(
     save_dataset(
         cwd=cwd+'/predictions',
         dataframe=df_predictions,
-        name=f'{domain}_y_pred',
+        name=f'{domain}_{name}_y_pred',
         prefix=prefix,
         sep=','
     )
@@ -608,13 +608,13 @@ def recall(confusion_matrix):
             recall_v = (1/2)*(
                 (confusion_matrix[0][0] / (confusion_matrix[0][0] + confusion_matrix[1][0]))
                 +
-                (confusion_matrix[0][1] / (confusion_matrix[0][1] + confusion_matrix[1][1]))
+                (confusion_matrix[1][1] / (confusion_matrix[0][1] + confusion_matrix[1][1]))
                 )
         except ZeroDivisionError:
             recall_v = (1/2)*(
                 (confusion_matrix[0][0] / (confusion_matrix[0][0] + confusion_matrix[1][0] + sys.float_info.epsilon))
                 +
-                (confusion_matrix[0][1] / (confusion_matrix[0][1] + confusion_matrix[1][1] + sys.float_info.epsilon))
+                (confusion_matrix[1][1] / (confusion_matrix[0][1] + confusion_matrix[1][1] + sys.float_info.epsilon))
                 ) 
     return recall_v
 
@@ -641,9 +641,9 @@ def recall_1(confusion_matrix):
     recall_v = None
     if confusion_matrix is not None and (len(confusion_matrix) == 2 and len(confusion_matrix[0]) == 2):
         try:
-            recall_v = confusion_matrix[0][1] / (confusion_matrix[0][1] + confusion_matrix[1][1])
+            recall_v = confusion_matrix[1][1] / (confusion_matrix[0][1] + confusion_matrix[1][1])
         except ZeroDivisionError:
-            recall_v = confusion_matrix[0][1] / (confusion_matrix[0][1] + confusion_matrix[1][1] + sys.float_info.epsilon)
+            recall_v = confusion_matrix[1][1] / (confusion_matrix[0][1] + confusion_matrix[1][1] + sys.float_info.epsilon)
     return recall_v
 
 def compute_confusion_matrix(true_labels, predicted_labels, labels):
