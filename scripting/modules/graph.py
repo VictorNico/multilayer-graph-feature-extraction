@@ -627,9 +627,9 @@ def standard_extraction(extracts, feats, maxConfig=None):
 
     Parameters
     ----------
-    extracts
-    feats
-    maxConfig
+    extracts: matrix of new descriptors
+    feats: descriptors name
+    maxConfig: extrem values by feature
 
     Returns
     -------

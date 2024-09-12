@@ -5255,6 +5255,28 @@ def bestThreshold(numbers):
             break  # Sortir de la boucle dès qu'un écart significatif est trouvé
     return result
 
+def cumulative_difference_threshold(accuracies, threshold_percent=0.8):
+    sorted_accuracies = sorted(accuracies, reverse=True)
+    diffs = [sorted_accuracies[i] - sorted_accuracies[i+1] for i in range(len(sorted_accuracies)-1)]
+    total_diff = sum(diffs)
+    cumulative_diff = 0
+    for i, diff in enumerate(diffs):
+        cumulative_diff += diff
+        if cumulative_diff / total_diff >= threshold_percent:
+            return i + 1
+    return len(accuracies)
+
+def elbow_method(accuracies):
+    sorted_accuracies = sorted(accuracies, reverse=True)
+    coords = [(i, acc) for i, acc in enumerate(sorted_accuracies)]
+    line_vec = coords[-1][0] - coords[0][0], coords[-1][1] - coords[0][1]
+    line_vec_norm = math.sqrt(sum(x*x for x in line_vec))
+    vec_from_first = lambda coord: (coord[0] - coords[0][0], coord[1] - coords[0][1])
+    scalar_proj = lambda vec: (vec[0]*line_vec[0] + vec[1]*line_vec[1]) / line_vec_norm
+    vec_proj = lambda vec: ((scalar_proj(vec) / line_vec_norm) * line_vec[0], (scalar_proj(vec) / line_vec_norm) * line_vec[1])
+    vec_reject = lambda vec: (vec[0] - vec_proj(vec)[0], vec[1] - vec_proj(vec)[1])
+    dists_from_line = [euclidean((0,0), vec_reject(vec_from_first(coord))) for coord in coords]
+    return dists_from_line.index(max(dists_from_line)) + 1
 
 # @profile
 def mlnaPipeline(

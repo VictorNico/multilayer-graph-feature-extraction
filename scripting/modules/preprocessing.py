@@ -24,6 +24,8 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.preprocessing import KBinsDiscretizer
 from itertools import combinations
 from imblearn.over_sampling import SMOTE
+from scipy.spatial.distance import euclidean
+import math
 # from imblearn.under_sampling import RandomUnderSampler
 # from imblearn.pipeline import Pipeline
 # from imblearn.over_sampling import RandomOverSampler

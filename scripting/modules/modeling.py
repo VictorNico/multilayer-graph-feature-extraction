@@ -472,7 +472,7 @@ def compute_classification_financial_cost(ypred, yreal, financialOption, test_da
         predicted_label = ypred[i]
 
         if predicted_label == 0 and true_label == 1:  # Bad debtor announced as good
-            cost += amount * rate
+            cost += amount * 1 # exxpected to really be cost += amount * loss_given_default but like it's hard to fine or compute this information for any dataset and the impact is not really observe, we decide to replace by 1
 
         elif predicted_label == 1 and true_label == 0:  # Good customer announced as bad
             deficit = amount * rate * duration

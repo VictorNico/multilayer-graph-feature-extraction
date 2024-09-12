@@ -251,7 +251,7 @@ def get_filenames(root_dir, func, verbose=False):
 
         # Print all the files
         for filename in filenames:
-            if func(filename) and not ('x_' in filename or 'y_' in filename or 'metric' in filename):
+            if func(filename) and not ('_x_' in filename or '_y_' in filename or 'metric' in filename):
                 print('File:', os.path.join(dirpath, filename)) if verbose else None
                 data_filenames.append(os.path.join(dirpath, filename))
 
@@ -1056,6 +1056,8 @@ def print_compare_v3_2(
 ):
     # fetch model name
     tables = {folder:'' for folder in list(store[list(store.keys())[0]].keys())}
+    resume = []
+    
     for folder in list(tables.keys()):
         # add the resize box to ensure the scale of the table will be contain's inside the width space avalable.
         # start setting up the tabular dimensions setting
@@ -1162,7 +1164,8 @@ def print_compare_v3_2(
                                     form
                                     )
                                 )
-
+                            if (pos == 0) and (act(store[model][folder][metric][approach][logic][config]) != 0.0) and (valll is True):
+                                resume.extend([model,approach,logic, config])
                             lines+= f"& {val}"
                             bests = max_config(store, model, folder, metric, act)
                             counterStore[metric][logic][config].append(1/bests.count(act(store[model][folder][metric][approach][logic][config])) if pos == 0 else 0)
@@ -1238,6 +1241,14 @@ def print_compare_v3_2(
         _file = open(filename1, "w")
         _file.write(table)
         _file.close()
+
+    if (valll is True):
+        print(f"""
+            {valll}, 
+            {alpha}, 
+            {dict(Counter(resume))}
+            -----------------------
+            """)
     return tables
 
 
@@ -1262,6 +1273,7 @@ def print_compare_v3_3(
     # fetch model name
     tables = {folder:'' for folder in folders}
     counter = {metric: {alpha:0 for alpha in alphas} for metric in metrics }
+    resume = []
     for folder in list(tables.keys()):
         # add the resize box to ensure the scale of the table will be contain's inside the width space avalable.
         # start setting up the tabular dimensions setting
@@ -1369,7 +1381,8 @@ def print_compare_v3_3(
                                 form
                                 )
                             )
-
+                        if (pos == 0) and (max_config(store, alpha, model, folder, metric, approach, act) != 0.0) and (valll is True):
+                                resume.extend([model,approach,alpha])
                         lines+= f"& {val}"
                         bests = get_all_max_config(store, model, folder, metric, act)
                         counterStore[metric][alpha].append(1/(bests.count(max_config(store, alpha, model, folder, metric, approach, act))) if pos == 0 else 0)
@@ -1404,7 +1417,7 @@ def print_compare_v3_3(
                 lines += """ & """
                 for alpha in alphas:
                     counter[metric][alpha]+= round(sum(counterStore[metric][alpha]),1)
-                    lines += """ & """+str(round(sum(counterStore[metric][alpha]),1)) if round(sum(counterStore[metric][alpha]),1) != round(maxim(counterStore, metric),1) else """ & \\textbf{"""+str(round(sum(counterStore[metric][alpha]),1))+"}"
+                    lines += """ & """+str(round(sum(counterStore[metric][alpha]),1)) if round(sum(counterStore[metric][alpha]),1) != round(maxim(counterStore, metric),1)else """ & \\textbf{"""+str(round(sum(counterStore[metric][alpha]),1))+"}"
 
             lines+= " \\\\ "
             lines+= " \\cline{1-"+str(nb_cols)+"}"
@@ -1446,7 +1459,14 @@ def print_compare_v3_3(
         _file = open(filename1, "w")
         _file.write(table)
         _file.close()
-    print(counter)
+    # print(counter)
+    if (valll is True):
+        print(f"""
+            {valll}, 
+            {alpha}, 
+            {dict(Counter(resume))}
+            -----------------------
+            """)
     return tables
 
 def print_g_b_impact_table(
@@ -4204,6 +4224,7 @@ def generate_report_tables_v3_2(
     data_result_folder_name = [dirnames for _, dirnames, _ in os.walk(f'{cwd}/{outputs_name}')][0]
     print(data_result_folder_name)
     print(metrics)
+    data_result_folder_name =  list(set(data_result_folder_name)-set(['LFD']))
     ## init a global container for containing the results of all results folder
     template_details_metrics_depth_1 = {}
     template_details_metrics_depth_2 = {}
@@ -4289,6 +4310,7 @@ def generate_report_tables_v3_2(
                     f'{cwd}/{outputs_name}/{result_folder}/{alpha}/{_type}/model_storage')
                  for file in files if
                  '_best_features' in file]) != 0 else None
+            best_mlna_k_per_alpha[result_folder][alpha]['accuracies'] = read_model(f'{cwd}/{outputs_name}/{result_folder}/{alpha}/{_type}/model_storage/{name}')['model'] if name != None else None
             best_mlna_k_per_alpha[result_folder][alpha]['predicted_best_k'].append(read_model(f'{cwd}/{outputs_name}/{result_folder}/{alpha}/{_type}/model_storage/{name}')["bestK"]) if name != None else None
             ## get classic model
             classic_f = [
@@ -4315,16 +4337,18 @@ def generate_report_tables_v3_2(
 
             ## fetch on each mlna layer resultts
             for index3, layer in enumerate(list(set(mlna_folders_names)&set(layers))):
+
                 ## get files results of alpha
                 files = load_results(
                     f'{outputs_name}/{result_folder}',
                     _type,
                     layer,
                     alpha,
-                    per=True,
-                    glo=True,
-                    mix=True
+                    per=per,
+                    glo=glo,
+                    mix=gap
                 )
+
                 ## aggregate results belong to metrics specific to the current results
                 for index4, model in enumerate(models_name):
                     # print(model)  
@@ -4384,6 +4408,8 @@ def generate_report_tables_v3_2(
                             # print(metric, approach)
                             for logic in list(ig_local_details_metrics_depth_1[model][result_folder][metric][approach].keys()): # GLO, PER or GAP
                                 for config in list(ig_local_details_metrics_depth_1[model][result_folder][metric][approach][logic].keys()): # MX, CX, CY, CXY
+                                    # if 'LD4' in result_folder:
+                                    #     print(result_folder, layer, approach, logic, config, len(files[approach][logic][config]) )
                                     for result in list(range(len(files[approach][logic][config]))): # each result file's containing evaluation metrics
                                         # save exact metric values
                                         val_local_details_metrics_depth_1[model][result_folder][metric][approach][logic][config].append(round(files[approach][logic][config][result].loc[model, metric],4))
@@ -4417,12 +4443,15 @@ def generate_report_tables_v3_2(
 
                                         ig_local_details_metrics_depth_2[model][result_folder][metric][approach][logic].append(ig)
                                         ig_global_details_metrics_depth_2[model][result_folder][metric][approach][logic].append(ig)
-                            
-                                        if 'accu' in metric and 'MX' in config:
+                                        # if 'LD4' in result_folder:
+                                        #     print(result_folder, layer, config)
+                                        if 'acc' in metric and 'MX' in config:
+                                            # if 'LD4' in result_folder:
+                                            #     print(result_folder, layer)
                                             list_of_accuracy.append((layer, model,files[approach][logic][config][result].loc[model, metric]))
 
             # analyse impact of layers and identify the best mlna as k
-            if not(name is None):
+            if not(name is None) and 'MX' in configs:
                 best_mlna_k_per_alpha[result_folder][alpha]['list']= list_of_accuracy
                 list_of_accuracy = sorted(list_of_accuracy, key=lambda x: abs(x[2]), reverse=False) # best will be at position 0
                 best_mlna_k_per_alpha[result_folder][alpha]['real_best_k'].append(list_of_accuracy[0][0])
@@ -4436,7 +4465,7 @@ def generate_report_tables_v3_2(
             ig_local_details_metrics_depth_1,
             f'{cwd}/{outputPath}/ig',
             alpha,
-            metrics,
+            metrics1,
             _totalConfigs,
             result_,
             False,
@@ -4447,7 +4476,7 @@ def generate_report_tables_v3_2(
             val_local_details_metrics_depth_1,
             f'{cwd}/{outputPath}/val',
             alpha,
-            metrics,
+            metrics1,
             _totalConfigs,
             result_,
             True,
@@ -4461,7 +4490,7 @@ def generate_report_tables_v3_2(
         ig_global_details_metrics_depth_1,
         f'{cwd}/{outputPath}/ig',
         'all',
-        metrics,
+        metrics1,
         _totalConfigs,
         result_,
         False,
@@ -4473,7 +4502,7 @@ def generate_report_tables_v3_2(
         val_global_details_metrics_depth_1,
         f'{cwd}/{outputPath}/val',
         'all',
-        metrics,
+        metrics1,
         _totalConfigs,
         result_,
         True,
@@ -4555,6 +4584,12 @@ def generate_report_tables_v3_2(
             fichier.write(header+val_local_tables[key]+footer)
 
     joblib.dump(best_mlna_k_per_alpha, f'{cwd}/{outputPath}/best.tex')
+    print_compare_k_att_selection_v2_2(
+        best_mlna_k_per_alpha,
+        f'{cwd}/{outputPath}/descriptComp',
+        metrics,
+        valll=False
+    )
     print_compare_k_att_selection_v2(
         best_mlna_k_per_alpha,
         f'{cwd}/{outputPath}/descriptComp',
@@ -5443,7 +5478,7 @@ def generate_g_b_impact_table(
                         # Loop on Logic
                         for logic in ['GLO','PER']:
                             # Loop on config
-                            for config in ['MX','CX']:
+                            for config in ['MX']: # ['MX','CX']
                                 # print(f"{folder_name}, {k}, {case_k}, {alpha}, {approach}, {logic}, {len(files[approach][logic][config])}")
                                 # Loop on files inside
                                 for file in range(len(files[approach][logic][config])):
@@ -5914,6 +5949,102 @@ def print_compare_k_att_selection_v2_1(
     filename1 = f"{output_path}/alpha/perf{valll}/all/plots_perf.tex"
     _file = open(filename1, "w")
     _file.write(plot_header+plots+"}"+footer)
+    _file.close()
+
+"""
+    pour chaque jeu de donneer, presenter l'impact du nombre de couches suivant notre protocole sur les metrics
+"""
+def print_compare_k_att_selection_v2_2(
+    store,
+    output_path,
+    metrics,
+    valll=False
+):
+
+    # define the stat function
+    act = max if valll is False else (min if "financial-cost" in metric else max)
+    # define the tabular of the metric
+    gplot = """\\resizebox{\\textwidth}{!}{
+    \\begin{tabular}{"""+("c"*(2))+"""}
+    """
+    # fetch dataset
+    for index, dataset in enumerate(set(store.keys())-set(['LFD'])):
+        # define lines plots form
+        lines = """\\addplot table[x=k,y=Acc,row sep=crcr] {
+            k Acc \\\\
+        """
+
+        plot = """
+            \\begin{tikzpicture}
+            \\begin{axis}[
+                xlabel=k,
+                ylabel={Acc},
+                xtick=data, % Get x tick marks from data
+                x tick label style={% Change x tick label style
+                    /pgf/number format/set thousands separator={}%
+                },
+                y tick label style={% Change y tick label style
+                    /pgf/number format/fixed, % Use fixed-point notation
+                    /pgf/number format/precision=3, % Precision to 3 decimal places
+                    %/pgf/number format/fixed zerofill % Fill with zeros if needed
+                },
+                title={"""+dataset+""" },% Plot title
+                tick align=outside, % Ticks on the outside
+                enlargelimits = upper,
+                xmin=0, % Ensure x-axis starts at 0
+                %ymin=0, % Ensure y-axis starts at 0
+                legend pos = outer north east
+            ]
+        """
+        # fetch alpha
+        for alpha in store[dataset].keys():
+            if ('list' in store[dataset][alpha]):
+                print(store[dataset])
+                sorted_data = sorted(store[dataset][alpha]['list'], key=lambda x: (x[0], -x[2]))
+        
+                best_tuples = {}
+                for nb_couches, _, precision in sorted_data:
+                    if nb_couches not in best_tuples:
+                        best_tuples[nb_couches] = precision
+                
+                result = [(nb_couches, precision) for nb_couches, precision in best_tuples.items()]
+                
+                NbCouches_list = [nb_couches for nb_couches, _ in result]
+                precision_list = [precision for _, precision in result]
+                # Chart plotting
+                print(NbCouches_list, precision_list, dataset, alpha)
+
+
+                # add line container
+                plot +=lines
+                # fetch mln k
+                for i in range(len(NbCouches_list)):
+                    # add line content
+                    plot += f"""{NbCouches_list[i]} {precision_list[i]} \\\\
+                    """
+                # end the model line
+                plot+= """};
+                    \\addlegendentry{$\\alpha = """+str(alpha)+"""$}
+                """   
+                # if ((index+1)%2 == 0) else """};
+                # """ 
+        # close the folder plot 
+        gplot+=(plot+"""
+            \\end{axis}
+            \\end{tikzpicture}
+            &
+                """) if ((index)%2 == 0) else (plot+"""
+            \\end{axis}
+            \\end{tikzpicture}
+            \\\\
+                """) 
+    # close the metric
+    gplot+="""\\end{tabular}}
+            """
+    create_domain(f"{output_path}/alpha/mlnkGrowth")
+    filename1 = f"{output_path}/alpha/mlnkGrowth/mlnkGrowth.tex"
+    _file = open(filename1, "w")
+    _file.write(plot_header+gplot+"}"+footer)
     _file.close()
 
 
