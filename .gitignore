@@ -215,3 +215,7 @@
 # Dossiers générés par certaines extensions LaTeX
 **/auto/
 **/minted/
+
+# new pipeline
+**/results/
+**/data/
