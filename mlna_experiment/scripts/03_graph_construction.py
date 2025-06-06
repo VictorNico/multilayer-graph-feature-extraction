@@ -3,7 +3,7 @@
 import sys
 # Ajoutez le répertoire parent pour pouvoir importer les modules
 sys.path.append('..')  # Ajouter le répertoire parent au chemin de recherche des modules
-
+from modules.preprocessing import get_combinations  # Preprocessing functions
 from modules.file import *  # File manipulation functions
 from modules.graph import *  # Modeling functions
 import statistics
@@ -381,6 +381,10 @@ def make_mlna_1_variable_v2(
     PERSONS_T = get_persons(x_test)
     for i in range(len(OHE)):
         # build the MLN for the variable i on training dataset
+        if sum([f'config_df_for_{nominal_factor_colums[i]}_{"withClass" if graphWithClass else "withoutClass"}' in file for _, _, files in
+             os.walk(cwd + f'/mlna_1/{nominal_factor_colums[i]}/') for
+             file in files]) > 0 :
+            continue
         copT = x_train.copy(deep=True)
         copT[target_variable] = y_train.copy(deep=True)
         MLN = build_mlg_with_class(
@@ -519,7 +523,6 @@ def make_mlna_k_variable_v2(
         graphWithClass=True
 ):
     ## visualization of result
-    modelD = model_desc()
     x_train, x_test, y_train, y_test = x_traini, x_testi, y_traini, y_testi
     PERSONS = get_persons(x_train)
     PERSONS_T = get_persons(x_test)
@@ -531,6 +534,14 @@ def make_mlna_k_variable_v2(
             # for layer_config in [[1,2]]: # create subsets of k index of OHE and fetch it
             copT = x_train.copy(deep=True)
             copT[target_variable] = y_train.copy(deep=True)
+            col_targeted = [f'{nominal_factor_colums[i]}' for i in layer_config]
+            case_k = '_'.join(col_targeted)
+            if sum([
+                       f'config_df_for_{case_k}_{"withClass" if graphWithClass else "withoutClass"}' in file
+                       for _, _, files in
+                       os.walk(cwd + f'/mlna_{k}/{case_k}/') for
+                       file in files]) > 0:
+                continue
             # build the MLN for the variable i
             MLN = build_mlg_with_class(
                     copT, [OHE[i] for i in layer_config],
@@ -539,8 +550,6 @@ def make_mlna_k_variable_v2(
                 if (graphWithClass is True) \
                 else build_mlg(copT,[OHE[i] for i in layer_config]
                                )
-            col_targeted = [f'{nominal_factor_colums[i]}' for i in layer_config]
-            case_k = '_'.join(col_targeted)
             # save the graph
             save_graph(
                 cwd=cwd + f'/mlna_{k}/{case_k}',
@@ -672,37 +681,31 @@ def make_mlna_top_k_variable_v2(
         topR=[]
 ):
     ## visualization of result
-    modelD = model_desc()
     x_train, x_test, y_train, y_test = x_traini, x_testi, y_traini, y_testi
     PERSONS = get_persons(x_train)
     PERSONS_T = get_persons(x_test)
-    exitingMLNB = [dirnames for _, dirnames, _ in os.walk(f'{cwd}')][0]
-    exitingMLNB = sorted([int(el.split("_")[1]) for el in exitingMLNB if "_b" in el])
-    print(exitingMLNB,"//", alpha)
-    BexitingMLNB = exitingMLNB[-1] if len(exitingMLNB) > 0 else None
 
-    start = BexitingMLNB + 1 if len(exitingMLNB) > 0 else 2
-    for k in range(start, len(topR) + 1):  # for 1<k<|OHE[i]|+2
+    for k in range(2, len(topR) + 1):  # for 1<k<|OHE[i]|+2
         # for k in [2]: # for 1<k<|OHE[i]|+2
         # for k in range(2:len(OHE)+1: # for 1<k<|OHE[i]|+2
         layer_config = topR[:k]  # create subsets of k index of OHE and fetch it
-        print(layer_config)
-        # for layer_config in [[1,2]]: # create subsets of k index of OHE and fetch it
-        # logic storage
-        logic_i_g = []
-        logic_i_p = []
-        logic_i_pg = []
         copT = x_train.copy(deep=True)
         copT[target_variable] = y_train.copy(deep=True)
+        col_targeted = [f'{nominal_factor_colums[i]}' for i in layer_config]
+        case_k = '_'.join(col_targeted)
+        if sum([
+            f'config_df_for_{case_k}_{"withClass" if graphWithClass else "withoutClass"}' in file
+            for _, _, files in
+            os.walk(cwd + f'/mlna_{k}_b/{case_k}/') for
+            file in files]) > 0:
+            continue
         # build the MLN for the variable i
         MLN = build_mlg_with_class(copT, [OHE[i] for i in layer_config],
                                    target_variable) if (graphWithClass is True) else build_mlg(
             copT, [OHE[i] for i in layer_config])
-        col_targeted = [f'{nominal_factor_colums[i]}' for i in layer_config]
-        case_k = '_'.join(col_targeted)
         # save the graph
         save_graph(
-            cwd=cwd + f'/mlna_{k}_b',
+            cwd=cwd + f'/mlna_{k}_b/{case_k}',
             graph=MLN,
             name=f'{case_k}_mln',
             rows_len=copT.shape[0],
@@ -792,16 +795,6 @@ def make_mlna_top_k_variable_v2(
                     del extracts_p[key]
                     del extracts_p_t[key]
 
-        # get the max value of each descriptor in both train and test dataset
-        # maxGdesc = get_maximun_std_descriptor(extracts_g, extracts_g_t, extracts_g.keys())
-        # maxPdesc = get_maximun_std_descriptor(extracts_p, extracts_p_t, extracts_p.keys())
-        # print(f"{maxGDesc} <------> {maxPDesc}")
-        # standard_extraction(extracts_g, extracts_g.keys(), maxGdesc)
-        # standard_extraction(extracts_p, extracts_p.keys(), maxPdesc)
-        # # print(f"{maxGDesc} <------> {maxPDesc}")
-        # standard_extraction(extracts_g_t, extracts_g.keys(), maxGdesc)
-        # standard_extraction(extracts_p_t, extracts_p.keys(), maxPdesc)
-
         maxGDesc = standard_extraction(extracts_g, extracts_g.keys())
         maxPDesc = standard_extraction(extracts_p, extracts_p.keys())
         # print(f"{maxGDesc} <------> {maxPDesc}")
@@ -832,6 +825,7 @@ def main():
     parser.add_argument('--dataset_folder', type=str, required=True, help='Nom du dataset')
     parser.add_argument('--alpha', type=float, required=True, help='Valeur d\'alpha')
     parser.add_argument('--turn', type=int, required=True, help='Valeur du tour')
+    parser.add_argument('--graph_with_class', action="store_true", required=False, help='integrant les classes?')
 
     # Récupération des arguments
     args = parser.parse_args()
@@ -924,6 +918,12 @@ def main():
     if target_columns_type == "cat":
         OHE = prepro_config["OHE"]
         columns = prepro_config["categorial_col"]
+    elif target_columns_type == "num":
+        OHE = [*prepro_config["OHE_2"]]
+        columns = list(
+            {*prepro_config["numeric_with_outliers_columns"],
+             *prepro_config["numeric_uniform_colums"]} - {
+                target_variable})
     else:
         OHE = [*prepro_config["OHE"], *prepro_config["OHE_2"]]
         columns = list(
@@ -932,7 +932,7 @@ def main():
 
     # ------------------------------------------------------------------------------------------------------------------
     if args.turn == 1: # check if we are onto the first turn
-        if sum(['graph_turn_1_completed' in file for _, _, files in
+        if sum(['graph_turn_1_completed.dtvni' == file for _, _, files in
                 os.walk(args.cwd + f'/{results_dir}{domain}/{args.alpha}/{target_columns_type}/mlna_1') for
                 file in files]) > 0:
             print("✅ MLNA 1 Graph already completed")
@@ -954,7 +954,7 @@ def main():
             with open(args.cwd + f'/{results_dir}{domain}/{args.alpha}/{target_columns_type}/mlna_1/graph_turn_1_completed.dtvni', "a") as fichier:
                 fichier.write("")
 
-        if sum(['graph_turn_1_completed' in file for _, _, files in
+        if sum(['graph_turn_1_completed.dtvni' == file for _, _, files in
                 os.walk(args.cwd + f'/{results_dir}{domain}/{args.alpha}/{target_columns_type}/mlna_2/') for
                 file in files]) > 0:
             print("✅ COMBINATORY MLNA 2 Graph  already completed")
@@ -978,22 +978,47 @@ def main():
                     "a") as fichier:
                 fichier.write("")
     if args.turn == 2:  # check if we are onto the first turn
-        make_mlna_top_k_variable_v2(
-            x_traini=x_traini,
-            x_testi=x_testi,
-            y_traini=y_traini,
-            y_testi=y_testi,
-            OHE=OHE,
-            nominal_factor_colums=columns,
-            cwd=args.cwd + f'/{results_dir}{domain}/{args.alpha}/{target_columns_type}',
-            root=args.cwd,
-            domain=domain,
-            target_variable=target_variable,
-            alpha=args.alpha,
-            graphWithClass=False,
-            topR=[]
-        )
+        if sum([f"MNIFS_{domain}_best_features" in file for _, _, files in
+                os.walk(args.cwd + f'/{results_dir}{domain}/{args.alpha}/{target_columns_type}') for
+                file in files]) == 0:
+            print("❌ Unable to access selection protocol results")
+            exit(1)
 
+        if sum(['graph_turn_2_completed.dtvni' == file for _, _, files in
+                os.walk(args.cwd + f'/{results_dir}{domain}/{args.alpha}/{target_columns_type}/select') for
+                file in files]) > 0:
+            print("✅ MLNA 1 Graph already completed")
+        else:
+
+            # load mnifs configs
+            mnifs_path = args.cwd + f'/{results_dir}{domain}/{args.alpha}/{target_columns_type}/' + [file for _, _, files in
+                os.walk(
+                  args.cwd + f'/{results_dir}{domain}/{args.alpha}/{target_columns_type}')
+                for
+                file in files][
+                [f"MNIFS_{domain}_best_features" in file for _, _, files in
+                 os.walk(args.cwd + f'/{results_dir}{domain}/{args.alpha}/{target_columns_type}') for
+                 file in files].index(True)
+            ]
+            mnifs_config = read_model(path=mnifs_path)
+
+            make_mlna_top_k_variable_v2(
+                x_traini=x_traini,
+                x_testi=x_testi,
+                y_traini=y_traini,
+                y_testi=y_testi,
+                OHE=OHE,
+                nominal_factor_colums=columns,
+                cwd=args.cwd + f'/{results_dir}{domain}/{args.alpha}/{target_columns_type}/select',
+                root=args.cwd,
+                domain=domain,
+                target_variable=target_variable,
+                alpha=args.alpha,
+                graphWithClass=args.graph_with_class,
+                topR=list(mnifs_config['model'].keys())
+            )
+            with open(args.cwd + f'/{results_dir}{domain}/{args.alpha}/{target_columns_type}/select/graph_turn_2_completed.dtvni', "a") as fichier:
+                fichier.write("")
 
     print("Descripteurs extraits et sauvegardés.")
 

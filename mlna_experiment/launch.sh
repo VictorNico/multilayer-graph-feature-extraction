@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e  # Arrête le script si une commande échoue
 
 # Fichier de configuration
 CONFIG_FILE="env.sh"
@@ -36,33 +37,69 @@ fi
 
 
 # Exécution du chargement et du prétraitement des données
-echo "Étape [1/5] : Prétraitement des données..."
+echo "Étape [1/6] : Prétraitement des données..."
 python3.9 -m scripts.01_data_preprocessing --cwd="$cwd" --dataset_folder="$param1"
 
 # Exécution de la séparation des données en jeux de test et d'entrainement
-echo "Étape [2/5] : Split train/test..."
+echo "Étape [2/6] : Split train/test..."
 python3.9 -m scripts.02_data_split --cwd="$cwd" --dataset_folder="$param1"
+
+# Exécution de l'entrainement des baselines
+echo "Étape [3/6] : Entrainement des modèles baseline..."
+python3.9 -m scripts.04_model_training --baseline --cwd="$cwd" --dataset_folder="$param1"  --alpha=0.1 --turn=1
 
 
 # Exécution de la construction des graphes et extraction des descripteurs
-echo "Étape [3/5] : Construction du graphe et extraction des descripteurs..."
+echo "Étape [4/5] : Construction du graphe et extraction des descripteurs..."
+
+# Exécution de l'entrainement des modèles de Machine learning
+echo "Étape [4/5] : Entraînement du modèle..."
+
 # Exécuter le pipeline pour chaque valeur d'alpha
 for alpha in "${alphas[@]}"; do
     short_name="${param1:0:3}"    # 2 lettres seulement
     alpha_short="${alpha:2}"   # Retire le point
 
     SCREEN_NAME="${short_name}_a${alpha_short}"
+
+    LOG_FILE="logs/${short_name}/${SCREEN_NAME} $(date '+%Y-%m-%d %H:%M:%S').log"
+    mkdir -p "logs/${short_name}"  # Assure que le dossier logs existe
+
     screen -S "${SCREEN_NAME:0:15}" -dm bash -c "
-      source $VENV_PATH && \
-      python3.9 -m scripts.03_graph_construction --cwd=$cwd --dataset_folder=$param1  --alpha=$alpha --turn=1
-      "
+      source $VENV_PATH
+      {
+        echo \"🔹 [\$(date '+%Y-%m-%d %H:%M:%S')] DÉBUT du traitement pour alpha=$alpha\"
+
+        python3.9 -m scripts.03_graph_construction --cwd=$cwd --dataset_folder=$param1 --alpha=$alpha --turn=1
+        python3.9 -m scripts.04_model_training --cwd=$cwd --dataset_folder=$param1 --alpha=$alpha --turn=1
+
+        parallel ::: \
+          \"python3.9 -m scripts.03_graph_construction --graph_with_class --cwd=$cwd --dataset_folder=$param1 --alpha=$alpha --turn=2\" \
+          \"python3.9 -m scripts.03_graph_construction --cwd=$cwd --dataset_folder=$param1 --alpha=$alpha --turn=2\"
+
+        parallel ::: \
+          \"python3.9 -m scripts.04_model_training --cwd=$cwd --dataset_folder=$param1 --alpha=$alpha --turn=2\" \
+          \"python3.9 -m scripts.04_model_training --graph_with_class --cwd=$cwd --dataset_folder=$param1 --alpha=$alpha --turn=2\"
+
+        echo \"✅ [\$(date '+%Y-%m-%d %H:%M:%S')] FIN du traitement pour alpha=$alpha\"
+      } > \"$LOG_FILE\" 2>&1
+    "
+
 #    python3.9 -m scripts.03_graph_construction --cwd=$cwd --dataset_folder=$param1  --alpha=$alpha --turn=1
-    echo "Construction du graphe alpha=${alpha:1} '$SCREEN_NAME'."
+#    python3.9 -m scripts.04_model_training --cwd="$cwd" --dataset_folder="$param1"  --alpha="$alpha" --turn=1
+    echo "Construction du graphe et entrainement pour alpha=${alpha:1} '$SCREEN_NAME'."
 done
 
-# Exécution de l'entrainement des modèles de Machine learning
-echo "Étape [4/5] : Entraînement du modèle..."
+echo "⏳ Attente de la fin de tous les écrans screen..."
 
+# Attendre que tous les écrans de traitement soient terminés
+while screen -list | grep -q "${short_name}_a"; do
+  echo "🔄 Screens encore actifs... attente de 10s"
+  sleep 10
+done
+
+python3.9 -m scripts.05_report_generation --cwd=$cwd --dataset_folder=$param1
+echo "✅ Tous les écrans sont terminés. Lancement du rapport..."
 
 # Exécution de la génération de rapport
 echo "Étape [5/5] : Génération du rapport..."

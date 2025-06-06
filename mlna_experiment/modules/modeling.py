@@ -306,17 +306,17 @@ def train_classifier(
         explainer = shap.TreeExplainer(clf)
         shap_values = explainer.shap_values(X_test)
         # Si classification binaire, shap_values sera une liste de deux éléments
-        print(shap_values.ndim)
-        # Vérification pour numpy.ndarray
-        if isinstance(shap_values, np.ndarray):
-            if shap_values.ndim > 2:
-                # Si c'est un tableau 3D, prenons la dernière dimension (généralement la classe positive)
-                shap_values = shap_values[:, :, 1]  # [:, :, -1] pour la classe 0 et [:, :, 1] pour la classe 1
-        elif isinstance(shap_values, list) and len(shap_values) == 2:
-            # Garde l'ancien comportement pour la compatibilité
-            shap_values = shap_values[1]
+        # print(shap_values.ndim)
+        # # Vérification pour numpy.ndarray
+        # if isinstance(shap_values, np.ndarray):
+        #     if shap_values.ndim > 2:
+        #         # Si c'est un tableau 3D, prenons la dernière dimension (généralement la classe positive)
+        #         shap_values = shap_values[:, :, 1]  # [:, :, -1] pour la classe 0 et [:, :, 1] pour la classe 1
+        # elif isinstance(shap_values, list) and len(shap_values) == 2:
+        #     # Garde l'ancien comportement pour la compatibilité
+        #     shap_values = shap_values[1]
     else:
-        explainer = shap.KernelExplainer(clf.predict, X_train)
+        explainer = shap.KernelExplainer(clf.predict_proba, X_train)
         shap_values = explainer.shap_values(X_test)
 
     # Store SHAP values along with metrics
@@ -358,7 +358,12 @@ def train(
         store,
         domain,
         prefix,
-        cwd
+        cwd,
+        duration_divider,
+        rate_divider,
+        financialOption,
+        original,
+        withCost=True
 ):
     """Train our baseline classifiers
     Args:
@@ -388,19 +393,25 @@ def train(
             store=store,
             domain=domain,
             prefix=prefix,
-            cwd=cwd
+            cwd=cwd,
+            financialOption=financialOption,
+            withCost=withCost,
+            duration_divider=duration_divider,
+            rate_divider=rate_divider,
+            original=original
         )
     # except e:
     #     print(f"An exception occurred during training: {name} {e}")
 
     # save of model training logs    
-    link_to_evaluations_data = save_dataset(
-        cwd=cwd,
-        dataframe=store,
-        name=domain,
-        prefix=prefix,
-        sep='\t'
-    )
+    # link_to_evaluations_data = save_dataset(
+    #     cwd=cwd,
+    #     dataframe=store,
+    #     name=domain,
+    #     prefix=prefix,
+    #     sep=',',
+    #     sub="/evaluation"
+    # )
 
     return store
 

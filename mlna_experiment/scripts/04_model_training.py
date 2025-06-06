@@ -8,6 +8,7 @@ from modules.modeling import *  # Fonctions d'entraînement
 from modules.preprocessing import *  # Preprocessing functions
 from modules.file import *  # File manipulation functions
 from modules.graph import *  # Modeling functions
+from modules.report import *  # Report functions
 import statistics
 import ast
 
@@ -95,7 +96,7 @@ def make_builder(
         name=f'{domain}_metric',
         prefix=prefix,
         sep=',',
-        sub='evaluation'
+        sub='/evaluation'
     )
     save_dataset(
         cwd=cwd,
@@ -103,7 +104,7 @@ def make_builder(
         name=f'{domain}_x_train',
         prefix=prefix,
         sep=',',
-        sub='evaluation'
+        sub='/evaluation'
     )
     save_dataset(
         cwd=cwd,
@@ -111,7 +112,7 @@ def make_builder(
         name=f'{domain}_x_test',
         prefix=prefix,
         sep=',',
-        sub='evaluation'
+        sub='/evaluation'
     )
     save_dataset(
         cwd=cwd,
@@ -119,7 +120,7 @@ def make_builder(
         name=f'{domain}_y_train',
         prefix=prefix,
         sep=',',
-        sub='evaluation'
+        sub='/evaluation'
     )
     save_dataset(
         cwd=cwd,
@@ -127,7 +128,7 @@ def make_builder(
         name=f'{domain}_y_test',
         prefix=prefix,
         sep=',',
-        sub='evaluation'
+        sub='/evaluation'
     )
     return (domain, store)
 
@@ -186,63 +187,23 @@ def build_MlC(
         mlc_cf[f'MlC_GAP_{"C" if graphWithClass is True else "M"}Y_T'] = inject_features_extracted(mlc_cf[f'MlC_GLO_{"C" if graphWithClass is True else "M"}X_T'], config_df[f'extract_{"C" if graphWithClass is True else "M"}Y_PER_df_t'])
         mlc_cf[f'MlC_GAP_{"C" if graphWithClass is True else "M"}XY_T'] = inject_features_extracted(mlc_cf[f'MlC_GLO_{"C" if graphWithClass is True else "M"}X_T'], config_df[f'extract_{"C" if graphWithClass is True else "M"}XY_PER_df_t'])
 
-    logic_i_p.append(
-        make_builder(
-            fix_imbalance=fix_imbalance,
-            DATA_OVER=None,
-            x_traini=mlc_cf[f'MlC_PER_{"C" if graphWithClass is True else "M"}X'],
-            x_testi=mlc_cf[f'MlC_PER_{"C" if graphWithClass is True else "M"}X_T'],
-            y_traini=y_train,
-            y_testi=y_test,
-            target_variable=target_variable,
-            clfs=clfs,
-            domain=f'MlC_PER_{"C" if graphWithClass is True else "M"}X_for_{name}',
-            duration_divider=duration_divider,
-            rate_divider=rate_divider,
-            prefix=domain,
-            verbose=verbose,
-            cwd=cwd + f'{mlnL}/{name}/personalized{"/withClass" if graphWithClass else "/withoutClass"}',
-            withCost=withCost,
-            financialOption=financialOption,
-            original = original
-        )
-    )
-    if graphWithClass is True:
+    if sum([f'MlC_PER_{"C" if graphWithClass is True else "M"}X_for_{name}_metric' in file for _, _, files in
+            os.walk(cwd + f'{mlnL}/{name}/personalized{"/withClass" if graphWithClass else "/withoutClass"}') for
+            file in files]) == 0:
         logic_i_p.append(
             make_builder(
                 fix_imbalance=fix_imbalance,
                 DATA_OVER=None,
-                x_traini=mlc_cf[f'MlC_PER_{"C" if graphWithClass is True else "M"}Y'],
-                x_testi=mlc_cf[f'MlC_PER_{"C" if graphWithClass is True else "M"}Y_T'],
+                x_traini=mlc_cf[f'MlC_PER_{"C" if graphWithClass is True else "M"}X'],
+                x_testi=mlc_cf[f'MlC_PER_{"C" if graphWithClass is True else "M"}X_T'],
                 y_traini=y_train,
                 y_testi=y_test,
                 target_variable=target_variable,
                 clfs=clfs,
-                domain=f'MlC_PER_{"C" if graphWithClass is True else "M"}Y_for_{name}',
+                domain=f'MlC_PER_{"C" if graphWithClass is True else "M"}X_for_{name}',
+                duration_divider=duration_divider,
+                rate_divider=rate_divider,
                 prefix=domain,
-                verbose=verbose,
-            duration_divider=duration_divider,
-            rate_divider=rate_divider,
-                cwd=cwd + f'{mlnL}/{name}/personalized{"/withClass" if graphWithClass else "/withoutClass"}',
-                withCost=withCost,
-                financialOption=financialOption,
-                original = original
-            )
-        )
-        logic_i_p.append(
-            make_builder(
-                fix_imbalance=fix_imbalance,
-                DATA_OVER=None,
-                x_traini=mlc_cf[f'MlC_PER_{"C" if graphWithClass is True else "M"}XY'],
-                x_testi=mlc_cf[f'MlC_PER_{"C" if graphWithClass is True else "M"}XY_T'],
-                y_traini=y_train,
-                y_testi=y_test,
-                target_variable=target_variable,
-                clfs=clfs,
-                domain=f'MlC_PER_{"C" if graphWithClass is True else "M"}XY_for_{name}',
-                prefix=domain,
-            duration_divider=duration_divider,
-            rate_divider=rate_divider,
                 verbose=verbose,
                 cwd=cwd + f'{mlnL}/{name}/personalized{"/withClass" if graphWithClass else "/withoutClass"}',
                 withCost=withCost,
@@ -250,62 +211,154 @@ def build_MlC(
                 original = original
             )
         )
-    logic_i_g.append(
-        make_builder(
-            fix_imbalance=fix_imbalance,
-            DATA_OVER=None,
-            x_traini=mlc_cf[f'MlC_GLO_{"C" if graphWithClass is True else "M"}X'],
-            x_testi=mlc_cf[f'MlC_GLO_{"C" if graphWithClass is True else "M"}X_T'],
-            y_traini=y_train,
-            y_testi=y_test,
-            target_variable=target_variable,
-            clfs=clfs,
-            domain=f'MlC_GLO_{"C" if graphWithClass is True else "M"}X_for_{name}',
-            prefix=domain,
-            duration_divider=duration_divider,
-            rate_divider=rate_divider,
-            verbose=verbose,
-            cwd=cwd + f'{mlnL}/{name}/global{"/withClass" if graphWithClass else "/withoutClass"}',
-            withCost=withCost,
-            financialOption=financialOption,
-             original = original
-        )
-    )
-    logic_i_pg.append(
-        make_builder(
-            fix_imbalance=fix_imbalance,
-            DATA_OVER=None,
-            x_traini=mlc_cf[f'MlC_GAP_{"C" if graphWithClass is True else "M"}X'],
-            x_testi=mlc_cf[f'MlC_GAP_{"C" if graphWithClass is True else "M"}X_T'],
-            y_traini=y_train,
-            y_testi=y_test,
-            duration_divider=duration_divider,
-            rate_divider=rate_divider,
-            target_variable=target_variable,
-            clfs=clfs,
-            domain=f'MlC_GAP_{"C" if graphWithClass is True else "M"}X_for_{name}',
-            prefix=domain,
-            verbose=verbose,
-            cwd=cwd + f'{mlnL}/{name}/mixed{"/withClass" if graphWithClass else "/withoutClass"}',
-            withCost=withCost,
-            financialOption=financialOption,
-            original = original
-        )
-    )
+    else:
+        res_path = cwd + f'{mlnL}/{name}/personalized{"/withClass" if graphWithClass else "/withoutClass"}/evaluation/' + [file for _, _, files in
+            os.walk(
+                cwd + f'{mlnL}/{name}/personalized{"/withClass" if graphWithClass else "/withoutClass"}')
+            for
+            file in files][
+            [f'MlC_PER_{"C" if graphWithClass is True else "M"}X_for_{name}_metric' in file for _, _, files in
+             os.walk(cwd + f'{mlnL}/{name}/personalized{"/withClass" if graphWithClass else "/withoutClass"}') for
+             file in files].index(True)
+        ]
+        res = (f'MlC_PER_{"C" if graphWithClass is True else "M"}X_for_{name}',load_data_set_from_url(path=res_path, sep=',', encoding='utf-8',
+                                     index_col=0,
+                                     na_values=None))
+        logic_i_p.append(res)
     if graphWithClass is True:
+        if sum([f'MlC_PER_{"C" if graphWithClass is True else "M"}Y_for_{name}_metric' in file for _, _, files in
+                os.walk(cwd + f'{mlnL}/{name}/personalized{"/withClass" if graphWithClass else "/withoutClass"}') for
+                file in files]) == 0:
+            logic_i_p.append(
+                make_builder(
+                    fix_imbalance=fix_imbalance,
+                    DATA_OVER=None,
+                    x_traini=mlc_cf[f'MlC_PER_{"C" if graphWithClass is True else "M"}Y'],
+                    x_testi=mlc_cf[f'MlC_PER_{"C" if graphWithClass is True else "M"}Y_T'],
+                    y_traini=y_train,
+                    y_testi=y_test,
+                    target_variable=target_variable,
+                    clfs=clfs,
+                    domain=f'MlC_PER_{"C" if graphWithClass is True else "M"}Y_for_{name}',
+                    prefix=domain,
+                    verbose=verbose,
+                duration_divider=duration_divider,
+                rate_divider=rate_divider,
+                    cwd=cwd + f'{mlnL}/{name}/personalized{"/withClass" if graphWithClass else "/withoutClass"}',
+                    withCost=withCost,
+                    financialOption=financialOption,
+                    original = original
+                )
+            )
+        else:
+            res_path = cwd + f'{mlnL}/{name}/personalized{"/withClass" if graphWithClass else "/withoutClass"}/evaluation/' + [file for _, _, files in
+                os.walk(
+                    cwd + f'{mlnL}/{name}/personalized{"/withClass" if graphWithClass else "/withoutClass"}')
+                for
+                file in files][
+                [f'MlC_PER_{"C" if graphWithClass is True else "M"}Y_for_{name}_metric' in file for _, _, files in
+                 os.walk(cwd + f'{mlnL}/{name}/personalized{"/withClass" if graphWithClass else "/withoutClass"}') for
+                 file in files].index(True)
+            ]
+            res = (f'MlC_PER_{"C" if graphWithClass is True else "M"}Y_for_{name}',load_data_set_from_url(path=res_path, sep=',', encoding='utf-8',
+                                         index_col=0,
+                                         na_values=None))
+            logic_i_p.append(res)
+        if sum([f'MlC_PER_{"C" if graphWithClass is True else "M"}XY_for_{name}_metric' in file for _, _, files in
+                os.walk(cwd + f'{mlnL}/{name}/personalized{"/withClass" if graphWithClass else "/withoutClass"}')
+                for
+                file in files]) == 0:
+            logic_i_p.append(
+                make_builder(
+                    fix_imbalance=fix_imbalance,
+                    DATA_OVER=None,
+                    x_traini=mlc_cf[f'MlC_PER_{"C" if graphWithClass is True else "M"}XY'],
+                    x_testi=mlc_cf[f'MlC_PER_{"C" if graphWithClass is True else "M"}XY_T'],
+                    y_traini=y_train,
+                    y_testi=y_test,
+                    target_variable=target_variable,
+                    clfs=clfs,
+                    domain=f'MlC_PER_{"C" if graphWithClass is True else "M"}XY_for_{name}',
+                    prefix=domain,
+                duration_divider=duration_divider,
+                rate_divider=rate_divider,
+                    verbose=verbose,
+                    cwd=cwd + f'{mlnL}/{name}/personalized{"/withClass" if graphWithClass else "/withoutClass"}',
+                    withCost=withCost,
+                    financialOption=financialOption,
+                    original = original
+                )
+            )
+        else:
+            res_path = cwd + f'{mlnL}/{name}/personalized{"/withClass" if graphWithClass else "/withoutClass"}/evaluation/' + [file for _, _, files in
+                os.walk(
+                    cwd + f'{mlnL}/{name}/personalized{"/withClass" if graphWithClass else "/withoutClass"}')
+                for
+                file in files][
+                [f'MlC_PER_{"C" if graphWithClass is True else "M"}XY_for_{name}_metric' in file for _, _, files in
+                 os.walk(cwd + f'{mlnL}/{name}/personalized{"/withClass" if graphWithClass else "/withoutClass"}') for
+                 file in files].index(True)
+            ]
+            res = (f'MlC_PER_{"C" if graphWithClass is True else "M"}XY_for_{name}',load_data_set_from_url(path=res_path, sep=',', encoding='utf-8',
+                                         index_col=0,
+                                         na_values=None))
+            logic_i_p.append(res)
+    if sum([f'MlC_GLO_{"C" if graphWithClass is True else "M"}X_for_{name}_metric' in file for _, _, files in
+            os.walk(cwd + f'{mlnL}/{name}/global{"/withClass" if graphWithClass else "/withoutClass"}')
+            for
+            file in files]) == 0:
+        logic_i_g.append(
+            make_builder(
+                fix_imbalance=fix_imbalance,
+                DATA_OVER=None,
+                x_traini=mlc_cf[f'MlC_GLO_{"C" if graphWithClass is True else "M"}X'],
+                x_testi=mlc_cf[f'MlC_GLO_{"C" if graphWithClass is True else "M"}X_T'],
+                y_traini=y_train,
+                y_testi=y_test,
+                target_variable=target_variable,
+                clfs=clfs,
+                domain=f'MlC_GLO_{"C" if graphWithClass is True else "M"}X_for_{name}',
+                prefix=domain,
+                duration_divider=duration_divider,
+                rate_divider=rate_divider,
+                verbose=verbose,
+                cwd=cwd + f'{mlnL}/{name}/global{"/withClass" if graphWithClass else "/withoutClass"}',
+                withCost=withCost,
+                financialOption=financialOption,
+                 original = original
+            )
+        )
+    else:
+        res_path = cwd + f'{mlnL}/{name}/global{"/withClass" if graphWithClass else "/withoutClass"}/evaluation/' + [file for _, _, files in
+            os.walk(
+                cwd + f'{mlnL}/{name}/global{"/withClass" if graphWithClass else "/withoutClass"}')
+            for
+            file in files][
+            [f'MlC_GLO_{"C" if graphWithClass is True else "M"}X_for_{name}_metric' in file for _, _, files in
+             os.walk(cwd + f'{mlnL}/{name}/global{"/withClass" if graphWithClass else "/withoutClass"}') for
+             file in files].index(True)
+        ]
+        res = (f'MlC_GLO_{"C" if graphWithClass is True else "M"}X_for_{name}',load_data_set_from_url(path=res_path, sep=',', encoding='utf-8',
+                                     index_col=0,
+                                     na_values=None))
+        logic_i_p.append(res)
+    if sum([f'MlC_GAP_{"C" if graphWithClass is True else "M"}X_for_{name}_metric' in file for _, _, files in
+            os.walk(cwd + f'{mlnL}/{name}/mixed{"/withClass" if graphWithClass else "/withoutClass"}')
+            for
+            file in files]) == 0:
         logic_i_pg.append(
             make_builder(
                 fix_imbalance=fix_imbalance,
                 DATA_OVER=None,
-                x_traini=mlc_cf[f'MlC_GAP_{"C" if graphWithClass is True else "M"}Y'],
-                x_testi=mlc_cf[f'MlC_GAP_{"C" if graphWithClass is True else "M"}Y_T'],
+                x_traini=mlc_cf[f'MlC_GAP_{"C" if graphWithClass is True else "M"}X'],
+                x_testi=mlc_cf[f'MlC_GAP_{"C" if graphWithClass is True else "M"}X_T'],
                 y_traini=y_train,
                 y_testi=y_test,
-            duration_divider=duration_divider,
-            rate_divider=rate_divider,
+                duration_divider=duration_divider,
+                rate_divider=rate_divider,
                 target_variable=target_variable,
                 clfs=clfs,
-                domain=f'MlC_GAP_{"C" if graphWithClass is True else "M"}Y_for_{name}',
+                domain=f'MlC_GAP_{"C" if graphWithClass is True else "M"}X_for_{name}',
                 prefix=domain,
                 verbose=verbose,
                 cwd=cwd + f'{mlnL}/{name}/mixed{"/withClass" if graphWithClass else "/withoutClass"}',
@@ -314,27 +367,99 @@ def build_MlC(
                 original = original
             )
         )
-        logic_i_pg.append(
-            make_builder(
-                fix_imbalance=fix_imbalance,
-                DATA_OVER=None,
-                x_traini=mlc_cf[f'MlC_GAP_{"C" if graphWithClass is True else "M"}XY'],
-                x_testi=mlc_cf[f'MlC_GAP_{"C" if graphWithClass is True else "M"}XY_T'],
-                y_traini=y_train,
-                y_testi=y_test,
-            duration_divider=duration_divider,
-            rate_divider=rate_divider,
-                target_variable=target_variable,
-                clfs=clfs,
-                domain=f'MlC_GAP_{"C" if graphWithClass is True else "M"}XY_for_{name}',
-                prefix=domain,
-                verbose=verbose,
-                cwd=cwd + f'{mlnL}/{name}/mixed{"/withClass" if graphWithClass else "/withoutClass"}',
-                withCost=withCost,
-                financialOption=financialOption,
-                original = original
+    else:
+        res_path = cwd + f'{mlnL}/{name}/mixed{"/withClass" if graphWithClass else "/withoutClass"}/evaluation/' + [file for _, _, files in
+            os.walk(
+                cwd + f'{mlnL}/{name}/mixed{"/withClass" if graphWithClass else "/withoutClass"}')
+            for
+            file in files][
+            [f'MlC_GAP_{"C" if graphWithClass is True else "M"}X_for_{name}_metric' in file for _, _, files in
+             os.walk(cwd + f'{mlnL}/{name}/mixed{"/withClass" if graphWithClass else "/withoutClass"}') for
+             file in files].index(True)
+        ]
+        res = (f'MlC_GAP_{"C" if graphWithClass is True else "M"}X_for_{name}',load_data_set_from_url(path=res_path, sep=',', encoding='utf-8',
+                                     index_col=0,
+                                     na_values=None))
+        logic_i_p.append(res)
+    if graphWithClass is True:
+        if sum([f'MlC_GAP_{"C" if graphWithClass is True else "M"}Y_for_{name}_metric' in file for _, _, files in
+                os.walk(cwd + f'{mlnL}/{name}/mixed{"/withClass" if graphWithClass else "/withoutClass"}')
+                for
+                file in files]) == 0:
+            logic_i_pg.append(
+                make_builder(
+                    fix_imbalance=fix_imbalance,
+                    DATA_OVER=None,
+                    x_traini=mlc_cf[f'MlC_GAP_{"C" if graphWithClass is True else "M"}Y'],
+                    x_testi=mlc_cf[f'MlC_GAP_{"C" if graphWithClass is True else "M"}Y_T'],
+                    y_traini=y_train,
+                    y_testi=y_test,
+                duration_divider=duration_divider,
+                rate_divider=rate_divider,
+                    target_variable=target_variable,
+                    clfs=clfs,
+                    domain=f'MlC_GAP_{"C" if graphWithClass is True else "M"}Y_for_{name}',
+                    prefix=domain,
+                    verbose=verbose,
+                    cwd=cwd + f'{mlnL}/{name}/mixed{"/withClass" if graphWithClass else "/withoutClass"}',
+                    withCost=withCost,
+                    financialOption=financialOption,
+                    original = original
+                )
             )
-        )
+        else:
+            res_path = cwd + f'{mlnL}/{name}/mixed{"/withClass" if graphWithClass else "/withoutClass"}/evaluation/' + [file for _, _, files in
+                os.walk(
+                    cwd + f'{mlnL}/{name}/mixed{"/withClass" if graphWithClass else "/withoutClass"}')
+                for
+                file in files][
+                [f'MlC_GAP_{"C" if graphWithClass is True else "M"}Y_for_{name}_metric' in file for _, _, files in
+                 os.walk(cwd + f'{mlnL}/{name}/mixed{"/withClass" if graphWithClass else "/withoutClass"}') for
+                 file in files].index(True)
+            ]
+            res = (f'MlC_GAP_{"C" if graphWithClass is True else "M"}Y_for_{name}',load_data_set_from_url(path=res_path, sep=',', encoding='utf-8',
+                                         index_col=0,
+                                         na_values=None))
+            logic_i_p.append(res)
+        if sum([f'MlC_GAP_{"C" if graphWithClass is True else "M"}XY_for_{name}_metric' in file for _, _, files in
+                os.walk(cwd + f'{mlnL}/{name}/mixed{"/withClass" if graphWithClass else "/withoutClass"}')
+                for
+                file in files]) == 0:
+            logic_i_pg.append(
+                make_builder(
+                    fix_imbalance=fix_imbalance,
+                    DATA_OVER=None,
+                    x_traini=mlc_cf[f'MlC_GAP_{"C" if graphWithClass is True else "M"}XY'],
+                    x_testi=mlc_cf[f'MlC_GAP_{"C" if graphWithClass is True else "M"}XY_T'],
+                    y_traini=y_train,
+                    y_testi=y_test,
+                duration_divider=duration_divider,
+                rate_divider=rate_divider,
+                    target_variable=target_variable,
+                    clfs=clfs,
+                    domain=f'MlC_GAP_{"C" if graphWithClass is True else "M"}XY_for_{name}',
+                    prefix=domain,
+                    verbose=verbose,
+                    cwd=cwd + f'{mlnL}/{name}/mixed{"/withClass" if graphWithClass else "/withoutClass"}',
+                    withCost=withCost,
+                    financialOption=financialOption,
+                    original = original
+                )
+            )
+        else:
+            res_path = cwd + f'{mlnL}/{name}/mixed{"/withClass" if graphWithClass else "/withoutClass"}/evaluation/' + [file for _, _, files in
+                os.walk(
+                    cwd + f'{mlnL}/{name}/mixed{"/withClass" if graphWithClass else "/withoutClass"}')
+                for
+                file in files][
+                [f'MlC_GAP_{"C" if graphWithClass is True else "M"}XY_for_{name}_metric' in file for _, _, files in
+                 os.walk(cwd + f'{mlnL}/{name}/mixed{"/withClass" if graphWithClass else "/withoutClass"}') for
+                 file in files].index(True)
+            ]
+            res = (f'MlC_GAP_{"C" if graphWithClass is True else "M"}XY_for_{name}',load_data_set_from_url(path=res_path, sep=',', encoding='utf-8',
+                                         index_col=0,
+                                         na_values=None))
+            logic_i_p.append(res)
 
     return mlc_cf
 
@@ -394,41 +519,22 @@ def build_MCA(
         MCA_GAP_MY_T = mlc_cf[f'MlC_GAP_{"C" if graphWithClass is True else "M"}Y_T'].drop(list(mlna), axis=1)
         MCA_GAP_MXY_T = mlc_cf[f'MlC_GAP_{"C" if graphWithClass is True else "M"}XY_T'].drop(list(mlna), axis=1)
 
-    logic_i_p.append(
-        make_builder(
-            fix_imbalance=fix_imbalance,
-            DATA_OVER=None,
-            x_traini=MCA_PER_MX,
-            x_testi=MCA_PER_MX_T,
-            y_traini=y_train,
-            y_testi=y_test,
-            duration_divider=duration_divider,
-            rate_divider=rate_divider,
-            target_variable=target_variable,
-            clfs=clfs,
-            domain=f'MCA_PER_{"C" if graphWithClass is True else "M"}X_for_{name}',
-            prefix=domain,
-            verbose=verbose,
-            cwd=cwd + f'{mlnL}/{name}/personalized{"/withClass" if graphWithClass else "/withoutClass"}',
-            withCost=withCost,
-            financialOption=financialOption,
-            original = original
-        )
-    )
-    if graphWithClass is True:
+    if sum([f'MCA_PER_{"C" if graphWithClass is True else "M"}X_for_{name}_metric' in file for _, _, files in
+            os.walk(cwd + f'{mlnL}/{name}/personalized{"/withClass" if graphWithClass else "/withoutClass"}') for
+            file in files]) == 0:
         logic_i_p.append(
             make_builder(
                 fix_imbalance=fix_imbalance,
                 DATA_OVER=None,
-                x_traini=MCA_PER_MY,
-                x_testi=MCA_PER_MY_T,
+                x_traini=MCA_PER_MX,
+                x_testi=MCA_PER_MX_T,
                 y_traini=y_train,
                 y_testi=y_test,
-            duration_divider=duration_divider,
-            rate_divider=rate_divider,
+                duration_divider=duration_divider,
+                rate_divider=rate_divider,
                 target_variable=target_variable,
                 clfs=clfs,
-                domain=f'MCA_PER_{"C" if graphWithClass is True else "M"}Y_for_{name}',
+                domain=f'MCA_PER_{"C" if graphWithClass is True else "M"}X_for_{name}',
                 prefix=domain,
                 verbose=verbose,
                 cwd=cwd + f'{mlnL}/{name}/personalized{"/withClass" if graphWithClass else "/withoutClass"}',
@@ -437,83 +543,154 @@ def build_MCA(
                 original = original
             )
         )
-        logic_i_p.append(
-            make_builder(
-                fix_imbalance=fix_imbalance,
-                DATA_OVER=None,
-                x_traini=MCA_PER_MXY,
-                x_testi=MCA_PER_MXY_T,
-                y_traini=y_train,
-                y_testi=y_test,
-            duration_divider=duration_divider,
-            rate_divider=rate_divider,
-                target_variable=target_variable,
-                clfs=clfs,
-                domain=f'MCA_PER_{"C" if graphWithClass is True else "M"}XY_for_{name}',
-                prefix=domain,
-                verbose=verbose,
-                cwd=cwd + f'{mlnL}/{name}/personalized{"/withClass" if graphWithClass else "/withoutClass"}',
-                withCost=withCost,
-                financialOption=financialOption,
-                original = original
-            )
-        )
-    logic_i_g.append(
-        make_builder(
-            fix_imbalance=fix_imbalance,
-            DATA_OVER=None,
-            x_traini=MCA_GLO_MX,
-            x_testi=MCA_GLO_MX_T,
-            y_traini=y_train,
-            y_testi=y_test,
-            duration_divider=duration_divider,
-            rate_divider=rate_divider,
-            target_variable=target_variable,
-            clfs=clfs,
-            domain=f'MCA_GLO_{"C" if graphWithClass is True else "M"}X_for_{name}',
-            prefix=domain,
-            verbose=verbose,
-            cwd=cwd + f'{mlnL}/{name}/global{"/withClass" if graphWithClass else "/withoutClass"}',
-            withCost=withCost,
-            financialOption=financialOption,
-            original = original
-        )
-    )
-    logic_i_pg.append(
-        make_builder(
-            fix_imbalance=fix_imbalance,
-            DATA_OVER=None,
-            x_traini=MCA_GAP_MX,
-            x_testi=MCA_GAP_MX_T,
-            y_traini=y_train,
-            duration_divider=duration_divider,
-            rate_divider=rate_divider,
-            y_testi=y_test,
-            target_variable=target_variable,
-            clfs=clfs,
-            domain=f'MCA_GAP_{"C" if graphWithClass is True else "M"}X_for_{name}',
-            prefix=domain,
-            verbose=verbose,
-            cwd=cwd + f'{mlnL}/{name}/mixed{"/withClass" if graphWithClass else "/withoutClass"}',
-            withCost=withCost,
-            financialOption=financialOption,
-            original = original
-        )
-    )
+    else:
+        res_path = cwd + f'{mlnL}/{name}/personalized{"/withClass" if graphWithClass else "/withoutClass"}/evaluation/' + [file for _, _, files in
+            os.walk(
+                cwd + f'{mlnL}/{name}/personalized{"/withClass" if graphWithClass else "/withoutClass"}')
+            for
+            file in files][
+            [f'MCA_PER_{"C" if graphWithClass is True else "M"}X_for_{name}_metric' in file for _, _, files in
+             os.walk(cwd + f'{mlnL}/{name}/personalized{"/withClass" if graphWithClass else "/withoutClass"}') for
+             file in files].index(True)
+        ]
+        res = (f'MCA_PER_{"C" if graphWithClass is True else "M"}X_for_{name}',load_data_set_from_url(path=res_path, sep=',', encoding='utf-8',
+                                     index_col=0,
+                                     na_values=None))
+        logic_i_p.append(res)
     if graphWithClass is True:
+        if sum([f'MCA_PER_{"C" if graphWithClass is True else "M"}Y_for_{name}_metric' in file for _, _, files in
+                os.walk(cwd + f'{mlnL}/{name}/personalized{"/withClass" if graphWithClass else "/withoutClass"}') for
+                file in files]) == 0:
+            logic_i_p.append(
+                make_builder(
+                    fix_imbalance=fix_imbalance,
+                    DATA_OVER=None,
+                    x_traini=MCA_PER_MY,
+                    x_testi=MCA_PER_MY_T,
+                    y_traini=y_train,
+                    y_testi=y_test,
+                duration_divider=duration_divider,
+                rate_divider=rate_divider,
+                    target_variable=target_variable,
+                    clfs=clfs,
+                    domain=f'MCA_PER_{"C" if graphWithClass is True else "M"}Y_for_{name}',
+                    prefix=domain,
+                    verbose=verbose,
+                    cwd=cwd + f'{mlnL}/{name}/personalized{"/withClass" if graphWithClass else "/withoutClass"}',
+                    withCost=withCost,
+                    financialOption=financialOption,
+                    original = original
+                )
+            )
+        else:
+            res_path = cwd + f'{mlnL}/{name}/personalized{"/withClass" if graphWithClass else "/withoutClass"}/evaluation/' + [file for _, _, files in
+                os.walk(
+                    cwd + f'{mlnL}/{name}/personalized{"/withClass" if graphWithClass else "/withoutClass"}')
+                for
+                file in files][
+                [f'MCA_PER_{"C" if graphWithClass is True else "M"}Y_for_{name}_metric' in file for _, _, files in
+                 os.walk(cwd + f'{mlnL}/{name}/personalized{"/withClass" if graphWithClass else "/withoutClass"}') for
+                 file in files].index(True)
+            ]
+            res = (f'MCA_PER_{"C" if graphWithClass is True else "M"}Y_for_{name}',load_data_set_from_url(path=res_path, sep=',', encoding='utf-8',
+                                         index_col=0,
+                                         na_values=None))
+            logic_i_p.append(res)
+        if sum([f'MCA_PER_{"C" if graphWithClass is True else "M"}XY_for_{name}_metric' in file for _, _, files in
+                os.walk(cwd + f'{mlnL}/{name}/personalized{"/withClass" if graphWithClass else "/withoutClass"}')
+                for
+                file in files]) == 0:
+            logic_i_p.append(
+                make_builder(
+                    fix_imbalance=fix_imbalance,
+                    DATA_OVER=None,
+                    x_traini=MCA_PER_MXY,
+                    x_testi=MCA_PER_MXY_T,
+                    y_traini=y_train,
+                    y_testi=y_test,
+                duration_divider=duration_divider,
+                rate_divider=rate_divider,
+                    target_variable=target_variable,
+                    clfs=clfs,
+                    domain=f'MCA_PER_{"C" if graphWithClass is True else "M"}XY_for_{name}',
+                    prefix=domain,
+                    verbose=verbose,
+                    cwd=cwd + f'{mlnL}/{name}/personalized{"/withClass" if graphWithClass else "/withoutClass"}',
+                    withCost=withCost,
+                    financialOption=financialOption,
+                    original = original
+                )
+            )
+        else:
+            res_path = cwd + f'{mlnL}/{name}/personalized{"/withClass" if graphWithClass else "/withoutClass"}/evaluation/' + [file for _, _, files in
+                os.walk(
+                    cwd + f'{mlnL}/{name}/personalized{"/withClass" if graphWithClass else "/withoutClass"}')
+                for
+                file in files][
+                [f'MCA_PER_{"C" if graphWithClass is True else "M"}XY_for_{name}_metric' in file for _, _, files in
+                 os.walk(cwd + f'{mlnL}/{name}/personalized{"/withClass" if graphWithClass else "/withoutClass"}') for
+                 file in files].index(True)
+            ]
+            res = (f'MCA_PER_{"C" if graphWithClass is True else "M"}XY_for_{name}',load_data_set_from_url(path=res_path, sep=',', encoding='utf-8',
+                                         index_col=0,
+                                         na_values=None))
+            logic_i_p.append(res)
+    if sum([f'MCA_GLO_{"C" if graphWithClass is True else "M"}X_for_{name}_metric' in file for _, _, files in
+            os.walk(cwd + f'{mlnL}/{name}/global{"/withClass" if graphWithClass else "/withoutClass"}')
+            for
+            file in files]) == 0:
+        logic_i_g.append(
+            make_builder(
+                fix_imbalance=fix_imbalance,
+                DATA_OVER=None,
+                x_traini=MCA_GLO_MX,
+                x_testi=MCA_GLO_MX_T,
+                y_traini=y_train,
+                y_testi=y_test,
+                duration_divider=duration_divider,
+                rate_divider=rate_divider,
+                target_variable=target_variable,
+                clfs=clfs,
+                domain=f'MCA_GLO_{"C" if graphWithClass is True else "M"}X_for_{name}',
+                prefix=domain,
+                verbose=verbose,
+                cwd=cwd + f'{mlnL}/{name}/global{"/withClass" if graphWithClass else "/withoutClass"}',
+                withCost=withCost,
+                financialOption=financialOption,
+                original = original
+            )
+        )
+    else:
+        res_path = cwd + f'{mlnL}/{name}/global{"/withClass" if graphWithClass else "/withoutClass"}/evaluation/' + [file for _, _, files in
+            os.walk(
+                cwd + f'{mlnL}/{name}/global{"/withClass" if graphWithClass else "/withoutClass"}')
+            for
+            file in files][
+            [f'MCA_GLO_{"C" if graphWithClass is True else "M"}X_for_{name}_metric' in file for _, _, files in
+             os.walk(cwd + f'{mlnL}/{name}/global{"/withClass" if graphWithClass else "/withoutClass"}') for
+             file in files].index(True)
+        ]
+        res = (f'MCA_GLO_{"C" if graphWithClass is True else "M"}X_for_{name}',load_data_set_from_url(path=res_path, sep=',', encoding='utf-8',
+                                     index_col=0,
+                                     na_values=None))
+        logic_i_p.append(res)
+    if sum([f'MCA_GAP_{"C" if graphWithClass is True else "M"}X_for_{name}_metric' in file for _, _, files in
+            os.walk(cwd + f'{mlnL}/{name}/mixed{"/withClass" if graphWithClass else "/withoutClass"}')
+            for
+            file in files]) == 0:
         logic_i_pg.append(
             make_builder(
                 fix_imbalance=fix_imbalance,
                 DATA_OVER=None,
-                x_traini=MCA_GAP_MY,
-                x_testi=MCA_GAP_MY_T,
+                x_traini=MCA_GAP_MX,
+                x_testi=MCA_GAP_MX_T,
                 y_traini=y_train,
-            duration_divider=duration_divider,
-            rate_divider=rate_divider,
+                duration_divider=duration_divider,
+                rate_divider=rate_divider,
                 y_testi=y_test,
                 target_variable=target_variable,
                 clfs=clfs,
-                domain=f'MCA_GAP_{"C" if graphWithClass is True else "M"}Y_for_{name}',
+                domain=f'MCA_GAP_{"C" if graphWithClass is True else "M"}X_for_{name}',
                 prefix=domain,
                 verbose=verbose,
                 cwd=cwd + f'{mlnL}/{name}/mixed{"/withClass" if graphWithClass else "/withoutClass"}',
@@ -522,27 +699,99 @@ def build_MCA(
                 original = original
             )
         )
-        logic_i_pg.append(
-            make_builder(
-                fix_imbalance=fix_imbalance,
-                DATA_OVER=None,
-                x_traini=MCA_GAP_MXY,
-                x_testi=MCA_GAP_MXY_T,
-                y_traini=y_train,
-                y_testi=y_test,
-            duration_divider=duration_divider,
-            rate_divider=rate_divider,
-                target_variable=target_variable,
-                clfs=clfs,
-                domain=f'MCA_GAP_{"C" if graphWithClass is True else "M"}XY_for_{name}',
-                prefix=domain,
-                verbose=verbose,
-                cwd=cwd + f'{mlnL}/{name}/mixed{"/withClass" if graphWithClass else "/withoutClass"}',
-                withCost=withCost,
-                financialOption=financialOption,
-                original = original
+    else:
+        res_path = cwd + f'{mlnL}/{name}/mixed{"/withClass" if graphWithClass else "/withoutClass"}/evaluation/' + [file for _, _, files in
+            os.walk(
+                cwd + f'{mlnL}/{name}/mixed{"/withClass" if graphWithClass else "/withoutClass"}')
+            for
+            file in files][
+            [f'MCA_GAP_{"C" if graphWithClass is True else "M"}X_for_{name}_metric' in file for _, _, files in
+             os.walk(cwd + f'{mlnL}/{name}/mixed{"/withClass" if graphWithClass else "/withoutClass"}') for
+             file in files].index(True)
+        ]
+        res = (f'MCA_GAP_{"C" if graphWithClass is True else "M"}X_for_{name}',load_data_set_from_url(path=res_path, sep=',', encoding='utf-8',
+                                     index_col=0,
+                                     na_values=None))
+        logic_i_p.append(res)
+    if graphWithClass is True:
+        if sum([f'MCA_GAP_{"C" if graphWithClass is True else "M"}Y_for_{name}_metric' in file for _, _, files in
+                os.walk(cwd + f'{mlnL}/{name}/mixed{"/withClass" if graphWithClass else "/withoutClass"}')
+                for
+                file in files]) == 0:
+            logic_i_pg.append(
+                make_builder(
+                    fix_imbalance=fix_imbalance,
+                    DATA_OVER=None,
+                    x_traini=MCA_GAP_MY,
+                    x_testi=MCA_GAP_MY_T,
+                    y_traini=y_train,
+                duration_divider=duration_divider,
+                rate_divider=rate_divider,
+                    y_testi=y_test,
+                    target_variable=target_variable,
+                    clfs=clfs,
+                    domain=f'MCA_GAP_{"C" if graphWithClass is True else "M"}Y_for_{name}',
+                    prefix=domain,
+                    verbose=verbose,
+                    cwd=cwd + f'{mlnL}/{name}/mixed{"/withClass" if graphWithClass else "/withoutClass"}',
+                    withCost=withCost,
+                    financialOption=financialOption,
+                    original = original
+                )
             )
-        )
+        else:
+            res_path = cwd + f'{mlnL}/{name}/mixed{"/withClass" if graphWithClass else "/withoutClass"}/evaluation/' + [file for _, _, files in
+                os.walk(
+                    cwd + f'{mlnL}/{name}/mixed{"/withClass" if graphWithClass else "/withoutClass"}')
+                for
+                file in files][
+                [f'MCA_GAP_{"C" if graphWithClass is True else "M"}Y_for_{name}_metric' in file for _, _, files in
+                 os.walk(cwd + f'{mlnL}/{name}/mixed{"/withClass" if graphWithClass else "/withoutClass"}') for
+                 file in files].index(True)
+            ]
+            res = (f'MCA_GAP_{"C" if graphWithClass is True else "M"}Y_for_{name}',load_data_set_from_url(path=res_path, sep=',', encoding='utf-8',
+                                         index_col=0,
+                                         na_values=None))
+            logic_i_p.append(res)
+        if sum([f'MCA_GAP_{"C" if graphWithClass is True else "M"}XY_for_{name}_metric' in file for _, _, files in
+                os.walk(cwd + f'{mlnL}/{name}/mixed{"/withClass" if graphWithClass else "/withoutClass"}')
+                for
+                file in files]) == 0:
+            logic_i_pg.append(
+                make_builder(
+                    fix_imbalance=fix_imbalance,
+                    DATA_OVER=None,
+                    x_traini=MCA_GAP_MXY,
+                    x_testi=MCA_GAP_MXY_T,
+                    y_traini=y_train,
+                    y_testi=y_test,
+                duration_divider=duration_divider,
+                rate_divider=rate_divider,
+                    target_variable=target_variable,
+                    clfs=clfs,
+                    domain=f'MCA_GAP_{"C" if graphWithClass is True else "M"}XY_for_{name}',
+                    prefix=domain,
+                    verbose=verbose,
+                    cwd=cwd + f'{mlnL}/{name}/mixed{"/withClass" if graphWithClass else "/withoutClass"}',
+                    withCost=withCost,
+                    financialOption=financialOption,
+                    original = original
+                )
+            )
+        else:
+            res_path = cwd + f'{mlnL}/{name}/mixed{"/withClass" if graphWithClass else "/withoutClass"}/evaluation/' + [file for _, _, files in
+                os.walk(
+                    cwd + f'{mlnL}/{name}/mixed{"/withClass" if graphWithClass else "/withoutClass"}')
+                for
+                file in files][
+                [f'MCA_GAP_{"C" if graphWithClass is True else "M"}XY_for_{name}_metric' in file for _, _, files in
+                 os.walk(cwd + f'{mlnL}/{name}/mixed{"/withClass" if graphWithClass else "/withoutClass"}') for
+                 file in files].index(True)
+            ]
+            res = (f'MCA_GAP_{"C" if graphWithClass is True else "M"}XY_for_{name}',load_data_set_from_url(path=res_path, sep=',', encoding='utf-8',
+                                         index_col=0,
+                                         na_values=None))
+            logic_i_p.append(res)
 
 def make_mlna_1_variable_v2(
         default,
@@ -586,15 +835,19 @@ def make_mlna_1_variable_v2(
         logic_i_g = []
         logic_i_p = []
         logic_i_pg = []
+        if sum([f'{nominal_factor_colums[i]}_{"withClass" if graphWithClass else "withoutClass"}_model_turn_1_completed' in file for _, _, files in
+             os.walk(cwd + f'/mlna_1/{nominal_factor_colums[i]}/') for
+             file in files]) > 0 :
+            continue
         # name=f'{nominal_factor_colums[i]}_mln'
         # load config df file
-        config_df_path = args.cwd + f'/mlna_1/{nominal_factor_colums[i]}/' + [file for _, _, files in
+        config_df_path = cwd + f'/mlna_1/{nominal_factor_colums[i]}/' + [file for _, _, files in
               os.walk(
-                  args.cwd + f'/mlna_1/{nominal_factor_colums[i]}/')
+                  cwd + f'/mlna_1/{nominal_factor_colums[i]}/')
               for
               file in files][
-            [f'config_df_for_{name}_{"withClass" if graphWithClass else "withoutClass"}' in file for _, _, files in
-             os.walk(args.cwd + f'/mlna_1/{nominal_factor_colums[i]}/') for
+            [f'config_df_for_{nominal_factor_colums[i]}_{"withClass" if graphWithClass else "withoutClass"}' in file for _, _, files in
+             os.walk(cwd + f'/mlna_1/{nominal_factor_colums[i]}/') for
              file in files].index(True)
         ]
         config_df = read_model(path=config_df_path)
@@ -661,7 +914,7 @@ def make_mlna_1_variable_v2(
             original = original,
             name=nominal_factor_colums[i]
         )
-
+        # print(logic_i_p)
         bestp = logic_i_p[5 if graphWithClass else 1][1].sort_values(
             by="accuracy",
             axis=0,
@@ -693,6 +946,10 @@ def make_mlna_1_variable_v2(
         logic_i_g = None
         logic_i_p = None
         mlc_cf = None
+        with open(
+                cwd + f'/mlna_1/{nominal_factor_colums[i]}/{nominal_factor_colums[i]}_{"withClass" if graphWithClass else "withoutClass"}_model_turn_1_completed.dtvni',
+                "a") as fichier:
+            fichier.write("")
 
     logic_g = None
     logic_p = None
@@ -715,7 +972,6 @@ def make_mlna_k_variable_v2(
         rate_divider,
         verbose,
         clfs,
-        alpha,
         withCost,
         financialOption,
         original,
@@ -740,151 +996,29 @@ def make_mlna_k_variable_v2(
             logic_i_g = []
             logic_i_p = []
             logic_i_pg = []
-            copT = x_train.copy(deep=True)
-            copT[target_variable] = y_train.copy(deep=True)
             # build the MLN for the variable i
-            MLN = build_mlg_with_class(
-                    copT, [OHE[i] for i in layer_config],
-                    target_variable
-                ) \
-                if (graphWithClass is True) \
-                else build_mlg(copT,[OHE[i] for i in layer_config]
-                               )
             col_targeted = [f'{nominal_factor_colums[i]}' for i in layer_config]
             case_k = '_'.join(col_targeted)
-            # save the graph
-            save_graph(
-                cwd=cwd + f'/mlna_{k}',
-                graph=MLN,
-                name=f'{case_k}_mln',
-                rows_len=pd.concat([x_train, y_train], axis=1).shape[0],
-                prefix=domain,
-                cols_len=len(OHE)
-            )
-            extracts_g = {
-                "Att_DEGREE_GLO": [],
-                "Att_INTRA_GLO": [],
-                "Att_INTER_GLO": [],
-                "Att_COMBINE_GLO": [],
-                "Att_M_INTRA_GLO": [],
-                "Att_M_INTER_GLO": [],
-                "Att_M_COMBINE_GLO": []
-            }
-            extracts_p = {
-                "Att_DEGREE_PER": [],  # GLO
-                "Att_COMBINE_PER": [],
-                "YN_COMBINE_PER": [],
-                "YP_COMBINE_PER": [],  # COM
-                "Att_INTER_PER": [],
-                "YN_INTER_PER": [],
-                "YP_INTER_PER": [],  # INTER
-                "Att_INTRA_PER": [],
-                "YN_INTRA_PER": [],
-                "YP_INTRA_PER": [],  # INTRA
-                "Att_M_COMBINE_PER": [],
-                "Att_M_INTER_PER": [],
-                "Att_M_INTRA_PER": []
-            }
-            extracts_g_t = copy.deepcopy(extracts_g)
-            extracts_p_t = copy.deepcopy(extracts_p)
+            print(case_k)
+            if sum([
+                       f'{case_k}_{"withClass" if graphWithClass else "withoutClass"}_model_turn_1_completed' in file
+                       for _, _, files in
+                       os.walk(cwd + f'/mlna_{k}/{case_k}/') for
+                       file in files]) > 0:
+                continue
+            # load config df file
+            config_df_path = cwd + f'/mlna_{k}/{case_k}/' + [file for _, _, files in
+                 os.walk(
+                     cwd + f'/mlna_{k}/{case_k}/')
+                 for
+                 file in files][
+                [(f'config_df_for_{case_k}_{"withClass" if graphWithClass else "withoutClass"}' in file)
+                 for _, _, files in
+                 os.walk(cwd + f'/mlna_{k}/{case_k}/') for
+                 file in files].index(True)
+            ]
+            config_df = read_model(path=config_df_path)
 
-            ##################################
-            ####### Training Descriptor ######
-            ##################################
-            for borrower in PERSONS:
-                # compute descriptors for current borrower
-                current = extract_descriptors_from_graph_model(
-                    graph=MLN,
-                    y_graph=removeEdge(MLN, k, copT.loc[borrower, target_variable], borrower),
-                    graphWithClass=graphWithClass,
-                    alpha=alpha,
-                    borrower=borrower,
-                    layers=k
-                )
-                # extract descriptors context
-                # print(f"{list(current.keys())} <--> {list(extracts_g.keys())} <--> {list(extracts_p.keys())}")
-                for key in list(current.keys()):
-                    if 'GLO' in key:
-                        extracts_g[key].append(current[key])
-                    else:
-                        extracts_p[key].append(current[key])
-
-            ##################################
-            ####### Test Descriptor     ######
-            ##################################
-            for borrower in PERSONS_T:
-                # compute descriptors for current borrower
-                grf = add_specific_loan_in_mlg(MLN, x_test.loc[[borrower]], [OHE[i] for i in layer_config])
-                current = extract_descriptors_from_graph_model(
-                    graph=grf,
-                    y_graph=grf,
-                    graphWithClass=graphWithClass,
-                    alpha=alpha,
-                    borrower=borrower,
-                    layers=k
-                )
-                # extract descriptors context
-                for key in list(current.keys()):
-                    if 'GLO' in key:
-                        extracts_g_t[key].append(current[key])
-                    else:
-                        extracts_p_t[key].append(current[key])
-
-            ########################################
-            ####### Descriptors Normalisation ######
-            ########################################
-            if graphWithClass is False:
-                # Deleting a class descriptor using del
-                # for key in list(extracts_g_t.keys()):
-                #     if 'Y' in key:
-                #         del extracts_g_t[key]
-                #         del extracts_g[key]
-                # for key in list(extracts_p_t.keys()):
-                #     if 'Y' in key:
-                #         del extracts_p_t[key]
-                #         del extracts_p_t[key]
-
-                # Deleting a class descriptor using del
-                for key in list(extracts_g.keys()):
-                    if 'Y' in key:
-                        del extracts_g_t[key]
-                        del extracts_g[key]
-                for key in list(extracts_p.keys()):
-                    if 'Y' in key:
-                        del extracts_p[key]
-                        del extracts_p_t[key]
-
-            # get the max value of each descriptor in both train and test dataset
-            maxGDesc = standard_extraction(extracts_g, extracts_g.keys())
-            maxPDesc = standard_extraction(extracts_p, extracts_p.keys())
-            # print(f"{maxGDesc} <------> {maxPDesc}")
-            standard_extraction(extracts_g_t, extracts_g.keys(), maxGDesc)
-            standard_extraction(extracts_p_t, extracts_p.keys(), maxPDesc)
-
-            ##########################################
-            ####### Descriptors Config Generator ######
-            ##########################################
-            config_df = generate_config_df(
-                cwd=cwd,
-                graphWithClass=graphWithClass,
-                mlnL=f'/mlna_{k}',
-                domain=domain,
-                extracts_g=extracts_g,
-                extracts_p=extracts_p,
-                extracts_g_t=extracts_g_t,
-                extracts_p_t=extracts_p_t,
-                name=case_k
-            )
-
-            # free used ressources
-            extract_g_df = None
-            extract_p_df = None
-            extract_g_df_t = None
-            extract_p_df_t = None
-            MLN = None
-            bipart_combine = None
-            bipart_intra_pagerank = None
-            bipart_inter_pagerank = None
 
             ##########################################
             ####### Build MlC config            ######
@@ -960,65 +1094,20 @@ def make_mlna_k_variable_v2(
             logic_p = [*logic_p, *logic_i_p]
             logic_g = [*logic_g, *logic_i_g]
             logic_pg = [*logic_pg, *logic_i_pg]
-            table_p = print_summary([default, *logic_i_p], modelD)
-            table_g = print_summary([default, *logic_i_g], modelD)
-            table_pg = print_summary([default, *logic_i_pg], modelD)
-            create_file(
-                content=table_p[1],
-                cwd=cwd + f'/mlna_{k}/personalized',
-                prefix=domain,
-                filename=f"mlna_for_{case_k}",
-                extension=".html"
-            )
-            create_file(
-                content=table_g[1],
-                cwd=cwd + f'/mlna_{k}/global',
-                prefix=domain,
-                filename=f"mlna_for_{case_k}",
-                extension=".html"
-            )
-            create_file(
-                content=table_pg[1],
-                cwd=cwd + f'/mlna_{k}/mixed',
-                prefix=domain,
-                filename=f"mlna_for_{case_k}",
-                extension=".html"
-            )
             table_g = None
             table_p = None
             logic_i_g = None
             logic_i_p = None
             mlc_cf = None
-        table_p = print_summary([default, *logic_p], modelD)
-        table_g = print_summary([default, *logic_g], modelD)
-        table_pg = print_summary([default, *logic_pg], modelD)
-        create_file(
-            content=table_p[1],
-            cwd=cwd + f'/mlna_{k}/personalized',
-            prefix=domain,
-            filename=f"mlna_for_all_categorial data",
-            extension=".html"
-        )
-        create_file(
-            content=table_g[1],
-            cwd=cwd + f'/mlna_{k}/global',
-            prefix=domain,
-            filename=f"mlna_for_all_categorial data",
-            extension=".html"
-        )
-        create_file(
-            content=table_pg[1],
-            cwd=cwd + f'/mlna_{k}/mixed',
-            prefix=domain,
-            filename=f"mlna_for_all_categorial data",
-            extension=".html"
-        )
+            with open(
+                    cwd + f'/mlna_{k}/{case_k}/{case_k}_{"withClass" if graphWithClass else "withoutClass"}_model_turn_1_completed.dtvni',
+                    "a") as fichier:
+                fichier.write("")
+
         modelD = None
         PERSONS = None
         table_p = None
         table_g = None
-        # del modelD
-        # del PERSONS
 
 
 def make_mlna_top_k_variable_v2(
@@ -1049,17 +1138,10 @@ def make_mlna_top_k_variable_v2(
     logic_p = []
     logic_pg = []
     ## visualization of result
-    modelD = model_desc()
     x_train, x_test, y_train, y_test = x_traini, x_testi, y_traini, y_testi
     PERSONS = get_persons(x_train)
     PERSONS_T = get_persons(x_test)
-    exitingMLNB = [dirnames for _, dirnames, _ in os.walk(f'{cwd}')][0]
-    exitingMLNB = sorted([int(el.split("_")[1]) for el in exitingMLNB if "_b" in el])
-    print(exitingMLNB,"//", alpha)
-    BexitingMLNB = exitingMLNB[-1] if len(exitingMLNB) > 0 else None
-
-    start = BexitingMLNB + 1 if len(exitingMLNB) > 0 else 2
-    for k in range(start, len(topR) + 1):  # for 1<k<|OHE[i]|+2
+    for k in range(2, len(topR) + 1):  # for 1<k<|OHE[i]|+2
         # for k in [2]: # for 1<k<|OHE[i]|+2
         # for k in range(2:len(OHE)+1: # for 1<k<|OHE[i]|+2
         layer_config = topR[:k]  # create subsets of k index of OHE and fetch it
@@ -1069,135 +1151,28 @@ def make_mlna_top_k_variable_v2(
         logic_i_g = []
         logic_i_p = []
         logic_i_pg = []
-        copT = x_train.copy(deep=True)
-        copT[target_variable] = y_train.copy(deep=True)
-        # build the MLN for the variable i
-        MLN = build_mlg_with_class(copT, [OHE[i] for i in layer_config],
-                                   target_variable) if (graphWithClass is True) else build_mlg(
-            copT, [OHE[i] for i in layer_config])
         col_targeted = [f'{nominal_factor_colums[i]}' for i in layer_config]
         case_k = '_'.join(col_targeted)
-        # save the graph
-        save_graph(
-            cwd=cwd + f'/mlna_{k}_b',
-            graph=MLN,
-            name=f'{case_k}_mln',
-            rows_len=copT.shape[0],
-            prefix=domain,
-            cols_len=len(OHE)
-        )
-        extracts_g = {
-            "Att_DEGREE_GLO": [],
-            "Att_INTRA_GLO": [],
-            "Att_INTER_GLO": [],
-            "Att_COMBINE_GLO": [],
-            "Att_M_INTRA_GLO": [],
-            "Att_M_INTER_GLO": [],
-            "Att_M_COMBINE_GLO": []
-        }
-        extracts_p = {
-            "Att_DEGREE_PER": [],  # GLO
-            "Att_COMBINE_PER": [],
-            "YN_COMBINE_PER": [],
-            "YP_COMBINE_PER": [],  # COM
-            "Att_INTER_PER": [],
-            "YN_INTER_PER": [],
-            "YP_INTER_PER": [],  # INTER
-            "Att_INTRA_PER": [],
-            "YN_INTRA_PER": [],
-            "YP_INTRA_PER": [],  # INTRA
-            "Att_M_COMBINE_PER": [],
-            "Att_M_INTER_PER": [],
-            "Att_M_INTRA_PER": []
-        }
-        extracts_g_t = copy.deepcopy(extracts_g)
-        extracts_p_t = copy.deepcopy(extracts_p)
-
-        ##################################
-        ####### Training Descriptor ######
-        ##################################
-        for borrower in PERSONS:
-            # compute descriptors for current borrower
-            current = extract_descriptors_from_graph_model(
-                graph=MLN,
-                y_graph=removeEdge(MLN, k, copT.loc[borrower, target_variable], borrower),
-                graphWithClass=graphWithClass,
-                alpha=alpha,
-                borrower=borrower,
-                layers=k
-            )
-            # extract descriptors context
-            # print(f"{list(current.keys())} <--> {list(extracts_g.keys())} <--> {list(extracts_p.keys())}")
-            for key in list(current.keys()):
-                if 'GLO' in key:
-                    extracts_g[key].append(current[key])
-                else:
-                    extracts_p[key].append(current[key])
-
-        ##################################
-        ####### Test Descriptor     ######
-        ##################################
-        for borrower in PERSONS_T:
-            # compute descriptors for current borrower
-            grf = add_specific_loan_in_mlg(MLN, x_test.loc[[borrower]], [OHE[i] for i in layer_config])
-            current = extract_descriptors_from_graph_model(
-                graph=grf,
-                y_graph=grf,
-                graphWithClass=graphWithClass,
-                alpha=alpha,
-                borrower=borrower,
-                layers=k
-            )
-            # extract descriptors context
-            for key in list(current.keys()):
-                if 'GLO' in key:
-                    extracts_g_t[key].append(current[key])
-                else:
-                    extracts_p_t[key].append(current[key])
-
-        ########################################
-        ####### Descriptors Normalisation ######
-        ########################################
-        if graphWithClass is False:
-            # Deleting a class descriptor using del
-            for key in list(extracts_g_t.keys()):
-                if 'Y' in key:
-                    del extracts_g_t[key]
-                    del extracts_g[key]
-            for key in list(extracts_p_t.keys()):
-                if 'Y' in key:
-                    del extracts_p[key]
-                    del extracts_p_t[key]
-
-        # get the max value of each descriptor in both train and test dataset
-        # maxGdesc = get_maximun_std_descriptor(extracts_g, extracts_g_t, extracts_g.keys())
-        # maxPdesc = get_maximun_std_descriptor(extracts_p, extracts_p_t, extracts_p.keys())
-        # print(f"{maxGDesc} <------> {maxPDesc}")
-        # standard_extraction(extracts_g, extracts_g.keys(), maxGdesc)
-        # standard_extraction(extracts_p, extracts_p.keys(), maxPdesc)
-        # # print(f"{maxGDesc} <------> {maxPDesc}")
-        # standard_extraction(extracts_g_t, extracts_g.keys(), maxGdesc)
-        # standard_extraction(extracts_p_t, extracts_p.keys(), maxPdesc)
-
-        maxGDesc = standard_extraction(extracts_g, extracts_g.keys())
-        maxPDesc = standard_extraction(extracts_p, extracts_p.keys())
-        # print(f"{maxGDesc} <------> {maxPDesc}")
-        standard_extraction(extracts_g_t, extracts_g.keys(), maxGDesc)
-        standard_extraction(extracts_p_t, extracts_p.keys(), maxPDesc)
+        if sum([
+            f'{case_k}_{"withClass" if graphWithClass else "withoutClass"}_model_turn_1_completed' in file
+            for _, _, files in
+            os.walk(cwd + f'/mlna_{k}/{case_k}/') for
+            file in files]) > 0:
+            continue
+        # load config df file
+        config_df_path = cwd + f'/mlna_{k}_b/{case_k}/' + [file for _, _, files in
+                                                         os.walk(
+                                                             cwd + f'/mlna_{k}_b/{case_k}/')
+                                                         for
+                                                         file in files][
+            [(f'config_df_for_{case_k}_{"withClass" if graphWithClass else "withoutClass"}' in file)
+             for _, _, files in
+             os.walk(cwd + f'/mlna_{k}_b/{case_k}/') for
+             file in files].index(True)
+        ]
+        config_df = read_model(path=config_df_path)
         ##########################################
         ####### Descriptors Config Generator ######
-        ##########################################
-        config_df = generate_config_df(
-            cwd=cwd,
-            graphWithClass=graphWithClass,
-            mlnL=f'/mlna_{k}_b',
-            domain=domain,
-            extracts_g=extracts_g,
-            extracts_p=extracts_p,
-            extracts_g_t=extracts_g_t,
-            extracts_p_t=extracts_p_t,
-            name=case_k
-        )
 
         # free used ressources
         extract_g_df = None
@@ -1280,64 +1255,15 @@ def make_mlna_top_k_variable_v2(
 
         ########### END
         #########################################################################
-        logic_p = [*logic_p, *logic_i_p]
-        logic_g = [*logic_g, *logic_i_g]
-        logic_pg = [*logic_pg, *logic_i_pg]
-        table_p = print_summary([default, *logic_i_p], modelD)
-        table_g = print_summary([default, *logic_i_g], modelD)
-        table_pg = print_summary([default, *logic_i_pg], modelD)
-        create_file(
-            content=table_p[1],
-            cwd=cwd + f'/mlna_{k}_b/personalized',
-            prefix=domain,
-            filename=f"mlna_for_{case_k}",
-            extension=".html"
-        )
-        create_file(
-            content=table_g[1],
-            cwd=cwd + f'/mlna_{k}_b/global',
-            prefix=domain,
-            filename=f"mlna_for_{case_k}",
-            extension=".html"
-        )
-        create_file(
-            content=table_pg[1],
-            cwd=cwd + f'/mlna_{k}_b/mixed',
-            prefix=domain,
-            filename=f"mlna_for_{case_k}",
-            extension=".html"
-        )
         table_g = None
         table_p = None
         logic_i_g = None
         logic_i_p = None
         mlc_cf = None
-    if start != len(topR) + 1:
-        table_p = print_summary([default, *logic_p], modelD)
-        table_g = print_summary([default, *logic_g], modelD)
-        table_pg = print_summary([default, *logic_pg], modelD)
-        create_file(
-            content=table_p[1],
-            cwd=cwd + f'/mlna_{k}_b/personalized',
-            prefix=domain,
-            filename=f"mlna_for_all_categorial data",
-            extension=".html"
-        )
-        create_file(
-            content=table_g[1],
-            cwd=cwd + f'/mlna_{k}_b/global',
-            prefix=domain,
-            filename=f"mlna_for_all_categorial data",
-            extension=".html"
-        )
-        create_file(
-            content=table_pg[1],
-            cwd=cwd + f'/mlna_{k}_b/mixed',
-            prefix=domain,
-            filename=f"mlna_for_all_categorial data",
-            extension=".html"
-        )
-    modelD = None
+        with open(
+                cwd + f'/mlna_{k}_b/{case_k}/{case_k}_{"withClass" if graphWithClass else "withoutClass"}_model_turn_2_completed.dtvni',
+                "a") as fichier:
+            fichier.write("")
     PERSONS = None
     table_p = None
     table_g = None
@@ -1398,6 +1324,8 @@ def main():
     parser.add_argument('--dataset_folder', type=str, required=True, help='Nom du dataset')
     parser.add_argument('--alpha', type=float, required=True, help='Valeur d\'alpha')
     parser.add_argument('--turn', type=int, required=True, help='Valeur du tour')
+    parser.add_argument('--baseline', action="store_true", required=False, help='Entrainement sur les données de base ?')
+    parser.add_argument('--graph_with_class', action="store_true", required=False, help='integrant les classes?')
 
     # Récupération des arguments
     args = parser.parse_args()
@@ -1503,7 +1431,7 @@ def main():
         print("❌ Unable to access original form of dataset")
         exit(1)
     # load the dedicated work orginal dataset
-    original_path = args.cwd + f'/{split_dir}{args.dataset_folder}/{target_columns_type}' + [file for _, _, files in
+    original_path = args.cwd + f'/{split_dir}{args.dataset_folder}/{target_columns_type}/' + [file for _, _, files in
        os.walk(
            args.cwd + f'/{split_dir}{args.dataset_folder}/{target_columns_type}')
        for
@@ -1532,10 +1460,59 @@ def main():
 
     # ------------------------------------------------------------------------------------------------------------------
     # default training
+    clfs = init_models()
+    if args.baseline is True: # Baseline execution
+        if sum([f'classic_metric' in file for _, _, files in
+                os.walk(args.cwd + f'/{results_dir}{domain}/evaluation') for
+                file in files]) > 0:
+            print("✅ Stage already completed")
+            exit(0)
 
+
+        default = make_builder(
+            fix_imbalance=False,
+            # DATA_OVER=promise[7],
+            target_variable=target_variable,
+            clfs=clfs,
+            domain='classic',
+            prefix=domain,
+            verbose=verbose,
+            duration_divider=duration_divider,
+            rate_divider=rate_divider,
+            cwd=args.cwd + f'/{results_dir}{domain}',
+            withCost=cost,
+            financialOption=ast.literal_eval(financialOption) if cost else None,
+            x_traini=x_traini,
+            x_testi=x_testi,
+            y_traini=y_traini,
+            y_testi=y_testi,
+            original=original
+        )
+        print("✅ Baseline models training completed")
+        exit(0)
+    else:
+        if sum([f'classic_metric' in file for _, _, files in
+                os.walk(args.cwd + f'/{results_dir}{domain}/evaluation') for
+                file in files]) == 0:
+            print("❌ Unable to access baseline models evaluation")
+            exit(0)
+        default_path = args.cwd + f'/{results_dir}{domain}/evaluation/' + \
+                        [file for _, _, files in
+                         os.walk(
+                             args.cwd + f'/{results_dir}{domain}/evaluation')
+                         for
+                         file in files][
+                            [f'classic_metric' in file for _, _, files in
+                             os.walk(args.cwd + f'/{results_dir}{domain}/evaluation') for
+                             file in files].index(True)
+                        ]
+        default = (
+            'classic',load_data_set_from_url(path=default_path, sep=dataset_delimiter, encoding=encoding,
+                                     index_col=index_col,
+                                     na_values=None))
     # ------------------------------------------------------------------------------------------------------------------
     if args.turn == 1: # check if we are onto the first turn
-        if sum(['model_turn_1_completed' in file for _, _, files in
+        if sum(['model_turn_1_completed.dtvni' == file for _, _, files in
                 os.walk(args.cwd + f'/{results_dir}{domain}/{args.alpha}/{target_columns_type}/mlna_1') for
                 file in files]) > 0:
             print("✅ MLNA 1 Modeling already completed")
@@ -1557,10 +1534,14 @@ def main():
                 duration_divider = duration_divider,
                 rate_divider= rate_divider,
                 original=original,
-                default=None,
+                default=default,
+                clfs=clfs,
+                verbose=verbose
             )
             outperformers = dict(sorted(outperformers.items(), key=lambda x: x[1], reverse=True))
             bestK = bestThreshold(list(outperformers)) + 1 if len(outperformers) > 2 else len(outperformers)
+            # elbow = elbow_method(list(outperformers))
+            # cusum = cumulative_difference_threshold(list(outperformers))
             print(f"{outperformers}, {NbGood} Goods and the best top k is {bestK}")
             save_model(
                 cwd=args.cwd + f'/{results_dir}{domain}/{args.alpha}/{target_columns_type}',
@@ -1570,21 +1551,23 @@ def main():
                     'bestK': bestK,
                     "name": [prepro_config["categorial_col"][i] for i in list(outperformers.keys())],
                 },
-                prefix="MNIFS",
-                clf_name=f"{domain}_best_features",
-                sub=""
+                prefix="",
+                clf_name=f"MNIFS_{domain}_best_features",
+                sub="",
+                times=False
             )
             contenu = f"""
-                            'model': {outperformers},
-                            'nbGood': {NbGood},
-                            'bestK': {bestK},
-                            "name":{[prepro_config[2][i] for i in list(outperformers.keys())]},
-                            "BName":{[prepro_config[2][i] for i in list(outperformers.keys())[:bestK]]},
-                            """
+                'model': {outperformers},
+                'nbGood': {NbGood},
+                'bestK': {bestK},
+                'name':{[prepro_config['categorial_col'][i] for i in list(outperformers.keys())]},
+                'BName':{[prepro_config['categorial_col'][i] for i in list(outperformers.keys())[:bestK]]},
+                """
             with open(args.cwd + f'/{results_dir}{domain}/{args.alpha}/{target_columns_type}/mlna_1/model_turn_1_completed.dtvni', "a") as fichier:
                 fichier.write(contenu)
 
-        if sum(['model_turn_1_completed' in file for _, _, files in
+
+        if sum(['model_turn_1_completed.dtvni' == file for _, _, files in
                 os.walk(args.cwd + f'/{results_dir}{domain}/{args.alpha}/{target_columns_type}/mlna_2/') for
                 file in files]) > 0:
             print("✅ COMBINATORY MLNA 2 Model  already completed")
@@ -1597,32 +1580,75 @@ def main():
                 OHE=OHE,
                 nominal_factor_colums=columns,
                 cwd = args.cwd + f'/{results_dir}{domain}/{args.alpha}/{target_columns_type}',
-                root= args.cwd,
                 domain= domain,
                 target_variable= target_variable,
-                alpha= args.alpha,
-                graphWithClass=False
+                graphWithClass=False,
+                fix_imbalance=False,
+                withCost=cost,
+                financialOption = ast.literal_eval(financialOption) if cost else None,
+                duration_divider = duration_divider,
+                rate_divider= rate_divider,
+                original=original,
+                default=default,
+                clfs=clfs,
+                verbose=verbose
             )
             with open(
-                    args.cwd + f'/{results_dir}{domain}/{args.alpha}/{target_columns_type}/mlna_2/graph_turn_1_completed.dtvni',
+                    args.cwd + f'/{results_dir}{domain}/{args.alpha}/{target_columns_type}/mlna_2/model_turn_1_completed.dtvni',
                     "a") as fichier:
                 fichier.write("")
     if args.turn == 2:  # check if we are onto the first turn
-        make_mlna_top_k_variable_v2(
-            x_traini=x_traini,
-            x_testi=x_testi,
-            y_traini=y_traini,
-            y_testi=y_testi,
-            OHE=OHE,
-            nominal_factor_colums=columns,
-            cwd=args.cwd + f'/{results_dir}{domain}/{args.alpha}/{target_columns_type}',
-            root=args.cwd,
-            domain=domain,
-            target_variable=target_variable,
-            alpha=args.alpha,
-            graphWithClass=False,
-            topR=[]
-        )
+        if sum([f"MNIFS_{domain}_best_features" in file for _, _, files in
+                os.walk(args.cwd + f'/{results_dir}{domain}/{args.alpha}/{target_columns_type}') for
+                file in files]) == 0:
+            print("❌ Unable to access selection protocol results")
+            exit(1)
+
+        if sum(['model_turn_2_completed.dtvni' == file for _, _, files in
+                os.walk(args.cwd + f'/{results_dir}{domain}/{args.alpha}/{target_columns_type}/select') for
+                file in files]) > 0:
+            print("✅ MLNA k Best model already completed")
+        else:
+
+            # load mnifs configs
+            mnifs_path = args.cwd + f'/{results_dir}{domain}/{args.alpha}/{target_columns_type}/' + [file for _, _, files in
+                os.walk(
+                  args.cwd + f'/{results_dir}{domain}/{args.alpha}/{target_columns_type}')
+                for
+                file in files][
+                [f"MNIFS_{domain}_best_features" in file for _, _, files in
+                 os.walk(args.cwd + f'/{results_dir}{domain}/{args.alpha}/{target_columns_type}') for
+                 file in files].index(True)
+            ]
+            mnifs_config = read_model(path=mnifs_path)
+
+            make_mlna_top_k_variable_v2(
+                x_traini=x_traini,
+                x_testi=x_testi,
+                y_traini=y_traini,
+                y_testi=y_testi,
+                OHE=OHE,
+                nominal_factor_colums=columns,
+                cwd=args.cwd + f'/{results_dir}{domain}/{args.alpha}/{target_columns_type}/select',
+                domain=domain,
+                target_variable=target_variable,
+                alpha=args.alpha,
+                graphWithClass=args.graph_with_class,
+                topR=list(mnifs_config['model'].keys()),
+                fix_imbalance=False,
+                withCost=cost,
+                financialOption = ast.literal_eval(financialOption) if cost else None,
+                duration_divider = duration_divider,
+                rate_divider= rate_divider,
+                original=original,
+                default=default,
+                clfs=clfs,
+                verbose=verbose
+            )
+            with open(
+                    args.cwd + f'/{results_dir}{domain}/{args.alpha}/{target_columns_type}/select/model_turn_2_completed.dtvni',
+                    "a") as fichier:
+                fichier.write("")
 
 
     print("Descripteurs extraits et sauvegardés.")
