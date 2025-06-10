@@ -217,6 +217,6 @@
 **/minted/
 
 # new pipeline
-**/results/
-**/data/
-**/logs/
+**/results*/
+**/data*/
+**/logs*/
