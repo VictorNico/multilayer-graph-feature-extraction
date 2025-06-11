@@ -3,7 +3,7 @@ set -e  # Arrête le script si une commande échoue
 
 # Fichier de configuration
 CONFIG_FILE="env.sh"
-VENV_PATH="../scripting/.env/bin/activate"
+VENV_PATH=".env_mlna"
 
 # paramètres d'exécution
 param1=$1
@@ -25,11 +25,20 @@ else
 fi
 # Activation de l'environement
 # shellcheck disable=SC1090
-if [[ ! -f "$VENV_PATH" ]]; then
+if [[ ! -f "$VENV_PATH/bin/activate" ]]; then
     echo "L'environnement virtuel n'existe pas à l'emplacement $VENV_PATH"
-    exit 1
+    # Crée un nouvel environnement pour tester
+    echo "creation venv activé"
+    python3.9 -m venv $VENV_PATH
+
+    source $VENV_PATH/bin/activate
+    echo "venv activé"
+    echo "Installation des dependances"
+    pip install -r requirements.txt
+
+
 else
-    source "$VENV_PATH"
+    source "$VENV_PATH/bin/activate"
     echo "venv activé"
 fi
 
