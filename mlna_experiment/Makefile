@@ -22,7 +22,7 @@ mlna_on_adu:
 		echo "👤 Utilisateur: $(USERNAME)"; \
 		echo "📁 Répertoire: $$(pwd)"; \
 		echo ""; \
-		sudo chmod +x launch.sh && sudo ./launch.sh Adult; \
+		 chmod +x launch.sh &&  ./launch.sh Adult; \
 		echo "✅ [$(shell date '+%Y-%m-%d %H:%M:%S')] FIN du traitement Adult"; \
 	} > "$$LOG_FILE" 2>&1 && \
 	echo "✅ Adult terminé - Log: $$LOG_FILE"
@@ -33,7 +33,7 @@ stop-mlna_on_adu:
 	@LOG_FILE="$(LOG_DIR)/Adult_stop_$(TIMESTAMP).log" && \
 	{ \
 		echo "🔹 [$(shell date '+%Y-%m-%d %H:%M:%S')] DÉBUT arrêt Adult"; \
-		sudo chmod +x kill_screens.sh && sudo ./kill_screens.sh Adult && rm -rf /Users/djiemboutienctheuvictornico/.screen/*; \
+		 chmod +x kill_screens.sh &&  ./kill_screens.sh Adult && rm -rf /Users/djiemboutienctheuvictornico/.screen/*; \
 		echo "✅ [$(shell date '+%Y-%m-%d %H:%M:%S')] FIN arrêt Adult"; \
 	} > "$$LOG_FILE" 2>&1
 
@@ -47,7 +47,7 @@ mlna_on_ban:
 		echo "👤 Utilisateur: $(USERNAME)"; \
 		echo "📁 Répertoire: $$(pwd)"; \
 		echo ""; \
-		sudo chmod +x launch.sh && sudo ./launch.sh BankMarketing; \
+		 chmod +x launch.sh &&  ./launch.sh BankMarketing; \
 		echo "✅ [$(shell date '+%Y-%m-%d %H:%M:%S')] FIN du traitement BankMarketing"; \
 	} > "$$LOG_FILE" 2>&1 && \
 	echo "✅ BankMarketing terminé - Log: $$LOG_FILE"
@@ -58,7 +58,7 @@ stop-mlna_on_ban:
 	@LOG_FILE="$(LOG_DIR)/BankMarketing_stop_$(TIMESTAMP).log" && \
 	{ \
 		echo "🔹 [$(shell date '+%Y-%m-%d %H:%M:%S')] DÉBUT arrêt BankMarketing"; \
-		sudo chmod +x kill_screens.sh && sudo ./kill_screens.sh BankMarketing && rm -rf /Users/djiemboutienctheuvictornico/.screen/*; \
+		 chmod +x kill_screens.sh &&  ./kill_screens.sh BankMarketing && rm -rf /Users/djiemboutienctheuvictornico/.screen/*; \
 		echo "✅ [$(shell date '+%Y-%m-%d %H:%M:%S')] FIN arrêt BankMarketing"; \
 	} > "$$LOG_FILE" 2>&1
 
@@ -72,7 +72,7 @@ mlna_on_car:
 		echo "👤 Utilisateur: $(USERNAME)"; \
 		echo "📁 Répertoire: $$(pwd)"; \
 		echo ""; \
-		sudo chmod +x launch.sh && sudo ./launch.sh CarEvaluation; \
+		 chmod +x launch.sh &&  ./launch.sh CarEvaluation; \
 		echo "✅ [$(shell date '+%Y-%m-%d %H:%M:%S')] FIN du traitement CarEvaluation"; \
 	} > "$$LOG_FILE" 2>&1 && \
 	echo "✅ CarEvaluation terminé - Log: $$LOG_FILE"
@@ -83,7 +83,7 @@ stop-mlna_on_car:
 	@LOG_FILE="$(LOG_DIR)/CarEvaluation_stop_$(TIMESTAMP).log" && \
 	{ \
 		echo "🔹 [$(shell date '+%Y-%m-%d %H:%M:%S')] DÉBUT arrêt CarEvaluation"; \
-		sudo chmod +x kill_screens.sh && sudo ./kill_screens.sh CarEvaluation && rm -rf /Users/djiemboutienctheuvictornico/.screen/*; \
+		 chmod +x kill_screens.sh &&  ./kill_screens.sh CarEvaluation && rm -rf /Users/djiemboutienctheuvictornico/.screen/*; \
 		echo "✅ [$(shell date '+%Y-%m-%d %H:%M:%S')] FIN arrêt CarEvaluation"; \
 	} > "$$LOG_FILE" 2>&1
 
@@ -97,7 +97,7 @@ mlna_on_crd:
 		echo "👤 Utilisateur: $(USERNAME)"; \
 		echo "📁 Répertoire: $$(pwd)"; \
 		echo ""; \
-		sudo chmod +x launch.sh && sudo ./launch.sh CreditRiskDataset; \
+		 chmod +x launch.sh &&  ./launch.sh CreditRiskDataset; \
 		echo "✅ [$(shell date '+%Y-%m-%d %H:%M:%S')] FIN du traitement CreditRiskDataset"; \
 	} > "$$LOG_FILE" 2>&1 && \
 	echo "✅ CreditRiskDataset terminé - Log: $$LOG_FILE"
@@ -108,7 +108,7 @@ stop-mlna_on_crd:
 	@LOG_FILE="$(LOG_DIR)/CreditRiskDataset_stop_$(TIMESTAMP).log" && \
 	{ \
 		echo "🔹 [$(shell date '+%Y-%m-%d %H:%M:%S')] DÉBUT arrêt CreditRiskDataset"; \
-		sudo chmod +x kill_screens.sh && sudo ./kill_screens.sh CreditRiskDataset && rm -rf /Users/djiemboutienctheuvictornico/.screen/*; \
+		 chmod +x kill_screens.sh &&  ./kill_screens.sh CreditRiskDataset && rm -rf /Users/djiemboutienctheuvictornico/.screen/*; \
 		echo "✅ [$(shell date '+%Y-%m-%d %H:%M:%S')] FIN arrêt CreditRiskDataset"; \
 	} > "$$LOG_FILE" 2>&1
 
@@ -122,7 +122,7 @@ mlna_on_dia:
 		echo "👤 Utilisateur: $(USERNAME)"; \
 		echo "📁 Répertoire: $$(pwd)"; \
 		echo ""; \
-		sudo chmod +x launch.sh && sudo ./launch.sh Diabetes; \
+		 chmod +x launch.sh &&  ./launch.sh Diabetes; \
 		echo "✅ [$(shell date '+%Y-%m-%d %H:%M:%S')] FIN du traitement Diabetes"; \
 	} > "$$LOG_FILE" 2>&1 && \
 	echo "✅ Diabetes terminé - Log: $$LOG_FILE"
@@ -133,7 +133,7 @@ stop-mlna_on_dia:
 	@LOG_FILE="$(LOG_DIR)/Diabetes_stop_$(TIMESTAMP).log" && \
 	{ \
 		echo "🔹 [$(shell date '+%Y-%m-%d %H:%M:%S')] DÉBUT arrêt Diabetes"; \
-		sudo chmod +x kill_screens.sh && sudo ./kill_screens.sh Diabetes && rm -rf /Users/djiemboutienctheuvictornico/.screen/*; \
+		 chmod +x kill_screens.sh &&  ./kill_screens.sh Diabetes && rm -rf /Users/djiemboutienctheuvictornico/.screen/*; \
 		echo "✅ [$(shell date '+%Y-%m-%d %H:%M:%S')] FIN arrêt Diabetes"; \
 	} > "$$LOG_FILE" 2>&1
 
@@ -147,7 +147,7 @@ mlna_on_ger:
 		echo "👤 Utilisateur: $(USERNAME)"; \
 		echo "📁 Répertoire: $$(pwd)"; \
 		echo ""; \
-		sudo chmod +x launch.sh && sudo ./launch.sh GermanCredit; \
+		 chmod +x launch.sh &&  ./launch.sh GermanCredit; \
 		echo "✅ [$(shell date '+%Y-%m-%d %H:%M:%S')] FIN du traitement GermanCredit"; \
 	} > "$$LOG_FILE" 2>&1 && \
 	echo "✅ GermanCredit terminé - Log: $$LOG_FILE"
@@ -158,7 +158,7 @@ stop-mlna_on_ger:
 	@LOG_FILE="$(LOG_DIR)/GermanCredit_stop_$(TIMESTAMP).log" && \
 	{ \
 		echo "🔹 [$(shell date '+%Y-%m-%d %H:%M:%S')] DÉBUT arrêt GermanCredit"; \
-		sudo chmod +x kill_screens.sh && sudo ./kill_screens.sh GermanCredit && rm -rf /Users/djiemboutienctheuvictornico/.screen/*; \
+		 chmod +x kill_screens.sh &&  ./kill_screens.sh GermanCredit && rm -rf /Users/djiemboutienctheuvictornico/.screen/*; \
 		echo "✅ [$(shell date '+%Y-%m-%d %H:%M:%S')] FIN arrêt GermanCredit"; \
 	} > "$$LOG_FILE" 2>&1
 
@@ -172,7 +172,7 @@ mlna_on_ld4:
 		echo "👤 Utilisateur: $(USERNAME)"; \
 		echo "📁 Répertoire: $$(pwd)"; \
 		echo ""; \
-		sudo chmod +x launch.sh && sudo ./launch.sh LoanDataforDummyBank; \
+		 chmod +x launch.sh &&  ./launch.sh LoanDataforDummyBank; \
 		echo "✅ [$(shell date '+%Y-%m-%d %H:%M:%S')] FIN du traitement LoanDataforDummyBank"; \
 	} > "$$LOG_FILE" 2>&1 && \
 	echo "✅ LoanDataforDummyBank terminé - Log: $$LOG_FILE"
@@ -183,7 +183,7 @@ stop-mlna_on_ld4:
 	@LOG_FILE="$(LOG_DIR)/LoanDataforDummyBank_stop_$(TIMESTAMP).log" && \
 	{ \
 		echo "🔹 [$(shell date '+%Y-%m-%d %H:%M:%S')] DÉBUT arrêt LoanDataforDummyBank"; \
-		sudo chmod +x kill_screens.sh && sudo ./kill_screens.sh LoanDataforDummyBank && rm -rf /Users/djiemboutienctheuvictornico/.screen/*; \
+		 chmod +x kill_screens.sh &&  ./kill_screens.sh LoanDataforDummyBank && rm -rf /Users/djiemboutienctheuvictornico/.screen/*; \
 		echo "✅ [$(shell date '+%Y-%m-%d %H:%M:%S')] FIN arrêt LoanDataforDummyBank"; \
 	} > "$$LOG_FILE" 2>&1
 
@@ -197,7 +197,7 @@ mlna_on_ldd:
 		echo "👤 Utilisateur: $(USERNAME)"; \
 		echo "📁 Répertoire: $$(pwd)"; \
 		echo ""; \
-		sudo chmod +x launch.sh && sudo ./launch.sh LoanDefaultDataset; \
+		 chmod +x launch.sh &&  ./launch.sh LoanDefaultDataset; \
 		echo "✅ [$(shell date '+%Y-%m-%d %H:%M:%S')] FIN du traitement LoanDefaultDataset"; \
 	} > "$$LOG_FILE" 2>&1 && \
 	echo "✅ LoanDefaultDataset terminé - Log: $$LOG_FILE"
@@ -208,7 +208,7 @@ stop-mlna_on_ldd:
 	@LOG_FILE="$(LOG_DIR)/LoanDefaultDataset_stop_$(TIMESTAMP).log" && \
 	{ \
 		echo "🔹 [$(shell date '+%Y-%m-%d %H:%M:%S')] DÉBUT arrêt LoanDefaultDataset"; \
-		sudo chmod +x kill_screens.sh && sudo ./kill_screens.sh LoanDefaultDataset && rm -rf /Users/djiemboutienctheuvictornico/.screen/*; \
+		 chmod +x kill_screens.sh &&  ./kill_screens.sh LoanDefaultDataset && rm -rf /Users/djiemboutienctheuvictornico/.screen/*; \
 		echo "✅ [$(shell date '+%Y-%m-%d %H:%M:%S')] FIN arrêt LoanDefaultDataset"; \
 	} > "$$LOG_FILE" 2>&1
 
@@ -222,7 +222,7 @@ mlna_on_mus:
 		echo "👤 Utilisateur: $(USERNAME)"; \
 		echo "📁 Répertoire: $$(pwd)"; \
 		echo ""; \
-		sudo chmod +x launch.sh && sudo ./launch.sh Mushroom; \
+		 chmod +x launch.sh &&  ./launch.sh Mushroom; \
 		echo "✅ [$(shell date '+%Y-%m-%d %H:%M:%S')] FIN du traitement Mushroom"; \
 	} > "$$LOG_FILE" 2>&1 && \
 	echo "✅ Mushroom terminé - Log: $$LOG_FILE"
@@ -233,7 +233,7 @@ stop-mlna_on_mus:
 	@LOG_FILE="$(LOG_DIR)/Mushroom_stop_$(TIMESTAMP).log" && \
 	{ \
 		echo "🔹 [$(shell date '+%Y-%m-%d %H:%M:%S')] DÉBUT arrêt Mushroom"; \
-		sudo chmod +x kill_screens.sh && sudo ./kill_screens.sh Mushroom && rm -rf /Users/djiemboutienctheuvictornico/.screen/*; \
+		 chmod +x kill_screens.sh &&  ./kill_screens.sh Mushroom && rm -rf /Users/djiemboutienctheuvictornico/.screen/*; \
 		echo "✅ [$(shell date '+%Y-%m-%d %H:%M:%S')] FIN arrêt Mushroom"; \
 	} > "$$LOG_FILE" 2>&1
 
@@ -247,7 +247,7 @@ mlna_on_nur:
 		echo "👤 Utilisateur: $(USERNAME)"; \
 		echo "📁 Répertoire: $$(pwd)"; \
 		echo ""; \
-		sudo chmod +x launch.sh && sudo ./launch.sh Nursery; \
+		 chmod +x launch.sh &&  ./launch.sh Nursery; \
 		echo "✅ [$(shell date '+%Y-%m-%d %H:%M:%S')] FIN du traitement Nursery"; \
 	} > "$$LOG_FILE" 2>&1 && \
 	echo "✅ Nursery terminé - Log: $$LOG_FILE"
@@ -258,7 +258,7 @@ stop-mlna_on_nur:
 	@LOG_FILE="$(LOG_DIR)/Nursery_stop_$(TIMESTAMP).log" && \
 	{ \
 		echo "🔹 [$(shell date '+%Y-%m-%d %H:%M:%S')] DÉBUT arrêt Nursery"; \
-		sudo chmod +x kill_screens.sh && sudo ./kill_screens.sh Nursery && rm -rf /Users/djiemboutienctheuvictornico/.screen/*; \
+		 chmod +x kill_screens.sh &&  ./kill_screens.sh Nursery && rm -rf /Users/djiemboutienctheuvictornico/.screen/*; \
 		echo "✅ [$(shell date '+%Y-%m-%d %H:%M:%S')] FIN arrêt Nursery"; \
 	} > "$$LOG_FILE" 2>&1
 
@@ -272,7 +272,7 @@ mlna_on_stu:
 		echo "👤 Utilisateur: $(USERNAME)"; \
 		echo "📁 Répertoire: $$(pwd)"; \
 		echo ""; \
-		sudo chmod +x launch.sh && sudo ./launch.sh StudentPerformance; \
+		 chmod +x launch.sh &&  ./launch.sh StudentPerformance; \
 		echo "✅ [$(shell date '+%Y-%m-%d %H:%M:%S')] FIN du traitement StudentPerformance"; \
 	} > "$$LOG_FILE" 2>&1 && \
 	echo "✅ StudentPerformance terminé - Log: $$LOG_FILE"
@@ -283,7 +283,7 @@ stop-mlna_on_stu:
 	@LOG_FILE="$(LOG_DIR)/StudentPerformance_stop_$(TIMESTAMP).log" && \
 	{ \
 		echo "🔹 [$(shell date '+%Y-%m-%d %H:%M:%S')] DÉBUT arrêt StudentPerformance"; \
-		sudo chmod +x kill_screens.sh && sudo ./kill_screens.sh StudentPerformance && rm -rf /Users/djiemboutienctheuvictornico/.screen/*; \
+		 chmod +x kill_screens.sh &&  ./kill_screens.sh StudentPerformance && rm -rf /Users/djiemboutienctheuvictornico/.screen/*; \
 		echo "✅ [$(shell date '+%Y-%m-%d %H:%M:%S')] FIN arrêt StudentPerformance"; \
 	} > "$$LOG_FILE" 2>&1
 
