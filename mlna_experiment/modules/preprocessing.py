@@ -40,24 +40,39 @@ import math
 #################################################
 # @profile
 def nominal_factor_encoding(data, variables_list):
-    """Apply One Hot Encoding (OHE) on ordinal factor dimension
+    """
+    Apply One Hot Encoding (OHE) on nominal factor dimensions.
+
     Args:
-      data: A dataframe containing the dimension to standardize
-      variables_list: List of dimension on which apply the OHE
+        data: A pandas DataFrame containing the variables to encode.
+        variables_list: List of column names to apply OHE on.
 
     Returns:
-      The new dataframe with all dimension standardized.
+        A tuple: (encoded DataFrame, dictionary of categories per variable)
     """
     dataframe = data.copy(deep=True)
     ohe = OneHotEncoder()
+
+    # Préfixer les valeurs pour les rendre uniques par colonne
     for col in variables_list:
-        print(f"{col} ---<>----- {dataframe[col].unique().tolist()}")
-        dataframe[col] = dataframe[col].apply(lambda x: x +'__'+ col.replace(' ', '_'))
+        if dataframe[col].nunique() <= 1:
+            print(f"Skipping column '{col}' (only one unique value: {dataframe[col].unique()})")
+            variables_list = [v for v in variables_list if v != col]
+        else:
+            print(f"{col} ---<>----- {dataframe[col].unique().tolist()}")
+            dataframe[col] = dataframe[col].apply(lambda x: f"{x}__{col.replace(' ', '_')}")
+
+
+    if not variables_list:
+        print("No valid column to encode. Returning original dataframe.")
+        return dataframe, {}
+
     ohe.fit(dataframe[variables_list])
-    merge_ohe_col = np.concatenate((ohe.categories_)) # list of all new dimension names
-    ohe_data = pd.DataFrame(ohe.transform(dataframe[variables_list]).toarray(), columns=merge_ohe_col) # make the one hot encoding and save the result inside a temp source
-    dataframe = pd.concat([ohe_data, dataframe], axis=1) #  concat existing and news columns dimensions
-    dataframe = dataframe.drop(variables_list, axis=1) # remove all nominal unencoded dimensions
+    merge_ohe_col = np.concatenate((ohe.categories_))  # list of all new dimension names
+    ohe_data = pd.DataFrame(ohe.transform(dataframe[variables_list]).toarray(),
+                            columns=merge_ohe_col)  # make the one hot encoding and save the result inside a temp source
+    dataframe = pd.concat([ohe_data, dataframe], axis=1)  # concat existing and news columns dimensions
+    dataframe = dataframe.drop(variables_list, axis=1)  # remove all nominal unencoded dimensions
     return (dataframe, ohe.categories_)
 
 # @profile
@@ -70,7 +85,7 @@ def ordinal_factor_encoding(data, variables_list):
     Returns:
       The new dataframe with all dimension encoded and their mapping
     """
-    
+    # print(data)
     dataframe = data.copy(deep=True)
     # 1) for each variable
     label_enc = {}
@@ -78,7 +93,7 @@ def ordinal_factor_encoding(data, variables_list):
         label_encoder = LabelEncoder()
         dataframe[var] = label_encoder.fit_transform(dataframe[var])
         label_enc[var] = dict(zip(label_encoder.classes_, label_encoder.transform(label_encoder.classes_)))
-    return [dataframe,label_enc]
+    return [dataframe, label_enc]
 
 # @profile
 def numeric_uniform_standardization(data, variables_list):
@@ -90,7 +105,7 @@ def numeric_uniform_standardization(data, variables_list):
     Returns:
       The new dataframe with all dimension standardized.
     """
-    
+    # print(data)
     dataframe = data.copy(deep=True)
     # 1) for each variable
     for var in variables_list:

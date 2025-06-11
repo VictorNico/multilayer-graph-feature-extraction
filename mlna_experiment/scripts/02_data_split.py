@@ -10,6 +10,7 @@ import statistics
 
 def try_split_all_models(df, target, test_size, max_perf, max_tries=100, reset_index=False, verbose=True):
     models = init_models()
+    print(df[target].value_counts())
     for attempt in range(max_tries):
         seed = random.randint(0, 10000)
         X = df.drop(columns=[target])
@@ -91,7 +92,7 @@ def main():
     target = config["DATA"]["target"]
 
     encoding = config["PREPROCESSING"]["encoding"]
-    dataset_delimiter = config["DATA"]["dataset_delimiter"]
+    dataset_delimiter = config["SPLIT"]["dataset_delimiter"]
 
     # ------------------------------------------------------------------------------------------------------------------
     # lookup existing train test file

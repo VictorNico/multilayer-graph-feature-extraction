@@ -454,7 +454,7 @@ def main():
     config = load_config(f"{args.cwd}/configs/{args.dataset_folder}/config.ini")
 
     encoding = config["PREPROCESSING"]["encoding"]
-    dataset_delimiter = config["DATA"]["dataset_delimiter"]
+    dataset_delimiter = config["SPLIT"]["dataset_delimiter"]
     domain = config["DATA"]["domain"]
     results_dir = config["GENERAL"]["results_dir"]
     report_dir = config["GENERAL"]["report_dir"]

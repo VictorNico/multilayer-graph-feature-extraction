@@ -75,6 +75,20 @@ def make_preprocessing(dataset, to_remove, domain, cwd, dir_name, target_variabl
 
     # delete attribut which are not helpfull
     dataset.drop(to_remove, axis=1, inplace=True)
+    before = dataset[target_variable].value_counts()
+    dataset = remove_rare_classes(dataset, target_variable, min_count=5)
+    after = dataset[target_variable].value_counts()
+    save_model(
+        cwd=cwd + f'/{processed_dir}{dir_name}',
+        clf={
+            "before": before,
+            "after": after
+        },
+        prefix="",
+        clf_name="remove_rare_classes",
+        ext=".conf",
+        sub=""
+    )
 
     # get list of numeric, ordinal and nominal dimension in dataset
 
@@ -134,12 +148,12 @@ def make_preprocessing(dataset, to_remove, domain, cwd, dir_name, target_variabl
     print(f"OHE <----> {OHE}") if verbose else None
 
     # label encoding of ordinal data
-    if (target_variable in categorial_col):
-        DATA_OHE = remove_rare_classes(DATA_OHE, target_column=target_variable, min_count=5)
-    DATA_OHE_LB, label_enc = ordinal_factor_encoding(
+    # if (target_variable in categorial_col):
+    DATA_OHE = remove_rare_classes(DATA_OHE, target_column=target_variable, min_count=5)
+    DATA_OHE_LB, label_enc = (ordinal_factor_encoding(
         DATA_OHE,
         [target_variable]
-    ) if (target_variable in categorial_col) else DATA_OHE, None
+    ) if (target_variable in categorial_col) else (DATA_OHE, None))
     save_model(
         cwd=cwd + f'/{processed_dir}{dir_name}',
         clf={
@@ -150,7 +164,7 @@ def make_preprocessing(dataset, to_remove, domain, cwd, dir_name, target_variabl
         ext=".conf",
         sub=""
     ) if (target_variable in categorial_col) else None
-    # DATA_OHE_LB = DATA_OHE
+
 
     # standard normalisation of label encoded data to deeve it into interval 0,1
     # DATA_OHE_LB_LBU = numeric_uniform_standardization(
@@ -313,7 +327,8 @@ def main():
     print(f"received path: {raw_path}") if verbose else None
     dataset = load_data_set_from_url(path=f"{args.cwd}/{raw_path}", sep=dataset_delimiter, encoding=encoding, index_col=index_col,
                                      na_values=na_values)
-
+    print(dataset.columns)
+    print(dataset[target_variable].value_counts())
     dataset.reset_index(drop=True, inplace=True)
     print(f"loaded dataset dim: {dataset.shape}") if verbose else None
 
@@ -333,12 +348,14 @@ def main():
         clf_name="original",
         sub=f""
     )
+    # identify columns with unique value to remove
+    unique_cols = dataset.columns[dataset.nunique() <= 1].tolist()
 
     # Application de la préparation
 
     make_preprocessing(
         dataset=dataset,
-        to_remove=to_remove,
+        to_remove=[*unique_cols,*to_remove],
         domain=domain,
         cwd=args.cwd,
         dir_name=args.dataset_folder,

@@ -836,7 +836,7 @@ def main():
     domain = config["DATA"]["domain"]
 
     encoding = config["PREPROCESSING"]["encoding"]
-    dataset_delimiter = config["DATA"]["dataset_delimiter"]
+    dataset_delimiter = config["SPLIT"]["dataset_delimiter"]
     target_variable = config["DATA"]["target"]
 
     processed_dir = config["GENERAL"]["processed_dir"]

@@ -34,7 +34,6 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.linear_model import Perceptron
 from sklearn.metrics import f1_score
 
-
 # 3. Imports locaux ou spécifiques au projet
 from .file import save_model, save_dataset
 
@@ -114,6 +113,7 @@ def init_models():
 
     return clfs
 
+
 # @profile
 def init_training_store(dataframe, withCost=True):
     """Initialize training information storage dataframe
@@ -155,6 +155,7 @@ def get_xgb_imp(xgb):
     imp_vals = xgb.get_booster().get_fscore()
     total = sum(imp_vals.values())
     return {k: v / total for k, v in imp_vals.items()}
+
 
 # @profile
 def train_classifier(
@@ -331,7 +332,9 @@ def train_classifier(
     shap_vals_mean = np.mean(np.abs(shap_values), axis=0)  # Mean absolute SHAP values
 
     vals = list(shap_vals_mean)
-    vals.extend([precision_r, accuracy_r, recall_r, f1_score_r, cost] if withCost else [precision_r, accuracy_r, recall_r, f1_score_r] )
+    vals.extend(
+        [precision_r, accuracy_r, recall_r, f1_score_r, cost] if withCost else [precision_r, accuracy_r, recall_r,
+                                                                                f1_score_r])
 
     keys = X_train.columns.to_list()
     keys.extend([
@@ -423,6 +426,7 @@ def train(
 
     return store
 
+
 def compute_classification_financial_cost(ypred, yreal, financialOption, test_dataset, duration_divider, rate_divider):
     """
     Compute the financial cost of an investment
@@ -441,7 +445,7 @@ def compute_classification_financial_cost(ypred, yreal, financialOption, test_da
     """
     cost = 0
     # print(len(test_dataset),len(yreal))
-    for i,example in enumerate(list(test_dataset.index)):
+    for i, example in enumerate(list(test_dataset.index)):
         rate = test_dataset[financialOption['rate']][example] / rate_divider
         amount = test_dataset[financialOption['amount']][example]
         duration = test_dataset[financialOption['duration']][example] / duration_divider
@@ -450,13 +454,15 @@ def compute_classification_financial_cost(ypred, yreal, financialOption, test_da
         predicted_label = ypred[i]
 
         if predicted_label == 0 and true_label == 1:  # Bad debtor announced as good
-            cost += amount * 1 # exxpected to really be cost += amount * loss_given_default but like it's hard to fine or compute this information for any dataset and the impact is not really observe, we decide to replace by 1
+            cost += amount * 1  # exxpected to really be cost += amount * loss_given_default but like it's hard to fine or compute this information for any dataset and the impact is not really observe, we decide to replace by 1
 
         elif predicted_label == 1 and true_label == 0:  # Good customer announced as bad
             deficit = amount * rate * duration
             cost += deficit
 
     return cost
+
+
 def compute_confusion_matrix(true_labels, predicted_labels, labels):
     """
     Computes the confusion matrix.
@@ -475,6 +481,7 @@ def compute_confusion_matrix(true_labels, predicted_labels, labels):
 
     return confusion_matrix
 
+
 def precision_macro(confusion_matrix):
     num_classes = len(confusion_matrix)
     precisions = []
@@ -484,6 +491,7 @@ def precision_macro(confusion_matrix):
         denom = tp + fp
         precisions.append(tp / denom if denom else 0.0)
     return sum(precisions) / num_classes
+
 
 def recall_macro(confusion_matrix):
     num_classes = len(confusion_matrix)
@@ -495,11 +503,13 @@ def recall_macro(confusion_matrix):
         recalls.append(tp / denom if denom else 0.0)
     return sum(recalls) / num_classes
 
+
 def f1_macro(confusion_matrix):
     p = precision_macro(confusion_matrix)
     r = recall_macro(confusion_matrix)
     denom = p + r
     return (2 * p * r) / denom if denom else 0.0
+
 
 def accuracy_macro(confusion_matrix):
     correct = sum(confusion_matrix[i][i] for i in range(len(confusion_matrix)))
