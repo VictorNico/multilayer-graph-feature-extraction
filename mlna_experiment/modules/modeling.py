@@ -83,7 +83,8 @@ def init_models():
     xgb = XGBClassifier(booster='gbtree', use_label_encoder=False)
     lda = LinearDiscriminantAnalysis()
     svc = SVC(
-        kernel='linear'
+        kernel='linear',
+        probability=True
     )
     mlp = MLPClassifier(
         hidden_layer_sizes=(100,),  # 1 couche cachée de 100 neurones
@@ -211,7 +212,7 @@ def train_classifier(
         except Exception as e:
             print(f"Error with Support Vector Classifier: {str(e)}")
             # Retry with lower max_iter if it doesn't converge
-            clf = SVC(kernel='linear', random_state=42, max_iter=500)
+            clf = SVC(kernel='linear', probability=True, random_state=42, max_iter=500)
             clf.fit(X_train, y_train)
     elif isinstance(clf, DecisionTreeClassifier):
         try:
@@ -299,25 +300,32 @@ def train_classifier(
     explainer = None
     shap_values = None
 
-    if isinstance(clf, (LogisticRegression, Perceptron, SVC, LinearDiscriminantAnalysis)):
+    print(f"=== DIAGNOSTIC SHAP pour {name} ===")
+    print(f"Type du modèle: {type(clf)}")
+    print(f"Classes du modèle: {clf.classes_}")
+    print(f"Nombre de classes: {len(clf.classes_)}")
+    if isinstance(clf, (LogisticRegression, Perceptron, LinearDiscriminantAnalysis)):
+        print("Utilisation de LinearExplainer")
         explainer = shap.LinearExplainer(clf, X_train)
         shap_values = explainer.shap_values(X_test)
     elif isinstance(clf, (RandomForestClassifier, DecisionTreeClassifier, XGBClassifier)):
+        print("Utilisation de TreeExplainer")
         explainer = shap.TreeExplainer(clf)
         shap_values = explainer.shap_values(X_test)
-        # Si classification binaire, shap_values sera une liste de deux éléments
-        # print(shap_values.ndim)
-        # # Vérification pour numpy.ndarray
-        # if isinstance(shap_values, np.ndarray):
-        #     if shap_values.ndim > 2:
-        #         # Si c'est un tableau 3D, prenons la dernière dimension (généralement la classe positive)
-        #         shap_values = shap_values[:, :, 1]  # [:, :, -1] pour la classe 0 et [:, :, 1] pour la classe 1
-        # elif isinstance(shap_values, list) and len(shap_values) == 2:
-        #     # Garde l'ancien comportement pour la compatibilité
-        #     shap_values = shap_values[1]
     else:
+        print("Utilisation de KernelExplainer")
         explainer = shap.KernelExplainer(clf.predict_proba, X_train)
         shap_values = explainer.shap_values(X_test)
+
+    # Diagnostic des valeurs SHAP
+    if isinstance(shap_values, list):
+        print(f"shap_values est une liste de {len(shap_values)} éléments")
+        for i, sv in enumerate(shap_values):
+            print(f"  Classe {i}: forme {sv.shape}")
+    elif isinstance(shap_values, np.ndarray):
+        print(f"shap_values est un array de forme: {shap_values.shape}")
+    else:
+        print(f"shap_values type inattendu: {type(shap_values)}")
 
     # Store SHAP values along with metrics
     shap_vals_mean = np.mean(np.abs(shap_values), axis=0)  # Mean absolute SHAP values

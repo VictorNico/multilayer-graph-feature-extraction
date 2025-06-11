@@ -10,21 +10,18 @@
         - evaluate the gain of class distance base descriptor in learning process
 
 """
+from copy import deepcopy
 
 # coding: utf-8
 
 ## 0.------- Module loading
-import statistics
-import os
 from .file import *
 from .report import *
-from unidecode import unidecode
-import re
-import time
-from copy import deepcopy
-from collections import Counter
 import json
 from colorama import init, Fore, Style
+import statistics
+import math
+from scipy.spatial.distance import euclidean
 
 # Initialize colorama for Windows compatibility
 init()
@@ -49,6 +46,7 @@ GAP_MX_F = lambda x: (('GAP_MX_' in x))
 GAP_CX_F = lambda x: (('GAP_CX_' in x))
 GAP_CY_F = lambda x: (('GAP_CY_' in x))
 GAP_CXY_F = lambda x: (('GAP_CXY_' in x))
+BOT_CXY_F = lambda x: (('BOT_CXY_' in x))
 
 GLO_INTER_F = lambda x: (not ('_M_' in x) and ('INTER' in x) and ('GLO' in x))
 GLO_INTRA_F = lambda x: (not ('_M_' in x) and ('INTRA' in x) and ('GLO' in x))
@@ -84,6 +82,11 @@ header = """
     \\usepackage{amssymb}
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Modules
+    \\usepackage{pgfplots}
+    \\usepackage{xcolor}
+    \\usepackage{tikz}
+    \\pgfplotsset{compat=1.17}
+    \\usetikzlibrary{matrix, positioning}
 
     \\usepackage{array}
     \\usepackage{float}
@@ -96,14 +99,28 @@ header = """
     \\usepackage{hyperref}
     \\usepackage[babel]{csquotes}
     \\usepackage{rotating}
+    \\usepackage{
+    multirow, 
+    multicol, 
+    xcolor, 
+    % fontspec, 
+    graphicx, 
+    booktabs, 
+    subfigure, 
+    fancyhdr, 
+    tikz, 
+    algorithm, 
+    algpseudocode, 
+    acronym
+    }
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %SetFonts
 
     %SetFonts
 
 
-    \\title{Prediction du risque de credit bancaire sensible aux coûts financiers en intégrant des descripteurs extraits des graphes \\ Tableaux récapitulatifs}
-    \\author{The Author}
+    \\title{Class-based multilayer graph feature extraction for supervised Machine Learning}
+    \\author{DJIEMBOU TIENTCHEU Victor Nico}
     %\\date{}                            % Activate to display a given date or no date
 
     \\begin{document}
@@ -277,9 +294,14 @@ def load_results(
         per=True,
         glo=True,
         mix=True,
+        bot=False,
         isRand=False,
         match= lambda x: True,
-        attributs= []
+        attributs= [],
+        isBest=False,
+        dataset_delimiter=None,
+        encoding=None,
+        index_col=None
 
 ):
     """
@@ -292,6 +314,7 @@ def load_results(
     per: flag to indicate whether to load per-layer results
     glo: flag to indicate whether to load glo results
     mix: flag to indicate whether to load mix results
+    bot: flag to indicate whether to load both results
     isRand: flag to indicate if it's a random combinaison layer
     match: lambda func to a specific kind of file
     attributs: names of the actual processing attributs
@@ -306,105 +329,115 @@ def load_results(
         'MlC':{
             'GLO':{
                 'MX': [
-                    load_data_set_from_url(path=file, sep='\t', encoding='utf-8', index_col=0, na_values=None)
+                    load_data_set_from_url(path=file, sep=dataset_delimiter, encoding=encoding, index_col=index_col, na_values=None)
                     for attribut in attributs for file in get_filenames(
-                        root_dir=f'{outputs_path}/{alpha}/{_type}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/global/withoutClass/evaluation',
+                        root_dir=f'{outputs_path}/{alpha}/{_type}{"/select" if isBest is True else ""}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/global/withoutClass/evaluation',
                         func=lambda x: (MlC_F(x) and GLO_MX_F(x) and (match(x))),
                         verbose=False
                     )
                 ],
                 'CX': [
-                    load_data_set_from_url(path=file, sep='\t', encoding='utf-8', index_col=0, na_values=None)
+                    load_data_set_from_url(path=file, sep=dataset_delimiter, encoding=encoding, index_col=index_col, na_values=None)
                     for attribut in attributs for file in get_filenames(
-                        root_dir=f'{outputs_path}/{alpha}/{_type}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/global/withClass/evaluation',
+                        root_dir=f'{outputs_path}/{alpha}/{_type}{"/select" if isBest is True else ""}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/global/withClass/evaluation',
                         func=lambda x: (MlC_F(x) and GLO_CX_F(x) and (match(x))),
                         verbose=False
                     )
                 ]
-            },
+            } if glo is True else None,
             'PER':{
                 'MX': [
-                    load_data_set_from_url(path=file, sep='\t', encoding='utf-8', index_col=0, na_values=None)
+                    load_data_set_from_url(path=file, sep=dataset_delimiter, encoding=encoding, index_col=index_col, na_values=None)
                     for attribut in attributs for file in get_filenames(
-                        root_dir=f'{outputs_path}/{alpha}/{_type}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/personalized/withoutClass/evaluation',
+                        root_dir=f'{outputs_path}/{alpha}/{_type}{"/select" if isBest is True else ""}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/personalized/withoutClass/evaluation',
                         func=lambda x: (MlC_F(x) and PER_MX_F(x) and (match(x))),
                         verbose=False
                     )
                 ],
                 'CX': [
-                    load_data_set_from_url(path=file, sep='\t', encoding='utf-8', index_col=0, na_values=None)
+                    load_data_set_from_url(path=file, sep=dataset_delimiter, encoding=encoding, index_col=index_col, na_values=None)
                     for attribut in attributs for file in get_filenames(
-                        root_dir=f'{outputs_path}/{alpha}/{_type}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/personalized/withClass/evaluation',
+                        root_dir=f'{outputs_path}/{alpha}/{_type}{"/select" if isBest is True else ""}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/personalized/withClass/evaluation',
                         func=lambda x: (MlC_F(x) and PER_CX_F(x) and (match(x))),
                         verbose=False
                     )
                 ],
                 'CY': [
-                    load_data_set_from_url(path=file, sep='\t', encoding='utf-8', index_col=0, na_values=None)
+                    load_data_set_from_url(path=file, sep=dataset_delimiter, encoding=encoding, index_col=index_col, na_values=None)
                     for attribut in attributs for file in get_filenames(
-                        root_dir=f'{outputs_path}/{alpha}/{_type}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/personalized/withClass/evaluation',
+                        root_dir=f'{outputs_path}/{alpha}/{_type}{"/select" if isBest is True else ""}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/personalized/withClass/evaluation',
                         func=lambda x: (MlC_F(x) and PER_CY_F(x) and (match(x))),
                         verbose=False
                     )
                 ],
                 'CXY': [
-                    load_data_set_from_url(path=file, sep='\t', encoding='utf-8', index_col=0, na_values=None)
+                    load_data_set_from_url(path=file, sep=dataset_delimiter, encoding=encoding, index_col=index_col, na_values=None)
                     for attribut in attributs for file in get_filenames(
-                        root_dir=f'{outputs_path}/{alpha}/{_type}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/personalized/withClass/evaluation',
+                        root_dir=f'{outputs_path}/{alpha}/{_type}{"/select" if isBest is True else ""}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/personalized/withClass/evaluation',
                         func=lambda x: (MlC_F(x) and PER_CXY_F(x) and (match(x))),
                         verbose=False
                     )
                 ]
-            },
+            } if per is True else None,
             'GAP':{
                 'MX': [
-                    load_data_set_from_url(path=file, sep='\t', encoding='utf-8', index_col=0, na_values=None)
+                    load_data_set_from_url(path=file, sep=dataset_delimiter, encoding=encoding, index_col=index_col, na_values=None)
                     for attribut in attributs for file in get_filenames(
-                        root_dir=f'{outputs_path}/{alpha}/{_type}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/mixed/withoutClass/evaluation',
+                        root_dir=f'{outputs_path}/{alpha}/{_type}{"/select" if isBest is True else ""}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/mixed/withoutClass/evaluation',
                         func=lambda x: (MlC_F(x) and GAP_MX_F(x) and (match(x))),
                         verbose=False
                     )
                 ],
                 'CX': [
-                    load_data_set_from_url(path=file, sep='\t', encoding='utf-8', index_col=0, na_values=None)
+                    load_data_set_from_url(path=file, sep=dataset_delimiter, encoding=encoding, index_col=index_col, na_values=None)
                     for attribut in attributs for file in get_filenames(
-                        root_dir=f'{outputs_path}/{alpha}/{_type}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/mixed/withClass/evaluation',
+                        root_dir=f'{outputs_path}/{alpha}/{_type}{"/select" if isBest is True else ""}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/mixed/withClass/evaluation',
                         func=lambda x: (MlC_F(x) and GAP_CX_F(x) and (match(x))),
                         verbose=False
                     )
                 ],
                 'CY': [
-                    load_data_set_from_url(path=file, sep='\t', encoding='utf-8', index_col=0, na_values=None)
+                    load_data_set_from_url(path=file, sep=dataset_delimiter, encoding=encoding, index_col=index_col, na_values=None)
                     for attribut in attributs for file in get_filenames(
-                        root_dir=f'{outputs_path}/{alpha}/{_type}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/mixed/withClass/evaluation',
+                        root_dir=f'{outputs_path}/{alpha}/{_type}{"/select" if isBest is True else ""}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/mixed/withClass/evaluation',
                         func=lambda x: (MlC_F(x) and GAP_CY_F(x) and (match(x))),
                         verbose=False
                     )
                 ],
                 'CXY': [
-                    load_data_set_from_url(path=file, sep='\t', encoding='utf-8', index_col=0, na_values=None)
+                    load_data_set_from_url(path=file, sep=dataset_delimiter, encoding=encoding, index_col=index_col, na_values=None)
                     for attribut in attributs for file in get_filenames(
-                        root_dir=f'{outputs_path}/{alpha}/{_type}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/mixed/withClass/evaluation',
+                        root_dir=f'{outputs_path}/{alpha}/{_type}{"/select" if isBest is True else ""}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/mixed/withClass/evaluation',
                         func=lambda x: (MlC_F(x) and GAP_CXY_F(x) and (match(x))),
                         verbose=False
                     )
                 ]
-            }
+            } if mix is True else None,
+            'BOT':{
+                'CXY': [
+                    load_data_set_from_url(path=file, sep=dataset_delimiter, encoding=encoding, index_col=index_col,
+                                           na_values=None)
+                    for attribut in attributs for file in get_filenames(
+                        root_dir=f'{outputs_path}/{alpha}/{_type}/select/mlna_{k}_b/{attribut}/mixed/both/evaluation',
+                        func=lambda x: (MlC_F(x) and BOT_CXY_F(x) and (match(x))),
+                        verbose=False
+                    )]
+            } if bot is True else None
         },
         'MCA':{
             'GLO':{
                 'MX': [
-                    load_data_set_from_url(path=file, sep='\t', encoding='utf-8', index_col=0, na_values=None)
+                    load_data_set_from_url(path=file, sep=dataset_delimiter, encoding=encoding, index_col=index_col, na_values=None)
                     for attribut in attributs for file in get_filenames(
-                        root_dir=f'{outputs_path}/{alpha}/{_type}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/global/withoutClass/evaluation',
+                        root_dir=f'{outputs_path}/{alpha}/{_type}{"/select" if isBest is True else ""}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/global/withoutClass/evaluation',
                         func=lambda x: (MCA_F(x) and GLO_MX_F(x) and (match(x))),
                         verbose=False
                     )
                 ],
                 'CX': [
-                    load_data_set_from_url(path=file, sep='\t', encoding='utf-8', index_col=0, na_values=None)
+                    load_data_set_from_url(path=file, sep=dataset_delimiter, encoding=encoding, index_col=index_col, na_values=None)
                     for attribut in attributs for file in get_filenames(
-                        root_dir=f'{outputs_path}/{alpha}/{_type}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/global/withClass/evaluation',
+                        root_dir=f'{outputs_path}/{alpha}/{_type}{"/select" if isBest is True else ""}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/global/withClass/evaluation',
                         func=lambda x: (MCA_F(x) and GLO_CX_F(x) and (match(x))),
                         verbose=False
                     )
@@ -412,33 +445,33 @@ def load_results(
             } if glo is True else None,
             'PER':{
                 'MX': [
-                    load_data_set_from_url(path=file, sep='\t', encoding='utf-8', index_col=0, na_values=None)
+                    load_data_set_from_url(path=file, sep=dataset_delimiter, encoding=encoding, index_col=index_col, na_values=None)
                     for attribut in attributs for file in get_filenames(
-                        root_dir=f'{outputs_path}/{alpha}/{_type}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/personalized/withoutClass/evaluation',
+                        root_dir=f'{outputs_path}/{alpha}/{_type}{"/select" if isBest is True else ""}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/personalized/withoutClass/evaluation',
                         func=lambda x: (MCA_F(x) and PER_MX_F(x) and (match(x))),
                         verbose=False
                     )
                 ],
                 'CX': [
-                    load_data_set_from_url(path=file, sep='\t', encoding='utf-8', index_col=0, na_values=None)
+                    load_data_set_from_url(path=file, sep=dataset_delimiter, encoding=encoding, index_col=index_col, na_values=None)
                     for attribut in attributs for file in get_filenames(
-                        root_dir=f'{outputs_path}/{alpha}/{_type}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/personalized/withClass/evaluation',
+                        root_dir=f'{outputs_path}/{alpha}/{_type}{"/select" if isBest is True else ""}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/personalized/withClass/evaluation',
                         func=lambda x: (MCA_F(x) and PER_CX_F(x) and (match(x))),
                         verbose=False
                     )
                 ],
                 'CY': [
-                    load_data_set_from_url(path=file, sep='\t', encoding='utf-8', index_col=0, na_values=None)
+                    load_data_set_from_url(path=file, sep=dataset_delimiter, encoding=encoding, index_col=index_col, na_values=None)
                     for attribut in attributs for file in get_filenames(
-                        root_dir=f'{outputs_path}/{alpha}/{_type}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/personalized/withClass/evaluation',
+                        root_dir=f'{outputs_path}/{alpha}/{_type}{"/select" if isBest is True else ""}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/personalized/withClass/evaluation',
                         func=lambda x: (MCA_F(x) and PER_CY_F(x) and (match(x))),
                         verbose=False
                     )
                 ],
                 'CXY': [
-                    load_data_set_from_url(path=file, sep='\t', encoding='utf-8', index_col=0, na_values=None)
+                    load_data_set_from_url(path=file, sep=dataset_delimiter, encoding=encoding, index_col=index_col, na_values=None)
                     for attribut in attributs for file in get_filenames(
-                        root_dir=f'{outputs_path}/{alpha}/{_type}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/personalized/withClass/evaluation',
+                        root_dir=f'{outputs_path}/{alpha}/{_type}{"/select" if isBest is True else ""}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/personalized/withClass/evaluation',
                         func=lambda x: (MCA_F(x) and PER_CXY_F(x) and (match(x))),
                         verbose=False
                     )
@@ -446,1734 +479,414 @@ def load_results(
             } if per is True else None,
             'GAP':{
                 'MX': [
-                    load_data_set_from_url(path=file, sep='\t', encoding='utf-8', index_col=0, na_values=None)
+                    load_data_set_from_url(path=file, sep=dataset_delimiter, encoding=encoding, index_col=index_col, na_values=None)
                     for attribut in attributs for file in get_filenames(
-                        root_dir=f'{outputs_path}/{alpha}/{_type}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/mixed/withoutClass/evaluation',
+                        root_dir=f'{outputs_path}/{alpha}/{_type}{"/select" if isBest is True else ""}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/mixed/withoutClass/evaluation',
                         func=lambda x: (MCA_F(x) and GAP_MX_F(x) and (match(x))),
                         verbose=False
                     )
                 ],
                 'CX': [
-                    load_data_set_from_url(path=file, sep='\t', encoding='utf-8', index_col=0, na_values=None)
+                    load_data_set_from_url(path=file, sep=dataset_delimiter, encoding=encoding, index_col=index_col, na_values=None)
                     for attribut in attributs for file in get_filenames(
-                        root_dir=f'{outputs_path}/{alpha}/{_type}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/mixed/withClass/evaluation',
+                        root_dir=f'{outputs_path}/{alpha}/{_type}{"/select" if isBest is True else ""}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/mixed/withClass/evaluation',
                         func=lambda x: (MCA_F(x) and GAP_CX_F(x) and (match(x))),
                         verbose=False
                     )
                 ],
                 'CY': [
-                    load_data_set_from_url(path=file, sep='\t', encoding='utf-8', index_col=0, na_values=None)
+                    load_data_set_from_url(path=file, sep=dataset_delimiter, encoding=encoding, index_col=index_col, na_values=None)
                     for attribut in attributs for file in get_filenames(
-                        root_dir=f'{outputs_path}/{alpha}/{_type}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/mixed/withClass/evaluation',
+                        root_dir=f'{outputs_path}/{alpha}/{_type}{"/select" if isBest is True else ""}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/mixed/withClass/evaluation',
                         func=lambda x: (MCA_F(x) and GAP_CY_F(x) and (match(x))),
                         verbose=False
                     )
                 ],
                 'CXY': [
-                    load_data_set_from_url(path=file, sep='\t', encoding='utf-8', index_col=0, na_values=None)
+                    load_data_set_from_url(path=file, sep=dataset_delimiter, encoding=encoding, index_col=index_col, na_values=None)
                     for attribut in attributs for file in get_filenames(
-                        root_dir=f'{outputs_path}/{alpha}/{_type}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/mixed/withClass/evaluation',
+                        root_dir=f'{outputs_path}/{alpha}/{_type}{"/select" if isBest is True else ""}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/mixed/withClass/evaluation',
                         func=lambda x: (MCA_F(x) and GAP_CXY_F(x) and (match(x))),
                         verbose=False
                     )
                 ]
             } if mix is True else None,
+            'BOT': {
+                'CXY': [
+                    load_data_set_from_url(path=file, sep=dataset_delimiter, encoding=encoding, index_col=index_col,
+                                           na_values=None)
+                    for attribut in attributs for file in get_filenames(
+                        root_dir=f'{outputs_path}/{alpha}/{_type}/select/mlna_{k}_b/{attribut}/mixed/both/evaluation',
+                        func=lambda x: (MCA_F(x) and BOT_CXY_F(x) and (match(x))),
+                        verbose=False
+                    )]
+            } if bot is True else None
         }
     }
     return files
 
-# --------------------------------------------------------------------------------------TablesPrinting-------------------------------------------------------------
-# ################################################################
-# ############## Tables Printing Functions #######################
-# ################################################################
-"""
-    Cette fonction compare les impacts de la valeur d'alpha 
-"""
-def print_compare_v3_3(
-    store,
-    output_path,
-    alpha,
-    metrics,
-    configs,
-    result,
-    valll=False,
-    total_digits= 4,
-    decimal_digits= 1
+
+def build_compare_feature_selection_protocole(
+        store
 ):
-    
-    alphas = sorted(list(store.keys()))
-    models = list(store[alphas[0]].keys())
-    folders = list(store[alphas[0]][models[0]].keys())
-    # fetch model name
-    tables = {folder:'' for folder in folders}
-    counter = {metric: {alpha:0 for alpha in alphas} for metric in metrics }
-    resume = []
-    for folder in list(tables.keys()):
-        # add the resize box to ensure the scale of the table will be contain's inside the width space avalable.
-        # start setting up the tabular dimensions setting
-        table_header = """
-        %\\begin{sidewaystable}
-        \\resizebox{\\textwidth}{!}{
-
-        \\begin{tabular}{|c|c|"""
-
-        # setup information columns headears
-        nbMCol =  (len(alphas)+1)*len(metrics)
-        table_header+= "r|"*nbMCol
-        # add col for total results
-        table_header+= "} "
-        # add separator clines
-        nb_cols = (2+nbMCol)
-        table_header+= " \\cline{1-"+str(nb_cols)+"}" # corresponding to the number of columns
-
-
-        # build the first line: metrics' line
-        lines = ''
-        # add the blank block
-        lines += """
-        \\multicolumn{2}{|c|}{"""+folder+"""}"""
-        # add cols for metric
-        for metric in metrics:
-            lines+= " & \\multicolumn{"+str(nbMCol//len(metrics))+"}{|c|}{"+dicto[metric]+"}"
-        # add the total name
-        lines+= " \\\\ "
-        lines+= " \\cline{3-"+str(nb_cols)+"""}
-        """
-
-        # build the second line: logics' line
-        # add the blank block
-        lines += """\\multicolumn{2}{|c|}{} """
-        # add alphas
-        for metric in metrics:
-            lines+= " & Classic"
-            for alpha in alphas:
-                lines+= f" & {alpha}"
-
-        # add the total name
-        lines+= " \\\\ "
-        lines+= " \\cline{1-"+str(nb_cols)+"""}
-
-        """
-
-        
-
-        # here we need to define a structure that will keep track of the number of times a config has the best result for a given metric
-        counterStore= {}
-        for metric in metrics:
-            counterStore[metric] = {}
-            for alpha in alphas:
-                counterStore[metric][alpha] = []
-
-        counterStore_1 = deepcopy(counterStore)
-        counterStore_2 = deepcopy(counterStore)
-
-        # having done this, we now need a function that will return max of the metrics in a config with a given approach
-        max_config = lambda store, alpha, mod, folder, metric, app, act: (
-        act(
-            [
-            round(act(store[alpha][mod][folder][metric][app][logic][config]),2)
-            # for app in store[alpha][mod][folder][metric].keys() 
-            for logic in store[alpha][mod][folder][metric][app].keys() 
-            for config in store[alpha][mod][folder][metric][app][logic].keys()
-            ]
-            )
-        )
-
-        get_all_max_config = lambda store, mod, folder, metric, app, act: (
-        (
-            [
-            round(act(store[alpha][mod][folder][metric][app][logic][config]),2)
-            for alpha in store.keys()
-            for logic in store[alpha][mod][folder][metric][app].keys() 
-            for config in store[alpha][mod][folder][metric][app][logic].keys()
-            ]
-            )
-        )
-
-        # fetch on model
-        for mi, model in enumerate(models): 
-            # print(store[alphas[0]].keys(),[alphas[0]],[model],[folder],[metrics[0]], "=----------=\n")
-            lines+= """
-            \\multirow{"""+str(len(list(store[alphas[0]][model][folder][metrics[0]].keys())))+"""}{*}{"""+model+"""}"""
-            for ai, approach in enumerate(list(store[alphas[0]][model][folder][metrics[0]].keys())): # MlC, MCA
-                lines+= f""" & {approach}"""
-                for i, metric in enumerate(metrics):
-                    lines+= """ & \\multirow{2}{*}{"""+str(round(store[alphas[0]][model][folder]['classic'].loc[model, metric],4))+"""}""" if ai == 0 else """ &"""
-                    for ali,alpha in enumerate(alphas):
-                        act = max if valll is False else (min if "financial-cost" in metric else max)
-                        act_b = sorted(list(set(get_all_max_config(store, model, folder, metric, approach, act))), reverse= (False if ((valll == True) and ("financial-cost" in metric )) else True))
-                        pos = act_b.index(max_config(store, alpha, model, folder, metric, approach, act))
-
-                        # Adjust integer part to the required digits
-                        int_part = str(int(max_config(store, alpha, model, folder, metric, act))).zfill(total_digits - decimal_digits) if total_digits != None else None
-                        form = f"{int_part}.{str(max_config(store, alpha, model, folder, metric, act)).split('.')[1][:decimal_digits]}" if total_digits != None else str(round(max_config(store, alpha, model, folder, metric, approach, act),2))
-                        val = "\\textbf{"+form+"}" if (pos == 0) and (max_config(store, alpha, model, folder, metric, approach, act) != 0.0) else (
-                            "\\underline{"+form+"}" if (pos == 1) and (max_config(store, alpha, model, folder, metric, approach, act) != 0.0) else (
-                                "\\textit{"+form+"}" if (pos == 2) and (max_config(store, alpha, model, folder, metric, approach, act) != 0.0) else 
-                                form
-                                )
-                            )
-                        if (pos == 0) and (max_config(store, alpha, model, folder, metric, approach, act) != 0.0) and (valll is True):
-                                resume.extend([model,approach,alpha])
-                        lines+= f"& {val}"
-                        bests = get_all_max_config(store, model, folder, metric, approach, act)
-                        counterStore[metric][alpha].append(1/(bests.count(max_config(store, alpha, model, folder, metric, approach, act))) if pos == 0 else 0)
-                        counterStore_1[metric][alpha].append(1/(bests.count(max_config(store, alpha, model, folder, metric, approach, act))) if pos == 1 else 0)
-                        counterStore_2[metric][alpha].append(1/(bests.count(max_config(store, alpha, model, folder, metric, approach, act))) if pos == 2 else 0)
-                # ---------------------------------------
-                if (ai != len(store[alphas[0]][model][folder][metrics[0]].keys())-1):
-                    start = 2
-                    prog = (nbMCol//len(metrics))
-                    # print(start)
-                    lines+= """\\\\ """
-                    for _ in range(len(metrics)):
-                        lines+= """ \\cline{"""+str(start)+"-"+str(start)+"""} \\cline{"""+str(start+2)+"""-"""+str(start+(nbMCol//len(metrics)))+"""}"""
-                        start = start+prog
-                    lines+= """
-
-                    """
-                else:
-                    lines+= """\\\\ """+ """ \\cline{1-"""+str(nb_cols)+"""}
-
-                        """ 
-
-        # total's line
-        # print(result)
-        maxim = lambda dictio, metric: (max([ sum(dictio[metric][alpha]) for alpha in dictio[metric].keys() ]))
-        
-        if 1 in result:
-            lines += """
-            \\multicolumn{2}{|c|}{\\textbf{Total}}"""
-
-            for j, metric in enumerate(metrics):
-                lines += """ & """
-                for alpha in alphas:
-                    counter[metric][alpha]+= round(sum(counterStore[metric][alpha]),1)
-                    lines += """ & """+str(round(sum(counterStore[metric][alpha]),1)) if round(sum(counterStore[metric][alpha]),1) != round(maxim(counterStore, metric),1)else """ & \\textbf{"""+str(round(sum(counterStore[metric][alpha]),1))+"}"
-
-            lines+= " \\\\ "
-            lines+= " \\cline{1-"+str(nb_cols)+"}"
-        
-        if 2 in result:
-            lines += """
-            \\multicolumn{2}{|c|}{\\textbf{Total 2nd Place}}"""
-
-            for j, metric in enumerate(metrics):
-                lines += """ & """
-                for alpha in alphas:
-                    lines += """ & """+str(round(sum(counterStore_1[metric][alpha]),1)) if sum(counterStore_1[metric][alpha]) != maxim(counterStore_1, metric) else """ & \\textbf{"""+str(round(sum(counterStore_1[metric][alpha]),1))+"}"
-
-            lines+= " \\\\ "
-            lines+= " \\cline{1-"+str(nb_cols)+"}"
-
-        if 3 in result:
-            lines += """
-            \\multicolumn{2}{|c|}{\\textbf{Total 3th Place}}"""
-
-            for j, metric in enumerate(metrics):
-                lines += """ & """
-                for alpha in alphas:
-                    lines += """ & """+str(round(sum(counterStore_2[metric][alpha]),1)) if sum(counterStore_2[metric][alpha]) != maxim(counterStore_2, metric) else """ & \\textbf{"""+str(round(sum(counterStore_2[metric][alpha]),1))+"}"
-
-            lines+= " \\\\ "
-            lines+= " \\cline{1-"+str(nb_cols)+"}"
-
-        lines+= """
-
-        \\end{tabular}
-        }
-        %\\end{sidewaystable}"""
-
-        table = table_header + lines
-        tables[folder] = table
-        create_domain(f"{output_path}/alpha/{folder}")
-        filename1 = f"{output_path}/alpha/{folder}/tab_alpha_{folder}.tex"
-        _file = open(filename1, "w")
-        _file.write(table)
-        _file.close()
-    # print(counter)
-    if (valll is True):
-        print(f"""
-            {valll}, 
-            ///////////////////////
-            {alpha}, 
-            =======================
-            {dict(Counter(resume))}
-            -----------------------
-            """)
-    return tables
-
-def print_g_b_impact_table(
-    store,
-    output_path,
-    alpha,
-    valll=False
-):
-    # fetch metric name
-    tables = """
-        
-        """
-    for metric in list(store.keys()):
-        # add the resize box to ensure the scale of the table will be contain's inside the width space avalable.
-        # start setting up the tabular dimensions setting
-        table_header = f"%{metric}"+"""
-        %\\begin{sidewaystable}
-        \\resizebox{\\textwidth}{!}{
-        \\begin{tabular}{|c|c|r|r|r|r|r|r|r|r|r|}"""
-
-        # add separator clines
-        nb_cols = 11
-        table_header+= """ 
-        \\cline{1-"""+str(nb_cols)+"}" # corresponding to the number of columns
-
-
-        # build the first line
-        lines = ""
-        # add the metric block
-        lines += """
-        \\multicolumn{2}{|c|}{"""+metric+"""}"""
-
-        # add cols coupling
-        lines+= " & \\multicolumn{3}{|c|}{(Good MLN 1, Good MLN 1)} & \\multicolumn{3}{|c|}{(Bad MLN 1, Good MLN 1)} & \\multicolumn{3}{|c|}{(Bad MLN 1, Bad MLN 1)}"
-        
-        # add the total name
-        lines+= " \\\\ "
-        lines+= " \\cline{3-"+str(nb_cols)+"}"
-
-        # build the second line
-        # add the metric block
-        lines += """
-        \\multicolumn{2}{|c|}{}"""
-
-        # add cols coupling
-        lines+= "& Classic $>$ &  Classic $=$ & Classic $<$"*3
-        
-        # add the total name
-        lines+= " \\\\ "
-        lines+= " \\cline{1-"+str(nb_cols)+"}"
-
-
-        # fetch store to fullfil the tables with content
-
-        # fetch logics
-        for li, logic in enumerate(list(store[metric]['MlC'].keys())): # GLO, PER or GAP
-            lines+= """
-            \\multirow{2}{*}{"""+logic+"""}"""
-
-            # fetch approachs
-            for ai, approach in enumerate(list(store[metric].keys())): # Mlc or MCA
-                lines+= f"""& {approach}"""
-                # fetch coupling
-                best_f = lambda x : max(list(x.values()))
-                for ci, couple in enumerate(store[metric][approach][logic]): #(Good MLN 1, Good MLN 1), (Bad MLN 1, Good MLN 1), (Bad MLN 1, Bad MLN 1)
-                    best = best_f(couple)
-                    for value in couple.values():
-                        lines+= "& \\textbf{"+str(value)+"}" if value == best else f"& {value}"
-
-                if ai == (len(list(store[metric].keys())) - 1):
-                    lines+= " \\\\ "
-                    lines+= " \\cline{1-"+str(nb_cols)+"""}
-                    """
-                else:
-                    lines+= " \\\\ "
-                    lines+= " \\cline{2-"+str(nb_cols)+"""}
-                    """
-
-        lines+= """
-
-        \\end{tabular}}"""
-
-        table = table_header + lines
-        tables += """
-
-        """+ table
-
-    create_domain(f"{output_path}/coupling")
-    filename1 = f"{output_path}/coupling/coupling.tex"
-    _file = open(filename1, "w")
-    _file.write(header+tables+footer)
-    _file.close()
-    return tables
-
-# ################################################################
-# ############## Tables Generation Logic Functions ###############
-# ################################################################
-"""
-    Impact performance analytic for metrics: accuracy, f1-score and financial-cost for all configurations
-"""
-
-def extract_evaluations(
-    outputs_name=None, 
-    cwd=None, 
-    outputPath=None,
-    layers=[1], 
-    glo=True,
-    per=True,
-    gap=True,
-    logics=['GLO','PER','GAP'],
-    approachs=['MlC','MCA'],
-    configs=['MX','CX','CY','CXY'],
-    metrics=['accuracy','f1-score','precision','recall','financial-cost'],
-    metrics1=[],
-    _type='cat',
-    alphas=[0.85],
-):
-    """
-    Analyzer Launcher
-    Parameters
-    ----------
-    outputs_path
-    cwd
-    layers
-    type
-
-    Returns
-    -------
-
-    """
-    ## identify the name of results folder
-    data_result_folder_name = [dirnames for _, dirnames, _ in os.walk(f'{cwd}/{outputs_name}')][0]
-    data_result_folder_name =  list(set(data_result_folder_name)-set(['LFD']))
-    # enregistrer les améliorations améliorations
-    metrics = ["Acc", "F1-score", "Cost"]
-    categories = ["CRD", "GER", "LD4", "LDD"]
-    list_values = {metric: {cat: [] for cat in categories} for metric in metrics}
-    best_mlna_k_per_alpha = {
-        folder: {key: {'real_best_k': [], 'predicted_best_k':[], 'value':[], 'model':[]} for key in alphas} for folder in data_result_folder_name
-    }
-    ## fetch on alpha values
-    for index, alpha in enumerate(alphas):
-        ## fetch on name of folders
-        for index2, result_folder in enumerate(data_result_folder_name):
-            # load predicted best mlnk
-            print(result_folder)
-            name = \
-                [file for _, _, files in os.walk(
-                    f'{cwd}/{outputs_name}/{result_folder}/{alpha}/{_type}/model_storage')
-                 for file in files if
-                 '_best_features' in file][0] if len([file for _, _, files in os.walk(
-                    f'{cwd}/{outputs_name}/{result_folder}/{alpha}/{_type}/model_storage')
-                 for file in files if
-                 '_best_features' in file]) != 0 else None
-            best_mlna_k_per_alpha[result_folder][alpha]['accuracies'] = read_model(f'{cwd}/{outputs_name}/{result_folder}/{alpha}/{_type}/model_storage/{name}')['model'] if name != None else None
-            best_mlna_k_per_alpha[result_folder][alpha]['predicted_best_k'].append(read_model(f'{cwd}/{outputs_name}/{result_folder}/{alpha}/{_type}/model_storage/{name}')["bestK"]) if name != None else None
-            ## get classic model
-            classic_f = [
-                load_data_set_from_url(path=file, sep='\t', encoding='utf-8', index_col=0, na_values=None)
-                for file in get_filenames(
-                    root_dir= f'{os.getcwd()}/{outputs_name}/{result_folder}/data_selection_storage',
-                    func= lambda x :C_F(x) and ('v2_' in x),
-                    verbose=False
-                )
-            ][-1]
-            # define a list which will receive all possible value of accuracy for each layer in aims tp sorted it later and extra, the best best layer and model
-            list_of_accuracy = []
-            ## get model list on classic results
-            models_list = classic_f.index.values.tolist()
-            ## get model dictionary
-            models = model_desc()
-            ## save only the ones use during the classic learning
-            models_name = {key: models[key] for key in models.keys() if key in models_list}
-            print(models_name)
-            ## identify the number of existing layer storage
-            mlna_folders_names = [dirnames for _, dirnames, _ in os.walk(f'{cwd}/{outputs_name}/{result_folder}/{alpha}/{_type}')][0]
-            mlna_folders_names = sorted([int(el.split("_")[1]) for el in mlna_folders_names if "mlna" in el])
-            print(result_folder, mlna_folders_names,"//", alpha, list(set(mlna_folders_names)&set(layers)))
-
-            ## fetch on each mlna layer resultts
-            for index3, layer in enumerate(list(set(mlna_folders_names)&set(layers))):
-
-                ## get files results of alpha
-                files = load_results(
-                    f'{outputs_name}/{result_folder}',
-                    _type,
-                    layer,
-                    alpha,
-                    per=per,
-                    glo=glo,
-                    mix=gap
-                )
-
-                ## aggregate results belong to metrics specific to the current results
-                for index4, model in enumerate(models_name):
-                    # now fetch ours results to store
-                    for metric in metrics: # accuracy and f1-score and/or financial cost
-                        for approach in approachs: # Mlc or MCA
-                            for logic in logics: # GLO, PER or GAP
-                                for config in configs: # MX, CX, CY, CXY
-
-                                    # print(result_folder, layer, approach, logic, config, len(files[approach][logic][config]) )
-                                    for result in list(range(len(files[approach][logic][config]))): # each result file's containing evaluation metrics
-                                        valu = round(
-                                                (
-                                                    (
-                                                        round(
-                                                            files[approach][logic][config][result].loc[model, metric], 
-                                                            4
-                                                            ) 
-                                                        - 
-                                                        round(
-                                                            classic_f.loc[model, metric], 
-                                                            4
-                                                            )
-                                                        ) 
-                                                    / 
-                                                    (round(classic_f.loc[model, metric],4) if round(classic_f.loc[model, metric],4) > 0 else epsilon)
-                                                    ) * 100, 
-                                                1
-                                                )
-
-                                        valu1 = (
-                                                    (
-                                                        round(
-                                                            files[approach][logic][config][result].loc[model, metric], 
-                                                            4
-                                                            ) 
-                                                        - 
-                                                        round(
-                                                            classic_f.loc[model, metric], 
-                                                            4
-                                                            )
-                                                        ) 
-                                                    / 
-                                                    (round(classic_f.loc[model, metric],4) if round(classic_f.loc[model, metric],4) > 0 else epsilon)
-                                                    ) * 100
-
-                                        main_key = [ kjj for kjj in list(macro_metrics.keys()) if (logic in kjj) and (approach in kjj) and (config in kjj)]
-                                        met = 'Acc' if 'acc' in metric else ('F1-score' if 'f1' in metric else 'Cost')
-                                        macro_metrics[main_key[0]][met][result_folder].append(
-                                            (
-                                                valu1 if 'finan' not in metric else  (valu1 if valu1 ==0 else -1*valu1)
-                                                , model)
-                                            )
-
-                                        # if 'LD4' in result_folder:
-                                        #     print(result_folder, layer, config)
-                                        if 'acc' in metric and 'MX' in config:
-                                            # if 'LD4' in result_folder:
-                                            #     print(result_folder, layer)
-                                            list_of_accuracy.append((layer, model,files[approach][logic][config][result].loc[model, metric]))
-
-            # analyse impact of layers and identify the best mlna as k
-            if not(name is None) and 'MX' in configs:
-                best_mlna_k_per_alpha[result_folder][alpha]['list']= list_of_accuracy
-                list_of_accuracy = sorted(list_of_accuracy, key=lambda x: abs(x[2]), reverse=False) # best will be at position 0
-                best_mlna_k_per_alpha[result_folder][alpha]['real_best_k'].append(list_of_accuracy[0][0])
-                best_mlna_k_per_alpha[result_folder][alpha]['model'].append(list_of_accuracy[0][1])
-                best_mlna_k_per_alpha[result_folder][alpha]['value'].append(list_of_accuracy[0][2])
-
-
-
-"""
-    Impact performance analytic for MLN1 and MLN2
-    Q: How to select features used to build the graph?
-
-    The goal here is to count the number of times where distingiush couple of performance (G,B) in MLN1 improve in MLN2
-"""
-def generate_g_b_impact_table(
-    outputs_name=None, 
-    cwd=None, 
-    outputPath='result_lts',
-    layers=[1], 
-    _type='qualitative',
-    alphas=[0.85]
-):
-    day = time.strftime("%Y_%m_%d_%H") # actual datetime
-    data_result_folder_name = [dirnames for _, dirnames, _ in os.walk(f'{cwd}/{outputs_name}')][0] # result folder name
-    data_result_folder_name =  list(set(data_result_folder_name)-set(['LFD']))
-    # define a structures
-    metrics_impact = {
-        'accuracy': {
-            'MlC': {
-                'GLO': [
-                {
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            }],
-                'PER': [
-                {
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            }]
-            },
-            'MCA': {
-                'GLO': [{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            }],
-                'PER': [{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            }]
-            }
-        },
-        'f1-score': {
-            'MlC': {
-                'GLO': [{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            }],
-                'PER': [{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            }]
-            },
-            'MCA': {
-                'GLO': [{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            }],
-                'PER': [{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            }]
-            }
-        },
-        'precision1': {
-            'MlC': {
-                'GLO': [{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            }],
-                'PER': [{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            }]
-            },
-            'MCA': {
-                'GLO': [{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            }],
-                'PER': [{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            }]
-            }
-        },
-        'recall1': {
-            'MlC': {
-                'GLO': [{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            }],
-                'PER': [{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            }]
-            },
-            'MCA': {
-                'GLO': [{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            }],
-                'PER': [{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            }]
-            }
-        },
-        'f1-score1': {
-            'MlC': {
-                'GLO': [{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            }],
-                'PER': [{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            }]
-            },
-            'MCA': {
-                'GLO': [{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            }],
-                'PER': [{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            }]
-            }
-        },
-        'precision0': {
-            'MlC': {
-                'GLO': [{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            }],
-                'PER': [{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            }]
-            },
-            'MCA': {
-                'GLO': [{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            }],
-                'PER': [{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            }]
-            }
-        },
-        'recall0': {
-            'MlC': {
-                'GLO': [{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            }],
-                'PER': [{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            }]
-            },
-            'MCA': {
-                'GLO': [{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            }],
-                'PER': [{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            }]
-            }
-        },
-        'f1-score0': {
-            'MlC': {
-                'GLO': [{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            }],
-                'PER': [{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            }]
-            },
-            'MCA': {
-                'GLO': [{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            }],
-                'PER': [{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            }]
-            }
-        },
-        'financial-cost': {
-            'MlC': {
-                'GLO': [{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            }],
-                'PER': [{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            }]
-            },
-            'MCA': {
-                'GLO': [{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            }],
-                'PER': [{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            },{
-                's': 0,
-                'e':0,
-                'i':0
-            }]
-            }
-        }
-    }
-
-    # Loop on folder names
-    for i, folder_name in enumerate(data_result_folder_name):
-        # get classics values
-        classic_f = [
-                load_data_set_from_url(path=file, sep='\t', encoding='utf-8', index_col=0, na_values=None)
-                for file in get_filenames(
-                    root_dir=f'{os.getcwd()}/{outputs_name}/{folder_name}/data_selection_storage',
-                    func=lambda x :C_F(x) and ('v2_' in x),
-                    verbose=False
-                )
-            ][-1]
-        models_list = classic_f.index.values.tolist() # get list of used models
-        cols = get_qualitative_from_cols(list(classic_f.columns)) # get resultat qualitative columns
-        # Loop on alphas
-        for alpha in alphas:    
-            clusters = {key : deepcopy({
-            'accuracy': {
-                'MlC': {
-                    'GLO': {
-                        'Good': [],
-                        'Bad': []
-                        },
-                    'PER': {
-                        'Good': [],
-                        'Bad': []
-                        },
-                    'GAP': {
-                        'Good': [],
-                        'Bad': []
-                        }
-                },
-                'MCA': {
-                    'GLO': {
-                        'Good': [],
-                        'Bad': []
-                        },
-                    'PER': {
-                        'Good': [],
-                        'Bad': []
-                        },
-                    'GAP': {
-                        'Good': [],
-                        'Bad': []
-                        }
-                }
-            },
-            'f1-score': {
-                'MlC': {
-                    'GLO': {
-                        'Good': [],
-                        'Bad': []
-                        },
-                    'PER': {
-                        'Good': [],
-                        'Bad': []
-                        },
-                    'GAP': {
-                        'Good': [],
-                        'Bad': []
-                        }
-                },
-                'MCA': {
-                    'GLO': {
-                        'Good': [],
-                        'Bad': []
-                        },
-                    'PER': {
-                        'Good': [],
-                        'Bad': []
-                        },
-                    'GAP': {
-                        'Good': [],
-                        'Bad': []
-                        }
-                }
-            },
-            'precision1': {
-                'MlC': {
-                    'GLO': {
-                        'Good': [],
-                        'Bad': []
-                        },
-                    'PER': {
-                        'Good': [],
-                        'Bad': []
-                        },
-                    'GAP': {
-                        'Good': [],
-                        'Bad': []
-                        }
-                },
-                'MCA': {
-                    'GLO': {
-                        'Good': [],
-                        'Bad': []
-                        },
-                    'PER': {
-                        'Good': [],
-                        'Bad': []
-                        },
-                    'GAP': {
-                        'Good': [],
-                        'Bad': []
-                        }
-                }
-            },
-            'recall1': {
-                'MlC': {
-                    'GLO': {
-                        'Good': [],
-                        'Bad': []
-                        },
-                    'PER': {
-                        'Good': [],
-                        'Bad': []
-                        },
-                    'GAP': {
-                        'Good': [],
-                        'Bad': []
-                        }
-                },
-                'MCA': {
-                    'GLO': {
-                        'Good': [],
-                        'Bad': []
-                        },
-                    'PER': {
-                        'Good': [],
-                        'Bad': []
-                        },
-                    'GAP': {
-                        'Good': [],
-                        'Bad': []
-                        }
-                }
-            },
-            'f1-score1': {
-                'MlC': {
-                    'GLO': {
-                        'Good': [],
-                        'Bad': []
-                        },
-                    'PER': {
-                        'Good': [],
-                        'Bad': []
-                        },
-                    'GAP': {
-                        'Good': [],
-                        'Bad': []
-                        }
-                },
-                'MCA': {
-                    'GLO': {
-                        'Good': [],
-                        'Bad': []
-                        },
-                    'PER': {
-                        'Good': [],
-                        'Bad': []
-                        },
-                    'GAP': {
-                        'Good': [],
-                        'Bad': []
-                        }
-                }
-            },
-            'precision0': {
-                'MlC': {
-                    'GLO': {
-                        'Good': [],
-                        'Bad': []
-                        },
-                    'PER': {
-                        'Good': [],
-                        'Bad': []
-                        },
-                    'GAP': {
-                        'Good': [],
-                        'Bad': []
-                        }
-                },
-                'MCA': {
-                    'GLO': {
-                        'Good': [],
-                        'Bad': []
-                        },
-                    'PER': {
-                        'Good': [],
-                        'Bad': []
-                        },
-                    'GAP': {
-                        'Good': [],
-                        'Bad': []
-                        }
-                }
-            },
-            'recall0': {
-                'MlC': {
-                    'GLO': {
-                        'Good': [],
-                        'Bad': []
-                        },
-                    'PER': {
-                        'Good': [],
-                        'Bad': []
-                        },
-                    'GAP': {
-                        'Good': [],
-                        'Bad': []
-                        }
-                },
-                'MCA': {
-                    'GLO': {
-                        'Good': [],
-                        'Bad': []
-                        },
-                    'PER': {
-                        'Good': [],
-                        'Bad': []
-                        },
-                    'GAP': {
-                        'Good': [],
-                        'Bad': []
-                        }
-                }
-            },
-            'f1-score0': {
-                'MlC': {
-                    'GLO': {
-                        'Good': [],
-                        'Bad': []
-                        },
-                    'PER': {
-                        'Good': [],
-                        'Bad': []
-                        },
-                    'GAP': {
-                        'Good': [],
-                        'Bad': []
-                        }
-                },
-                'MCA': {
-                    'GLO': {
-                        'Good': [],
-                        'Bad': []
-                        },
-                    'PER': {
-                        'Good': [],
-                        'Bad': []
-                        },
-                    'GAP': {
-                        'Good': [],
-                        'Bad': []
-                        }
-                }
-            },
-            'financial-cost': {
-                'MlC': {
-                    'GLO': {
-                        'Good': [],
-                        'Bad': []
-                        },
-                    'PER': {
-                        'Good': [],
-                        'Bad': []
-                        },
-                    'GAP': {
-                        'Good': [],
-                        'Bad': []
-                        }
-                },
-                'MCA': {
-                    'GLO': {
-                        'Good': [],
-                        'Bad': []
-                        },
-                    'PER': {
-                        'Good': [],
-                        'Bad': []
-                        },
-                    'GAP': {
-                        'Good': [],
-                        'Bad': []
-                        }
-                }
-            }
-        }) for key in models_list} # structure to store good and bad features
-            # Loop on MLN1 and MLN2
-            for k in [1,2]:
-                # loop on features combination
-                for layer_config in get_combinations(range(len(cols)),k): # create subsets of k index of OHE and fetch it
-                    col_targeted= [f'{cols[i]}' for i in layer_config]
-                    case_k= '±'.join(col_targeted) if len(layer_config)>1 else col_targeted[0]
-                    
-                    ### get files for distincts logic
-                    match= lambda x: (
-                        sum(
-                            [
-                                re.sub(r'[^\w\s]', '', unidecode(partern)) in re.sub(r'[^\w\s]', '', unidecode(x))
-                                for partern in case_k.split("±")
-                                ]
-                            ) == k if k > 1 else re.sub(r'[^\w\s]', '', unidecode(case_k)) in re.sub(r'[^\w\s]', '', unidecode(x))
-                        )
-                    
-                    # Load belong files
-                    files = load_results(
-                        f'{outputs_name}/{folder_name}',
-                        _type,
-                        k,
-                        alpha,
-                        per=True,
-                        glo=True,
-                        mix=False,
-                        isRand= True if k != 1 else False,
-                        match=match
-                    )
-
-                    # Loop on approach
-                    for approach in  ['MlC','MCA']:
-                        # Loop on Logic
-                        for logic in ['GLO','PER']: #,'PER'
-                            # Loop on config
-                            for config in ['MX']: # ['MX','CX']
-                                # print(f"{folder_name}, {k}, {case_k}, {alpha}, {approach}, {logic}, {len(files[approach][logic][config])}")
-                                # Loop on files inside
-                                for file in range(len(files[approach][logic][config])):
-                                    # Loop on models
-                                    for model in models_list:
-                                        # Loop on metrics
-                                        for metric in metrics_impact.keys():
-                                            if k == 1:
-                                                status = 'Good' if round(files[approach][logic][config][file].loc[model,metric],4) > round(classic_f.loc[model,metric],4) else 'Bad'
-                                                clusters[model][metric][approach][logic][status].append(case_k)
-                                            else:
-                                                indice = -1
-                                                if sum([partern in clusters[model][metric][approach][logic]['Good'] for partern in case_k.split("±")]) == k:
-                                                   indice = 0
-                                                elif sum([partern in clusters[model][metric][approach][logic]['Bad'] for partern in case_k.split("±")]) == k:
-                                                   indice = 2
-                                                else:
-                                                   indice = 1
-                                                metrics_impact[metric][approach][logic][indice]["s"] += 1 if round(files[approach][logic][config][file].loc[model,metric],) < round(classic_f.loc[model,metric],) else 0
-                                                metrics_impact[metric][approach][logic][indice]["e"] += 1 if round(files[approach][logic][config][file].loc[model,metric],) == round(classic_f.loc[model,metric],) else 0
-                                                metrics_impact[metric][approach][logic][indice]["i"] += 1 if round(files[approach][logic][config][file].loc[model,metric],) > round(classic_f.loc[model,metric],) else 0
-    # call the printer function
-    print_g_b_impact_table(
-        metrics_impact,
-        f'{cwd}/{outputPath}',
-        'all',
-        True
-        )
-    return metrics_impact
-
-
-
-"""
-    Impact performance analytic for GLO, PER
-"""
-# --------------------------------------------------------------------------------------BarPlots-----------------------------------------------------------------
-
-# ################################################################
-# ############## BarPLots Printing Functions #####################
-# ################################################################
-def print_compare_bchart(
-    store,
-    output_path,
-    outputs_name,
-    alpha,
-    top
-):
-    # fetch model name
-    models = list(store.keys())
-    folders = list(store[models[0]].keys())
-    tables = {model:'' for model in models}
-
-    summary = {model:{folder: {'GLO_CX':0,'PER_CX':0,'PER_CY':0} for folder in folders} for model in models}
-
-    lambda_function = lambda dictionary, pattern: sum(1 for key in dictionary.keys() if re.match(pattern, key))
-    counter1 = {'GLO_CX':0,'PER_CX':0,'PER_CY':0}
-    top_2 = []
-    for model in list(store.keys()):
-        """
-        \\begin{bchart}[min=50,max=100,step=10,unit=\\%]
-        \\bcbar[label=1st bar,color=yellow]{-3.4}
-            \\smallskip
-        \\bcbar{5.6} 
-            \\medskip
-        \bcbar{7.2}
-            \\bigskip
-        \\bcbar{9.9}
-    \\end{bchart}
-        \\begin{tabular}{
-        \\end{tabular}
-        """
-
-        # fetch folders
-        tab = "\\begin{tabular}{"
-        for _ in store[model].keys():
-            tab+="c"
-        tab+="""}
-        """
-        tables[model]+= tab
-        for i, folder in enumerate(store[model].keys()):
-            classic_f = [
-                load_data_set_from_url(path=file, sep='\t', encoding='utf-8', index_col=0, na_values=None)
-                for file in get_filenames(
-                    root_dir=f'{os.getcwd()}/{outputs_name}/{folder}/data_selection_storage',
-                    func=lambda x :C_F(x) and ('v2_' in x),
-                    verbose=False
-                )
-            ][-1]
-            columns = len(list(classic_f.columns))-11 # 11 METRICS
-            # sort the dict
-            data = dict(sorted(store[model][folder].items(), key=lambda x: abs(x[1]), reverse=True)[:top])
-            top_2.extend(list(data.keys())[:5])
-            summary[model][folder]['GLO_CX'] = lambda_function(data, r'^.*_GLO$')
-            # summary[model][folder]['PER'] = lambda_function(data, r'^.*_PER$')
-            summary[model][folder]['PER_CX'] = lambda_function(data, r'^(?!Y).*_PER$')
-            summary[model][folder]['PER_CY'] = lambda_function(data, r'^Y.*_PER$')
-            summary[model][folder]['nbAtt'] = columns
-            counter1['GLO_CX'] += 1 if summary[model][folder]['GLO_CX'] >= 4 else 0
-            counter1['PER_CX'] += 1 if summary[model][folder]['PER_CX'] >= 4 else 0
-            counter1['PER_CY'] += 1 if summary[model][folder]['PER_CY'] >= 4 else 0
-            # identify a max and min importance value
-            # print(data.items())
-            data1 = dict(sorted(data.items(), key=lambda x: x[1], reverse=True))
-            max_val = list(data1.items())[0][1]
-            min_val = list(data1.items())[-1][1]
-            # create a new char for each folder
-            bchart = "\\begin{bchart}[max="+f"{(max_val if abs(min_val) < max_val else abs(min_val)):.{6}f}"+""",unit=\\%]
-                """
-
-            # use to Dec order dict to fill the bar chart
-            for key, val in data.items():
-                # identify the logic
-                color = "green" if GLO_F(key) else ("yellow" if DEGREE_F(key) else ("red" if PER_F(key) else "blue"))
-                bchart += "\\bcbar[value=, label="+str(key).replace('_','\\_')+",color="+color+"]{"+f"{val:.{6}f}"+"""}
-                    \\smallskip
-                    """
-            bchart += ("\\bcxlabel{"+str(folder).replace('_','\\_')+"""}
-                            \\end{bchart}
-                            """) if i != len(store[model].keys())-1 else ("\\bcxlabel{"+str(folder).replace('_','\\_')+"""}
-                            \\bclegend{5pt}{blue/Classic, green/GLO, red/PER, yellow/DEGREE}
-                                \\end{bchart}
-                    """)
-
-            tables[model]+= (bchart +"""
-                            &
-                            """) if i != len(store[model].keys())-1 else (bchart +"""
-                \\end{tabular}}""")
-        
-        create_domain(f"{output_path}/bchart/{str(alpha).replace('.','_')}/{model}")
-        filename1 = f"{output_path}/bchart/{str(alpha).replace('.','_')}/{model}/{model}.tex"
-        _file = open(filename1, "w")
-        _file.write(bchar_header+tables[model]+footer)
-        _file.close()
-    # ----------------------------- print the summary ---------------------------- 
+    # add the resize box to ensure the scale of the table will be contain's inside the width space avalable.
+    # start setting up the tabular dimensions setting
     table_header = """
-    %\\begin{sidewaystable}
-    \\resizebox{\\textwidth}{!}{
+        %\\begin{sidewaystable}
+        \\resizebox{\\textwidth}{!}{
 
-    \\begin{tabular}{|c|c|"""
-
+        \\begin{tabular}{|c|c|""" + ("c|" * 10)
     # setup information columns headears
-    nbMCol =  7
-    table_header+= "r|"*nbMCol
+    nbMCol = 10
     # add col for total results
-    table_header+= "} "
+    table_header += "} "
     # add separator clines
-    nb_cols = (2+nbMCol)
-    table_header+= " \\cline{1-"+str(nb_cols)+"}" # corresponding to the number of columns
-
+    nb_cols = (2 + nbMCol)
+    table_header += " \\cline{1-" + str(nb_cols) + "}"  # corresponding to the number of columns
 
     # build the first line: metrics' line
     lines = ''
     # add the blank block
     lines += """
     \\multicolumn{2}{|c|}{}"""
-    # add cols for metric
-    for model in models:
-        lines+= " & \\textbf{"+model+"}"
+
+    datasets = list(store.keys())
+    methods = list(store[datasets[0]].keys())
+    alphas = sorted(list({el for data in datasets for el in store[data][methods[0]].keys()}))
+    # add alpha for metric
+    for alpha in alphas:
+        lines += f" & {alpha}"
     # add the total name
-    lines+= " & \\textbf{TOTAL} \\\\ "
-    lines+= " \\cline{1-"+str(nb_cols)+"""}
+    lines += " \\\\ "
+    lines += " \\cline{1-" + str(nb_cols) + """}
     """
+    for folder in datasets:
+        # fetch on model
+        lines += """
+            \\multirow{3}{*}{""" + folder + """}"""
+        for mi, meth in enumerate(methods):
+            lines += f""" & {meth}"""
+            for ai, alpha in enumerate(alphas):  # MlC, MCA
+                lines += f""" & {store[folder][meth][alpha]}""" if alpha in list(store[folder][meth].keys()) else " & "
+            lines += ("""\\\\ """ + """ \\cline{2-""" + str(nb_cols) + """}
 
-    # lambda function for sum
-    sum_type = lambda store, folder, type: sum([store[model][folder][type] for model in store.keys()])
-    max_sum_type = lambda store, folder, types: max([sum([store[model][folder][type] for model in store.keys()]) for type in types])
-    sum_mod = lambda store, model, types: sum([store[model][folder][type] for folder in store[model].keys() for type in types])
-    max_sum_mod = lambda store, types: max([sum([store[model][folder][type]  for folder in store[model].keys() for type in types]) for model in store.keys()])
-    # fetch folders
-    for folder in folders:
-        lines+= """
-        \\multirow{3}{*}{\\textbf{"""+folder+""" ("""+ str(summary[models[0]][folder]['nbAtt'])+""" + 19)}}
-        """
-        # fetch descriptors type
-        for di, desc in enumerate(counter1.keys()):
-            lines+= """& """+ str(desc).replace('_','\\_')
-            # fetch models
-            for model in models:
-                # add desc info for each model
-                lines+= """& """+ str(summary[model][folder][desc])
-            # add total of the current
-            lines+= """& """+ str(sum_type(summary, folder, desc)) if max_sum_type(summary, folder, counter1.keys()) != sum_type(summary, folder, desc) else "& \\textbf{"+str(sum_type(summary, folder, desc))+"}"
-            # back to next line
-            lines+= " \\\\ "
-            lines+= " \\cline{1-"+str(nb_cols)+"""}
-            """ if di == len(counter1.keys())-1 else " \\cline{2-"+str(nb_cols)+"""}
-            """
-    # add total line
+                    """) if mi != len(methods) - 1 else ("""\\\\ """ + """ \\cline{1-""" + str(nb_cols) + """}
+
+                    """)
+
     lines += """
-    \\multicolumn{2}{|c|}{\\textbf{TOTAL}}"""
-    for model in models:
-        lines+= " & "+ str(sum_mod(summary, model, counter1.keys())) if sum_mod(summary, model, counter1.keys()) != max_sum_mod(summary, counter1.keys()) else "& \\textbf{"+ str(sum_mod(summary, model, counter1.keys()))+"}"
-    lines+= " & "
-    lines+= " \\\\ "
-    lines+= " \\cline{1-"+str(nb_cols)+"""}
-    \\end{tabular}}"""
 
-    create_domain(f"{output_path}/bchart/{str(alpha).replace('.','_')}/summary")
+    \\end{tabular}
+    }
+    %\\end{sidewaystable}"""
 
-    with open(f"{output_path}/bchart/{str(alpha).replace('.','_')}/summary/summary.tex", "w") as fichier:
-        fichier.write(
-            header+"""
-            \\begin{table}[H]
-            \\center"""+table_header+lines+"""
-            \\caption{Nombre d'attributs de type GLO, PER et PER\\_Y des graphes multicouches qui sont présents dans le Top-20 des attributs qui contribuent le plus aux décisions des modèles de prédiction dans les différents jeux de données. Entre parenthèse, c'est le nombre total d'attributs du jeu de données associé.}
-            \\label{tab:recapTab}
-            \\end{table}"""+footer
-            )
-    # ------------------------------------------------------------------------------------
-    return (summary,"/////////",counter1, "/////////",dict(Counter(top_2)))
+    table = table_header + lines
+    return table
 
-"""
-    pour chaque jeu de donneer, presenter l'impact du nombre de couches suivant notre protocole sur les metrics
-"""
-def print_compare_k_att_selection_v2_2(
-    store,
-    output_path,
-    metrics,
-    valll=False
-):
 
-    # define the stat function
-    act = max if valll is False else (min if "financial-cost" in metric else max)
-    # define the tabular of the metric
-    gplot = """\\resizebox{\\textwidth}{!}{
-    \\begin{tabular}{"""+("c"*(2))+"""}
+
+def bestThreshold(numbers):
     """
-    # fetch dataset
-    for index, dataset in enumerate(set(store.keys())-set(['LFD'])):
-        # define lines plots form
-        lines = """\\addplot table[x=k,y=Acc,row sep=crcr] {
-            k Acc \\\\
-        """
-
-        plot = """
-            \\begin{tikzpicture}
-            \\begin{axis}[
-                xlabel=k,
-                ylabel={Acc},
-                xtick=data, % Get x tick marks from data
-                x tick label style={% Change x tick label style
-                    /pgf/number format/set thousands separator={}%
-                },
-                y tick label style={% Change y tick label style
-                    /pgf/number format/fixed, % Use fixed-point notation
-                    /pgf/number format/precision=3, % Precision to 3 decimal places
-                    %/pgf/number format/fixed zerofill % Fill with zeros if needed
-                },
-                title={"""+dataset+""" },% Plot title
-                tick align=outside, % Ticks on the outside
-                enlargelimits = upper,
-                xmin=0, % Ensure x-axis starts at 0
-                %ymin=0, % Ensure y-axis starts at 0
-                legend pos = outer north east
-            ]
-        """
-        # fetch alpha
-        for alpha in store[dataset].keys():
-            if ('list' in store[dataset][alpha]):
-                # print(store[dataset])
-                sorted_data = sorted(store[dataset][alpha]['list'], key=lambda x: (x[0], -x[2]))
-        
-                best_tuples = {}
-                for nb_couches, _, precision in sorted_data:
-                    if nb_couches not in best_tuples:
-                        best_tuples[nb_couches] = precision
-                
-                result = [(nb_couches, precision) for nb_couches, precision in best_tuples.items()]
-                
-                NbCouches_list = [nb_couches for nb_couches, _ in result]
-                precision_list = [precision for _, precision in result]
-                # Chart plotting
-                print(NbCouches_list, precision_list, dataset, alpha)
-
-
-                # add line container
-                plot +=lines
-                # fetch mln k
-                for i in range(len(NbCouches_list)):
-                    # add line content
-                    plot += f"""{NbCouches_list[i]} {precision_list[i]} \\\\
-                    """
-                # end the model line
-                plot+= """};
-                    \\addlegendentry{$\\alpha = """+str(alpha)+"""$}
-                """   
-                # if ((index+1)%2 == 0) else """};
-                # """ 
-        # close the folder plot 
-        gplot+=(plot+"""
-            \\end{axis}
-            \\end{tikzpicture}
-            &
-                """) if ((index)%2 == 0) else (plot+"""
-            \\end{axis}
-            \\end{tikzpicture}
-            \\\\
-                """) 
-    # close the metric
-    gplot+="""\\end{tabular}}
-            """
-    create_domain(f"{output_path}/alpha/mlnkGrowth")
-    filename1 = f"{output_path}/alpha/mlnkGrowth/mlnkGrowth.tex"
-    _file = open(filename1, "w")
-    _file.write(plot_header+gplot+"}"+footer)
-    _file.close()
-
-
-
-
-# ################################################################
-# ############## BarPlots Generation Logic Functions #############
-# ################################################################
-def generate_descriptor_ranking(
-    outputs_name=None, 
-    cwd=None, 
-    outputPath='result_lts',
-    layers=[1], 
-    _type='qualitative',
-    alphas=[0.85]
-):
-    """
-    Analyzer Descriptors' importance
+    find the optimal threshold
     Parameters
     ----------
-    outputs_path
-    cwd
-    layers
-    type
+    data
 
     Returns
     -------
-
+    limit
     """
-    day = time.strftime("%Y_%m_%d_%H")
-    ## identify the name of results folder
-    data_result_folder_name = [dirnames for _, dirnames, _ in os.walk(f'{cwd}/{outputs_name}')][0]
-    print(data_result_folder_name)
-    data_result_folder_name = list(set(data_result_folder_name)-set(['LFD']))
-    ## init a global container for containing the results of all results folder
+    diffs = [numbers[i] - numbers[i + 1] for i in range(len(numbers) - 1)]
+    mean_diff = statistics.mean(diffs)
+    std_diff = statistics.stdev(diffs)
+    result = len(numbers) - 1
+    for i, diff in enumerate(diffs):
+        if abs(diff - mean_diff) > std_diff:
+            result = i
+            break  # Sortir de la boucle dès qu'un écart significatif est trouvé
+    return result
 
-    
+def cumulative_difference_threshold(accuracies, threshold_percent=0.8):
+    sorted_accuracies = sorted(accuracies, reverse=True)
+    diffs = [sorted_accuracies[i] - sorted_accuracies[i+1] for i in range(len(sorted_accuracies)-1)]
+    total_diff = sum(diffs)
+    cumulative_diff = 0
+    for i, diff in enumerate(diffs):
+        cumulative_diff += diff
+        if cumulative_diff / total_diff >= threshold_percent:
+            return i + 1
+    return len(accuracies)
+
+def elbow_method(accuracies):
+    sorted_accuracies = sorted(accuracies, reverse=True)
+    coords = [(i, acc) for i, acc in enumerate(sorted_accuracies)]
+    line_vec = coords[-1][0] - coords[0][0], coords[-1][1] - coords[0][1]
+    line_vec_norm = math.sqrt(sum(x*x for x in line_vec))
+    vec_from_first = lambda coord: (coord[0] - coords[0][0], coord[1] - coords[0][1])
+    scalar_proj = lambda vec: (vec[0]*line_vec[0] + vec[1]*line_vec[1]) / line_vec_norm
+    vec_proj = lambda vec: ((scalar_proj(vec) / line_vec_norm) * line_vec[0], (scalar_proj(vec) / line_vec_norm) * line_vec[1])
+    vec_reject = lambda vec: (vec[0] - vec_proj(vec)[0], vec[1] - vec_proj(vec)[1])
+    dists_from_line = [euclidean((0,0), vec_reject(vec_from_first(coord))) for coord in coords]
+    return dists_from_line.index(max(dists_from_line)) + 1
+
+def proto_precision_tikz(
+        tolerances,
+        elbow_results,
+        cusum_results,
+        datasets,
+        layout_config=None
+):
+    """
+    Génère un document TikZ avec des matrices pour comparer les précisions Elbow vs CUSUM
+
+    Args:
+        tolerances: liste des tolérances (ex: [0.0, 0.01, 0.02, ...])
+        elbow_results: dict {tolerance: {dataset: precision}}
+        cusum_results: dict {tolerance: {dataset: precision}}
+        datasets: liste des noms de datasets
+        output_file: nom du fichier de sortie
+        layout_config: dict avec configuration du layout (optionnel)
+    """
+
+    # Configuration par défaut du layout
+    default_config = {
+        'matrices_per_row': 2,
+        'matrix_spacing_x': 4,
+        'matrix_spacing_y': 5,
+        'cell_width': '1.5cm',
+        'cell_height': '0.6cm',
+        'header_width': '3.05cm',
+        'header_height': '0.6cm'
+    }
+
+    if layout_config:
+        default_config.update(layout_config)
+
+    config = default_config
+
+    # Début du document LaTeX
+    latex_content = f"""
+\\begin{{tikzpicture}}
+
+"""
+
+    # Calculer positions des matrices
+    positions = []
+    matrices_per_row = config['matrices_per_row']
+    spacing_x = config['matrix_spacing_x']
+    spacing_y = config['matrix_spacing_y']
+
+    for i, dataset in enumerate(datasets):
+        row = i // matrices_per_row
+        col = i % matrices_per_row
+        x = col * spacing_x
+        y = -row * spacing_y
+        positions.append((x, y))
+
+    # Générer chaque matrice pour chaque dataset
+    for i, dataset in enumerate(datasets):
+        x, y = positions[i]
+        matrix_name = dataset.lower().replace(' ', '').replace('-', '')
+
+        # Créer la matrice
+        latex_content += f"""% Matrice pour {dataset}
+\\matrix ({matrix_name}) [matrix of nodes, nodes in empty cells,
+    nodes={{draw, minimum width={config['cell_width']}, minimum height={config['cell_height']}, anchor=center, text centered}}] at ({x},{y})
+{{
+"""
+
+        # Ligne d'en-tête (si c'est la première colonne, inclure la colonne des labels)
+        if i % matrices_per_row == 0:
+            latex_content += "        & Elbow & CUSUM \\\\\n"
+        else:
+            latex_content += "        Elbow & CUSUM \\\\\n"
+
+        # Lignes de données
+        for j, tol in enumerate(tolerances):
+            if i % matrices_per_row == 0:  # Première colonne : inclure les labels de précision
+                precision_label = f"P ({int(tol * 100)}\\%)"
+                row_content = f"        {precision_label} & "
+            else:  # Autres colonnes : pas de label
+                row_content = "        "
+
+            # Ajouter les valeurs Elbow et CUSUM
+            elbow_val = elbow_results[tol][dataset]
+            cusum_val = cusum_results[tol][dataset]
+
+            if i % matrices_per_row == 0:
+                row_content += f"{elbow_val:.1f} & {cusum_val:.1f}"
+            else:
+                row_content += f"{elbow_val:.1f} & {cusum_val:.1f}"
+
+            row_content += " \\\\\n"
+            latex_content += row_content
+
+        latex_content += "};\n\n"
+
+        # Ajouter le titre du dataset
+        header_y = y + (len(tolerances)/2+.4) * 0.6 + 0.57  # Ajuster selon la hauteur des cellules
+        latex_content += f"""% Titre pour {dataset}
+\\node[draw, rectangle, minimum width={config['header_width']}, minimum height={config['header_height']}] ({matrix_name}_title) at ({x + 0.75 if x == 0 else x},{header_y}) {{{dataset}}};
+
+"""
+
+    # Fermer le document
+    latex_content += """\\end{tikzpicture}
+"""
+
+    return latex_content
+def vector_matching_precision(v1, v2, tolerance=0):
+    """
+    Calcule la précision de correspondance entre deux vecteurs.
+
+    :param v1: Premier vecteur
+    :param v2: Deuxième vecteur
+    :param tolerance: Tolérance pour considérer deux valeurs comme correspondantes
+    :return: Pourcentage de correspondance entre les vecteurs
+    """
+    if len(v1) != len(v2):
+        raise ValueError("Les vecteurs doivent avoir la même longueur")
+
+    v1, v2 = np.array(v1), np.array(v2)
+    matches = np.abs(v1 - v2) <= tolerance
+    precision = np.mean(matches) * 100
+
+    return precision
+
+def selection_proto(records, output_path):
+    # result structure
+    resultDict = {
+        'dataset': [],
+        'alpha': [],
+        # 'QuartileThreshold':[],
+        'elbowThreshold': [],
+        'cumulative_difference_threshold': [],
+        # 'variance_explained_threshold':[],
+        'realThreshold': []
+    }
+    res = {}
+    getTheBestAcc = lambda store, k: round(max([acc for layer, _, acc in store if k == layer]), 4)
+    real_values = {}
+    elbow_values = {}
+    cusum_values = {}
+    # walk on the datasets
+    for dataset in records.keys():
+        # walk on alphas
+        res[dataset] = {key: {} for key in ['CUSUM', 'Elbow', 'réel']}
+        real_values[dataset] = []
+        elbow_values[dataset] = []
+        cusum_values[dataset] = []
+        for alpha in records[dataset].keys():
+            if not isinstance(records[dataset][alpha]['predicted_best_k'], list):
+                resultDict['dataset'].append(dataset)
+                resultDict['alpha'].append(alpha)
+                # resultDict['QuartileThreshold'].append(getTheBestAcc(records[dataset][alpha]['list'],records[dataset][alpha]['predicted_best_k'][0]))
+                elb = elbow_method(list(records[dataset][alpha]['accuracies']))
+                elb = elb if elb < max([layer for layer, _, _ in records[dataset][alpha]['list']]) else max(
+                    [layer for layer, _, _ in records[dataset][alpha]['list']])
+                resultDict['elbowThreshold'].append(getTheBestAcc(records[dataset][alpha]['list'], elb))
+                res[dataset]['Elbow'][alpha] = getTheBestAcc(records[dataset][alpha]['list'], elb)
+                elbow_values[dataset].append(res[dataset]['Elbow'][alpha])
+
+                cum = cumulative_difference_threshold(list(records[dataset][alpha]['accuracies']))
+                cum = cum if cum < max([layer for layer, _, _ in records[dataset][alpha]['list']]) else max(
+                    [layer for layer, _, _ in records[dataset][alpha]['list']])
+                resultDict['cumulative_difference_threshold'].append(
+                    getTheBestAcc(records[dataset][alpha]['list'], cum))
+                res[dataset]['CUSUM'][alpha] = getTheBestAcc(records[dataset][alpha]['list'], cum)
+                cusum_values[dataset].append(res[dataset]['CUSUM'][alpha])
+
+                # resultDict['variance_explained_threshold'].append(getTheBestAcc(records[dataset][alpha]['list'],variance_explained_threshold(list(records[dataset][alpha]['accuracies'].values()))))
+                resultDict['realThreshold'].append(
+                    round(max([acc for _, _, acc in records[dataset][alpha]['list']]), 4))
+                res[dataset]['réel'][alpha] = round(max([acc for _, _, acc in records[dataset][alpha]['list']]), 4)
+                real_values[dataset].append(res[dataset]['réel'][alpha])
+
+    dat = pd.DataFrame(resultDict)
+    return dat, build_compare_feature_selection_protocole(res), (real_values,elbow_values,cusum_values)
+
+
+def analyse_files(
+        models_name,
+        metrics,
+        files,
+        classic_f,
+        macro_metrics,
+        result_folder,
+        list_of_accuracy,
+        layer
+):
+    for index4, model in enumerate(models_name):
+        # now fetch ours results to store
+        for metric in list(set(classic_f.columns) & set(metrics)):  # accuracy and f1-score and/or financial cost
+            for approach in list(files.keys()):  # Mlc or MCA
+                for logic in list(files[approach].keys()):  # GLO, PER or GAP
+                    for config in list(files[approach][logic].keys() if files[approach][logic] is not None else {}):  # MX, CX, CY, CXY
+                        # print(result_folder, layer, approach, logic, config, len(files[approach][logic][config]) )
+                        for result in list(range(len(
+                                files[approach][logic][config]))):  # each result file's containing evaluation metrics
+                            # print(files[approach][logic][config][result].columns)
+                            # exit(0)
+                            valu = round(
+                                (
+                                        (
+                                                round(
+                                                    files[approach][logic][config][result].loc[model, metric],
+                                                    4
+                                                )
+                                                -
+                                                round(
+                                                    classic_f.loc[model, metric],
+                                                    4
+                                                )
+                                        )
+                                        /
+                                        (round(classic_f.loc[model, metric], 4) if round(classic_f.loc[model, metric],
+                                                                                         4) > 0 else epsilon)
+                                ) * 100,
+                                1
+                            )
+
+                            valu1 = (
+                                            (
+                                                    round(
+                                                        files[approach][logic][config][result].loc[model, metric],
+                                                        4
+                                                    )
+                                                    -
+                                                    round(
+                                                        classic_f.loc[model, metric],
+                                                        4
+                                                    )
+                                            )
+                                            /
+                                            (round(classic_f.loc[model, metric], 4) if round(
+                                                classic_f.loc[model, metric], 4) > 0 else epsilon)
+                                    ) * 100
+
+                            main_key = [kjj for kjj in list(macro_metrics.keys()) if
+                                        (logic in kjj) and (approach in kjj) and (config in kjj)]
+                            # met = 'Acc' if 'acc' in metric else ('F1-score' if 'f1' in metric else 'Cost')
+                            macro_metrics[main_key[0]][metric][result_folder].append(
+                                (
+                                    valu1 if 'finan' not in metric else (valu1 if valu1 == 0 else -1 * valu1)
+                                    , model)
+                            )
+
+                            # if 'LD4' in result_folder:
+                            #     print(result_folder, layer, config)
+                            if 'acc' in metric and 'MX' in config:
+                                # if 'LD4' in result_folder:
+                                # print(result_folder, layer)
+                                list_of_accuracy.append((layer, model, files[approach][logic][config][result].loc[model, metric]))
+    return (list_of_accuracy, macro_metrics)
+
+def analyse_files_for_shap_value(
+        models_name,
+        files,
+        result_folders,
+        top=10
+):
     template_descripteurs = {
         'INTER_GLO': [],
         'INTRA_GLO': [],
@@ -2188,198 +901,244 @@ def generate_descriptor_ranking(
         'INTRA_M_PER': [],
         'COMBINE_M_PER': [],
 
-        'INTER_GLO_': [],
-        'INTRA_GLO': [],
-        'COMBINE_GLO': [],
-        'INTER_PER': [],
-        'INTRA_PER': [],
-        'COMBINE_PER': [],
-        'INTER_M_GLO': [],
-        'INTRA_M_GLO': [],
-        'COMBINE_M_GLO': [],
-        'INTER_M_PER': [],
-        'INTRA_M_PER': [],
-        'COMBINE_M_PER': [],
-
-        'YN_COMBINE_PER':[],
-        'YP_COMBINE_PER':[],
-        'YN_INTER_PER':[],
-        'YP_INTER_PER':[],
-        'YN_INTRA_PER':[],
-        'YP_INTRA_PER':[],
+        'YN_COMBINE_PER': [],
+        'YP_COMBINE_PER': [],
+        'YN_INTER_PER': [],
+        'YP_INTER_PER': [],
+        'YN_INTRA_PER': [],
+        'YP_INTRA_PER': [],
         'DEGREE': []
 
     }
-    ######################################
-    global_details_metrics_depth_1 = {
-    }
-
-    global_tables = ""
-    local_tables = {}
-    ## fetch on alpha values
-    for index, alpha in enumerate(alphas):
-        ## fetch on name of folders
-        for index2, result_folder in enumerate(data_result_folder_name):
-            ## get classic model
-            classic_f = [
-                load_data_set_from_url(path=file, sep='\t', encoding='utf-8', index_col=0, na_values=None)
-                for file in get_filenames(
-                    root_dir=f'{os.getcwd()}/{outputs_name}/{result_folder}/data_selection_storage',
-                    func=lambda x :C_F(x) and ('v2_' in x),
-                    verbose=False
-                )
-            ][-1]
-            # define a list which will receive all possible value of accuracy for each layer in aims tp sorted it later and extra, the best best layer and model
-            # list_of_accuracy = []
-            ## get model list on classic results
-            models_list = classic_f.index.values.tolist()
-            ## get model dictionary
-            models = model_desc()
-            ## save only the ones use suring the classic learning
-            models_name = {key: models[key] for key in models.keys() if key in models_list}
-            print(models_name)
-            ## identify the number of existing layer storage
-            mlna_folders_names = [dirnames for _, dirnames, _ in os.walk(f'{cwd}/{outputs_name}/{result_folder}/{alpha}/{_type}')][0]
-            mlna_folders_names = sorted([int(el.split("_")[1]) for el in mlna_folders_names if "mlna" in el])
-            print(result_folder, mlna_folders_names,"//", alpha, list(set(mlna_folders_names)&set(layers)))
-
-            ## fetch on each mlna layer resultts
-            for index3, layer in enumerate(list(set(mlna_folders_names)&set(layers))):
-                ## get files results of alpha
-                files = load_results(
-                    f'{outputs_name}/{result_folder}',
-                    _type,
-                    layer,
-                    alpha,
-                    per=True,
-                    glo=True,
-                    mix=True,
-                    match= lambda x: ('v2_' in x) 
-                )
-                ## aggregate results belong to metrics specific to the current results
-                for index4, model in enumerate(models_name):
-                    if (index2 == index3) and (index2 == 0) and (index == 0):
-                        # global one
-                        global_details_metrics_depth_1[model] = {key: deepcopy(template_descripteurs) for key in data_result_folder_name}
-
-                    
-                    for result in list(range(len(files["MlC"]["GAP"]["CXY"]))): # each result file's containing evaluation metrics
-                        colo = files["MlC"]["GAP"]["CXY"][result].columns
-                        for att in colo:
-                            if not (att in ["accuracy", "precision", "recall", "f1-score","financial-cost", "precision1", "recall1", "f1-score1", "precision0", "recall0", "f1-score0"]):
-                                if YN_PER_INTER_F(att):
-                                    global_details_metrics_depth_1[model][result_folder][
-                                        'YN_INTER_PER'].append(abs(files["MlC"]["GAP"]["CXY"][result].loc[model, att]))
-                                elif YP_PER_INTER_F(att):
-                                    global_details_metrics_depth_1[model][result_folder][
-                                        'YP_INTER_PER'].append(abs(files["MlC"]["GAP"]["CXY"][result].loc[model, att]))
-                                elif YN_PER_INTRA_F(att):
-                                    global_details_metrics_depth_1[model][result_folder][
-                                        'YN_INTRA_PER'].append(abs(files["MlC"]["GAP"]["CXY"][result].loc[model, att]))
-                                elif YP_PER_INTRA_F(att):
-                                    global_details_metrics_depth_1[model][result_folder][
-                                        'YP_INTRA_PER'].append(abs(files["MlC"]["GAP"]["CXY"][result].loc[model, att]))
-                                elif YN_PER_COMBINE_F(att):
-                                    global_details_metrics_depth_1[model][result_folder][
-                                        'YN_COMBINE_PER'].append(abs(files["MlC"]["GAP"]["CXY"][result].loc[model, att]))
-                                elif YP_PER_COMBINE_F(att):
-                                    global_details_metrics_depth_1[model][result_folder][
-                                        'YP_COMBINE_PER'].append(abs(files["MlC"]["GAP"]["CXY"][result].loc[model, att]))
-                                elif GLO_INTER_F(att):
-                                    global_details_metrics_depth_1[model][result_folder][
-                                        'INTER_GLO'].append(abs(files["MlC"]["GAP"]["CXY"][result].loc[model, att]))
-                                elif GLO_INTRA_F(att):
-                                    global_details_metrics_depth_1[model][result_folder][
-                                        'INTRA_GLO'].append(abs(files["MlC"]["GAP"]["CXY"][result].loc[model, att]))
-                                elif GLO_COMBINE_F(att):
-                                    global_details_metrics_depth_1[model][result_folder][
-                                        'COMBINE_GLO'].append(abs(files["MlC"]["GAP"]["CXY"][result].loc[model, att]))
-                                elif PER_INTER_F(att):
-                                    global_details_metrics_depth_1[model][result_folder][
-                                        'INTER_PER'].append(abs(files["MlC"]["GAP"]["CXY"][result].loc[model, att]))
-                                elif PER_INTRA_F(att):
-                                    global_details_metrics_depth_1[model][result_folder][
-                                        'INTRA_PER'].append(abs(files["MlC"]["GAP"]["CXY"][result].loc[model, att]))
-                                elif PER_COMBINE_F(att):
-                                    global_details_metrics_depth_1[model][result_folder][
-                                        'COMBINE_PER'].append(abs(files["MlC"]["GAP"]["CXY"][result].loc[model, att]))
-                                elif GLO_INTER_M_F(att):
-                                    global_details_metrics_depth_1[model][result_folder][
-                                        'INTER_M_GLO'].append(abs(files["MlC"]["GAP"]["CXY"][result].loc[model, att]))
-                                elif GLO_INTRA_M_F(att):
-                                    global_details_metrics_depth_1[model][result_folder][
-                                        'INTRA_M_GLO'].append(abs(files["MlC"]["GAP"]["CXY"][result].loc[model, att]))
-                                elif GLO_COMBINE_M_F(att):
-                                    global_details_metrics_depth_1[model][result_folder][
-                                        'COMBINE_M_GLO'].append(abs(files["MlC"]["GAP"]["CXY"][result].loc[model, att]))
-                                elif PER_INTER_M_F(att):
-                                    global_details_metrics_depth_1[model][result_folder][
-                                        'INTER_M_PER'].append(abs(files["MlC"]["GAP"]["CXY"][result].loc[model, att]))
-                                elif PER_INTRA_M_F(att):
-                                    global_details_metrics_depth_1[model][result_folder][
-                                        'INTRA_M_PER'].append(abs(files["MlC"]["GAP"]["CXY"][result].loc[model, att]))
-                                elif PER_COMBINE_M_F(att):
-                                    global_details_metrics_depth_1[model][result_folder][
-                                        'COMBINE_M_PER'].append(abs(files["MlC"]["GAP"]["CXY"][result].loc[model, att]))
-                                elif DEGREE_F(att):
-                                    global_details_metrics_depth_1[model][result_folder][
-                                        'DEGREE'].append(abs(files["MlC"]["GAP"]["CXY"][result].loc[model, att]))
-                                else:
-                                    if not (att in global_details_metrics_depth_1[model][result_folder].keys()):
-                                        global_details_metrics_depth_1[model][result_folder][
-                                            att] = []
-                                        # print(global_details_metrics_depth_1[model][result_folder])
-                                    global_details_metrics_depth_1[model][result_folder][
-                                        att].append(abs(files["MlC"]["GAP"]["CXY"][result].loc[model, att]))
-
+    global_details_metrics_depth_1 = {}
+    for index4, model in enumerate(models_name):
+        global_details_metrics_depth_1[model] = {key: deepcopy(template_descripteurs) for key in
+                                                 result_folders}
+        for result_folder in result_folders:
+            # print(result_folder)
+            for result in list(range(len(files[result_folder]["MlC"]["BOT"]["CXY"]))):  # each result file's containing evaluation metrics
+                # print(result, len(files[result_folder]["MlC"]["BOT"]["CXY"]), files[result_folder]["MlC"]["BOT"]["CXY"][result].columns)
+                if sum([k in files[result_folder]["MlC"]["BOT"]["CXY"][result].columns for k in ["precision", "accuracy", "recall", "f1-score"]]) == 4:
+                    files[result_folder]["MlC"]["BOT"]["CXY"][result].drop(["precision", "accuracy", "recall", "f1-score"], axis=1, inplace=True)
+                colo = files[result_folder]["MlC"]["BOT"]["CXY"][result].columns
+                # print(colo)
+                for att in colo:
+                    if not (att in ["accuracy", "precision", "recall", "f1-score", "financial-cost"]):
+                        if YN_PER_INTER_F(att):
+                            global_details_metrics_depth_1[model][result_folder][
+                                'YN_INTER_PER'].append([abs(x) for x in parse_vector(files[result_folder]["MlC"]["BOT"]["CXY"][result].loc[model, att])])
+                        elif YP_PER_INTER_F(att):
+                            global_details_metrics_depth_1[model][result_folder][
+                                'YP_INTER_PER'].append([abs(x) for x in parse_vector(files[result_folder]["MlC"]["BOT"]["CXY"][result].loc[model, att])])
+                        elif YN_PER_INTRA_F(att):
+                            global_details_metrics_depth_1[model][result_folder][
+                                'YN_INTRA_PER'].append([abs(x) for x in parse_vector(files[result_folder]["MlC"]["BOT"]["CXY"][result].loc[model, att])])
+                        elif YP_PER_INTRA_F(att):
+                            global_details_metrics_depth_1[model][result_folder][
+                                'YP_INTRA_PER'].append([abs(x) for x in parse_vector(files[result_folder]["MlC"]["BOT"]["CXY"][result].loc[model, att])])
+                        elif YN_PER_COMBINE_F(att):
+                            global_details_metrics_depth_1[model][result_folder][
+                                'YN_COMBINE_PER'].append(
+                                [abs(x) for x in parse_vector(files[result_folder]["MlC"]["BOT"]["CXY"][result].loc[model, att])])
+                        elif YP_PER_COMBINE_F(att):
+                            global_details_metrics_depth_1[model][result_folder][
+                                'YP_COMBINE_PER'].append(
+                                [abs(x) for x in parse_vector(files[result_folder]["MlC"]["BOT"]["CXY"][result].loc[model, att])])
+                        elif GLO_INTER_F(att):
+                            global_details_metrics_depth_1[model][result_folder][
+                                'INTER_GLO'].append([abs(x) for x in parse_vector(files[result_folder]["MlC"]["BOT"]["CXY"][result].loc[model, att])])
+                        elif GLO_INTRA_F(att):
+                            global_details_metrics_depth_1[model][result_folder][
+                                'INTRA_GLO'].append([abs(x) for x in parse_vector(files[result_folder]["MlC"]["BOT"]["CXY"][result].loc[model, att])])
+                        elif GLO_COMBINE_F(att):
+                            global_details_metrics_depth_1[model][result_folder][
+                                'COMBINE_GLO'].append([abs(x) for x in parse_vector(files[result_folder]["MlC"]["BOT"]["CXY"][result].loc[model, att])])
+                        elif PER_INTER_F(att):
+                            global_details_metrics_depth_1[model][result_folder][
+                                'INTER_PER'].append([abs(x) for x in parse_vector(files[result_folder]["MlC"]["BOT"]["CXY"][result].loc[model, att])])
+                        elif PER_INTRA_F(att):
+                            global_details_metrics_depth_1[model][result_folder][
+                                'INTRA_PER'].append([abs(x) for x in parse_vector(files[result_folder]["MlC"]["BOT"]["CXY"][result].loc[model, att])])
+                        elif PER_COMBINE_F(att):
+                            global_details_metrics_depth_1[model][result_folder][
+                                'COMBINE_PER'].append([abs(x) for x in parse_vector(files[result_folder]["MlC"]["BOT"]["CXY"][result].loc[model, att])])
+                        elif GLO_INTER_M_F(att):
+                            global_details_metrics_depth_1[model][result_folder][
+                                'INTER_M_GLO'].append([abs(x) for x in parse_vector(files[result_folder]["MlC"]["BOT"]["CXY"][result].loc[model, att])])
+                        elif GLO_INTRA_M_F(att):
+                            global_details_metrics_depth_1[model][result_folder][
+                                'INTRA_M_GLO'].append([abs(x) for x in parse_vector(files[result_folder]["MlC"]["BOT"]["CXY"][result].loc[model, att])])
+                        elif GLO_COMBINE_M_F(att):
+                            global_details_metrics_depth_1[model][result_folder][
+                                'COMBINE_M_GLO'].append([abs(x) for x in parse_vector(files[result_folder]["MlC"]["BOT"]["CXY"][result].loc[model, att])])
+                        elif PER_INTER_M_F(att):
+                            global_details_metrics_depth_1[model][result_folder][
+                                'INTER_M_PER'].append([abs(x) for x in parse_vector(files[result_folder]["MlC"]["BOT"]["CXY"][result].loc[model, att])])
+                        elif PER_INTRA_M_F(att):
+                            global_details_metrics_depth_1[model][result_folder][
+                                'INTRA_M_PER'].append([abs(x) for x in parse_vector(files[result_folder]["MlC"]["BOT"]["CXY"][result].loc[model, att])])
+                        elif PER_COMBINE_M_F(att):
+                            global_details_metrics_depth_1[model][result_folder][
+                                'COMBINE_M_PER'].append([abs(x) for x in parse_vector(files[result_folder]["MlC"]["BOT"]["CXY"][result].loc[model, att])])
+                        elif DEGREE_F(att):
+                            global_details_metrics_depth_1[model][result_folder][
+                                'DEGREE'].append([abs(x) for x in parse_vector(files[result_folder]["MlC"]["BOT"]["CXY"][result].loc[model, att])])
+                        else:
+                            var = att
+                            if '__' in att:
+                                _, var = att.split('__', 1)
+                            if not (var in global_details_metrics_depth_1[model][result_folder].keys()):
+                                global_details_metrics_depth_1[model][result_folder][
+                                    var] = []
+                                # print(global_details_metrics_depth_1[model][result_folder])
+                            global_details_metrics_depth_1[model][result_folder][
+                                var].append([abs(x) for x in parse_vector(files[result_folder]["MlC"]["BOT"]["CXY"][result].loc[model, att])])
 
     for model in global_details_metrics_depth_1.keys():
         for folder in global_details_metrics_depth_1[model].keys():
             for att in global_details_metrics_depth_1[model][folder].keys():
-                print(global_details_metrics_depth_1[model][folder][att], model, folder, att)
-                global_details_metrics_depth_1[model][folder][att] = statistics.mean(global_details_metrics_depth_1[model][folder][att])
-            # Calculer la somme de toutes les valeurs
-            total_sum = sum(global_details_metrics_depth_1[model][folder].values())
+                # print(global_details_metrics_depth_1[model][folder][att], model, folder, att)
+                global_details_metrics_depth_1[model][folder][att] = np.mean(global_details_metrics_depth_1[model][folder][att], axis=0)
 
-            # Normaliser les valeurs
-            global_details_metrics_depth_1[model][folder] = {k: v / total_sum for k, v in global_details_metrics_depth_1[model][folder].items()}
-    ## print the global container (gain, metric)
-    return print_compare_bchart(
-        global_details_metrics_depth_1,
-        f'{cwd}/{outputPath}/',
-        outputs_name,
-        "all",
-        20
-    )
+    shapes = f"""
+    """
+    for model in models_name:
+        tt = []
+        shapes += """
+        """
+        for fold in result_folders:
+            agg = pd.DataFrame(global_details_metrics_depth_1[model][fold]).T
+            agg.columns = [f'Classe {i}' for i in range(agg.shape[1])]
 
+            # Calculer l'importance totale et trier (DÉCROISSANT = plus important en premier)
+            agg['total_importance'] = agg.abs().sum(axis=1)
+            agg = agg.sort_values('total_importance', ascending=False)
+            agg = agg.drop('total_importance', axis=1)
 
+            tt.append(f"{{{create_standalone_shap_plot(agg.head(top), model, fold, top)}}}")
+        shapes += """
+        """.join(tt)
 
+    return shapes
 
+# === 4. Définir les couleurs pour chaque classe ===
+class_colors = {
+    'Classe 0': '{RGB}{255,20,147}',  # Rose/Magenta
+    'Classe 1': '{RGB}{34,139,34}',  # Vert
+    'Classe 2': '{RGB}{255,69,0}',  # Rouge
+    'Classe 3': '{RGB}{30,144,255}',  # Bleu
+}
 
+def get_additional_colors(n_classes):
+    """Génère des couleurs supplémentaires si plus de 4 classes"""
+    additional_colors = [
+        '{RGB}{148,0,211}',  # Violet
+        '{RGB}{255,140,0}',  # Orange foncé
+        '{RGB}{0,191,255}',  # Bleu ciel
+        '{RGB}{50,205,50}',  # Vert clair
+    ]
 
+    all_colors = {}
+    base_colors = list(class_colors.values())
 
+    for i in range(n_classes):
+        if i < len(base_colors):
+            all_colors[f'Classe {i}'] = base_colors[i]
+        else:
+            all_colors[f'Classe {i}'] = additional_colors[(i - len(base_colors)) % len(additional_colors)]
 
+    return all_colors
+def create_standalone_shap_plot(df_shap, model_name, fd, top):
+    """Crée un SHAP summary plot standalone pour un modèle"""
 
+    n_features, n_classes = df_shap.shape
+    feature_names = [name.replace("_", "\\_") for name in df_shap.index.tolist()]
+    class_names = df_shap.columns.tolist()
 
+    # Obtenir les couleurs pour toutes les classes
+    colors = get_additional_colors(n_classes)
 
+    # Calculer les valeurs maximales pour l'axe X
+    max_val = df_shap.abs().max().max()
+    x_max = max_val * 1.1
 
+    latex_content = f"""
+% Définition des couleurs pour chaque classe
+"""
 
+    # Ajouter les définitions de couleurs
+    for class_name, color_def in colors.items():
+        color_key = class_name.lower().replace(' ', '')
+        latex_content += f"\\definecolor{{{color_key}}}{color_def}\n"
 
+    latex_content += f"""
+\\begin{{figure}}[H]
+\\centering
+\\begin{{tikzpicture}}
+\\begin{{axis}}[
+    xbar stacked,
+    width=14cm,
+    height={max(8, n_features * 0.4)}cm,
+    xlabel={{Importance moyenne |SHAP| par classe}},
+    ylabel={{Variables}},
+    xmin=0,
+    xmax={x_max:.3f},
+    ytick=data,
+    yticklabels={{%
+        {', '.join(feature_names)}
+    }},
+    bar width={max(6, 20 - n_features)}pt,
+    legend style={{
+        at={{(0.98,0.02)}},
+        anchor=south east,
+        legend columns=1
+    }},
+    grid=major,
+    grid style={{gray!30}},
+    title={{{model_name} - {{{fd}}} - SHAP Summary Plot}},
+    y dir=reverse,
+    yticklabel style={{font=\small}}
+]
 
+"""
 
+    # Ajouter les données pour chaque classe
+    for i, class_name in enumerate(class_names):
+        color_key = class_name.lower().replace(' ', '')
+        values = df_shap[class_name].abs().values
 
+        # PAS d'inversion ici - on garde l'ordre du DataFrame (déjà trié par importance décroissante)
+        coordinates = ' '.join([f"({val:.4f},{j})" for j, val in enumerate(values)])
 
+        latex_content += f"""% {class_name}
+\\addplot[fill={color_key}, draw=none] coordinates {{
+    {coordinates}
+}};
 
+"""
 
+    # Ajouter la légende
+    legend_entries = ', '.join(class_names)
+    latex_content += f"""\\legend{{{legend_entries}}}
+\\end{{axis}}
+\\end{{tikzpicture}}
+\\caption{{Importance des variables SHAP pour le modèle {model_name} (ordre décroissant d'importance top {top})}}
+\\label{{fig:shap_{fd}_{model_name.replace(' ', '_').lower()}}}
+\\end{{figure}}"""
 
+    return latex_content
 
-
-
-
-
-
-
-
-
-
-
+# === 3. Convertir les vecteurs SHAP de string en liste de float ===
+def parse_vector(text):
+    try:
+        # Enlever les crochets et séparer par les espaces
+        # print(type(text),text, "//")
+        nombres_str = text.strip('[]').split()
+        # Convertir en float
+        # print(nombres_str, "..")
+        liste = [float(x) for x in nombres_str]
+        # print(liste, ".-.")
+        return liste
+    except Exception as e:
+        print(f"Erreur parsing: {text} → {e}")
+        return np.nan
