@@ -640,7 +640,7 @@ def main():
         LATEX_FILE_=filename1,
         TO_EMAILS_=environment['recipients'],
         CC_EMAILS_=environment['email_cc'],
-        SUBJECT_=f"Test Pipeline Report - {timestr}",
+        SUBJECT_=f"Pipeline Report - {timestr}",
         EMAIL_BODY_=f"""
 Hello,
 
