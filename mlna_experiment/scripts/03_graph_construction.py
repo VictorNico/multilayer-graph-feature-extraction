@@ -953,30 +953,6 @@ def main():
             )
             with open(args.cwd + f'/{results_dir}{domain}/{args.alpha}/{target_columns_type}/mlna_1/graph_turn_1_completed.dtvni', "a") as fichier:
                 fichier.write("")
-
-        if sum(['graph_turn_1_completed.dtvni' == file for _, _, files in
-                os.walk(args.cwd + f'/{results_dir}{domain}/{args.alpha}/{target_columns_type}/mlna_2/') for
-                file in files]) > 0:
-            print("✅ COMBINATORY MLNA 2 Graph  already completed")
-        else:
-            make_mlna_k_variable_v2(
-                x_traini=x_traini,
-                x_testi=x_testi,
-                y_traini=y_traini,
-                y_testi=y_testi,
-                OHE=OHE,
-                nominal_factor_colums=columns,
-                cwd = args.cwd + f'/{results_dir}{domain}/{args.alpha}/{target_columns_type}',
-                root= args.cwd,
-                domain= domain,
-                target_variable= target_variable,
-                alpha= args.alpha,
-                graphWithClass=False
-            )
-            with open(
-                    args.cwd + f'/{results_dir}{domain}/{args.alpha}/{target_columns_type}/mlna_2/graph_turn_1_completed.dtvni',
-                    "a") as fichier:
-                fichier.write("")
     if args.turn == 2:  # check if we are onto the first turn
         if sum([f"MNIFS_{domain}_best_features" in file for _, _, files in
                 os.walk(args.cwd + f'/{results_dir}{domain}/{args.alpha}/{target_columns_type}') for
@@ -1018,6 +994,30 @@ def main():
                 topR=list(mnifs_config['model'].keys())
             )
             with open(args.cwd + f'/{results_dir}{domain}/{args.alpha}/{target_columns_type}/select/graph_turn_2_completed.dtvni', "a") as fichier:
+                fichier.write("")
+    if args.turn == 3:  # check if we are onto the first turn
+        if sum(['graph_turn_3_completed.dtvni' == file for _, _, files in
+                os.walk(args.cwd + f'/{results_dir}{domain}/{args.alpha}/{target_columns_type}/mlna_2/') for
+                file in files]) > 0:
+            print("✅ COMBINATORY MLNA 2 Graph  already completed")
+        else:
+            make_mlna_k_variable_v2(
+                x_traini=x_traini,
+                x_testi=x_testi,
+                y_traini=y_traini,
+                y_testi=y_testi,
+                OHE=OHE,
+                nominal_factor_colums=columns,
+                cwd = args.cwd + f'/{results_dir}{domain}/{args.alpha}/{target_columns_type}',
+                root= args.cwd,
+                domain= domain,
+                target_variable= target_variable,
+                alpha= args.alpha,
+                graphWithClass=False
+            )
+            with open(
+                    args.cwd + f'/{results_dir}{domain}/{args.alpha}/{target_columns_type}/mlna_2/graph_turn_3_completed.dtvni',
+                    "a") as fichier:
                 fichier.write("")
 
     print("Descripteurs extraits et sauvegardés.")

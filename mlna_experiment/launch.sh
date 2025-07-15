@@ -7,6 +7,7 @@ VENV_PATH=".env_mlna"
 
 # paramètres d'exécution
 param1=$1
+param2=$2
 
 if [[ -z "$param1" ]]; then
     echo "Usage: $0 <nom_repertoire_dataset>"
@@ -83,12 +84,12 @@ for alpha in "${alphas[@]}"; do
         python3.9 -m scripts.04_model_training --cwd=$cwd --dataset_folder=$param1 --alpha=$alpha --turn=1
 
         parallel ::: \
-          \"python3.9 -m scripts.03_graph_construction --graph_with_class --cwd=$cwd --dataset_folder=$param1 --alpha=$alpha --turn=2\" \
-          \"python3.9 -m scripts.03_graph_construction --cwd=$cwd --dataset_folder=$param1 --alpha=$alpha --turn=2\"
+          \"python3.9 -m scripts.03_graph_construction --graph_with_class --cwd=$cwd --dataset_folder=$param1 --alpha=$alpha --turn=$param2\" \
+          \"python3.9 -m scripts.03_graph_construction --cwd=$cwd --dataset_folder=$param1 --alpha=$alpha --turn=$param2\"
 
         parallel ::: \
-          \"python3.9 -m scripts.04_model_training --cwd=$cwd --dataset_folder=$param1 --alpha=$alpha --turn=2\" \
-          \"python3.9 -m scripts.04_model_training --graph_with_class --cwd=$cwd --dataset_folder=$param1 --alpha=$alpha --turn=2\"
+          \"python3.9 -m scripts.04_model_training --cwd=$cwd --dataset_folder=$param1 --alpha=$alpha --turn=$param2\" \
+          \"python3.9 -m scripts.04_model_training --graph_with_class --cwd=$cwd --dataset_folder=$param1 --alpha=$alpha --turn=$param2\"
 
         echo \"✅ [\$(date '+%Y-%m-%d %H:%M:%S')] FIN du traitement pour alpha=$alpha\"
       } > \"$LOG_FILE\" 2>&1

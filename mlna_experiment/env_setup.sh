@@ -5,10 +5,10 @@ set -e  # Arrête le script si une commande échoue
 VENV_PATH=".env_mlna"
 
 
-if [[ -z "$param1" ]]; then
-    echo "Usage: $0 <nom_repertoire_dataset>"
-    exit 1
-fi
+#if [[ -z "$param1" ]]; then
+#    echo "Usage: $0 <nom_repertoire_dataset>"
+#    exit 1
+#fi
 
 
 # Activation de l'environement
@@ -22,6 +22,8 @@ if [[ ! -f "$VENV_PATH/bin/activate" ]]; then
     source $VENV_PATH/bin/activate
     echo "venv activé"
     echo "Installation des dependances"
+    pip install --upgrade pip
+    pip install setuptools
     pip install -r requirements.txt
 
 

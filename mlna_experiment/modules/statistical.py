@@ -531,18 +531,21 @@ def build_compare_feature_selection_protocole(
 ):
     # add the resize box to ensure the scale of the table will be contain's inside the width space avalable.
     # start setting up the tabular dimensions setting
+    datasets = list(store.keys())
+    methods = list(store[datasets[0]].keys())
+    alphas = sorted(list({el for data in datasets for el in store[data][methods[0]].keys()}))
     table_header = """
         %\\begin{sidewaystable}
         \\resizebox{\\textwidth}{!}{
 
-        \\begin{tabular}{|c|c|""" + ("c|" * 10)
+        \\begin{tabular}{|c|c|""" + ("c|" * len(alphas))
     # setup information columns headears
     nbMCol = 10
     # add col for total results
     table_header += "} "
     # add separator clines
     nb_cols = (2 + nbMCol)
-    table_header += " \\cline{1-" + str(nb_cols) + "}"  # corresponding to the number of columns
+    table_header += " \\cline{1-" + str(len(alphas)+2) + "}"  # corresponding to the number of columns
 
     # build the first line: metrics' line
     lines = ''
@@ -550,15 +553,13 @@ def build_compare_feature_selection_protocole(
     lines += """
     \\multicolumn{2}{|c|}{}"""
 
-    datasets = list(store.keys())
-    methods = list(store[datasets[0]].keys())
-    alphas = sorted(list({el for data in datasets for el in store[data][methods[0]].keys()}))
+
     # add alpha for metric
     for alpha in alphas:
         lines += f" & {alpha}"
     # add the total name
     lines += " \\\\ "
-    lines += " \\cline{1-" + str(nb_cols) + """}
+    lines += " \\cline{1-" + str(len(alphas)+2) + """}
     """
     for folder in datasets:
         # fetch on model
@@ -568,9 +569,9 @@ def build_compare_feature_selection_protocole(
             lines += f""" & {meth}"""
             for ai, alpha in enumerate(alphas):  # MlC, MCA
                 lines += f""" & {store[folder][meth][alpha]}""" if alpha in list(store[folder][meth].keys()) else " & "
-            lines += ("""\\\\ """ + """ \\cline{2-""" + str(nb_cols) + """}
+            lines += ("""\\\\ """ + """ \\cline{2-""" + str(len(alphas)+2) + """}
 
-                    """) if mi != len(methods) - 1 else ("""\\\\ """ + """ \\cline{1-""" + str(nb_cols) + """}
+                    """) if mi != len(methods) - 1 else ("""\\\\ """ + """ \\cline{1-""" + str(len(alphas)+2) + """}
 
                     """)
 

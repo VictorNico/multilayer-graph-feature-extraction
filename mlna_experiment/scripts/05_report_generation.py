@@ -1,4 +1,5 @@
 # 05_report_generation.py
+import os
 import sys
 
 # Ajoutez le répertoire parent pour pouvoir importer les modules
@@ -25,7 +26,8 @@ def load_env_with_path():
         'gmail_user': os.getenv('GMAIL_USER'),
         'gmail_password': os.getenv('GMAIL_APP_PASSWORD'),
         'recipients': os.getenv('EMAIL_RECIPIENTS', '').split(','),
-        'email_cc': os.getenv('EMAIL_CC', '').split(',')
+        'email_cc': os.getenv('EMAIL_CC', '').split(','),
+        'alphas': [float(al) for al in os.getenv('ALPHAS','').split(',')]
     }
 
 def check_completed_folder(
@@ -54,13 +56,15 @@ def check_completed_folder(
     if alphas is None:
         alphas = [round(i, 1) for i in np.arange(0.1, 1.0, 0.1)]
         alphas.append(0.85)
+
     children_folder = [dirnames for _, dirnames, _ in os.walk(f'{results_path}')][0]
+    print(alphas,children_folder)
     # look for a flag file for each child
     completed = []  # where we store completed children
     for child in children_folder:
         counter = 0  # nb of alpha completed in that alpha case
         for alpha in alphas:
-            if sum([motif == file for _, _, files in
+            if sum([str(motif).casefold().strip() == str(file).casefold().strip() for _, _, files in
                     os.walk(f'{results_path}{child}/{alpha}/{target_columns_type}/{fold}') for
                     file in files]) > 0:
                 counter += 1
@@ -227,32 +231,33 @@ def metric_extraction(
                 list_of_accuracy,
                 1
             )
-            list_of_accuracy, macro_store = analyse_files(
-                models_name,
-                metrics,
-                load_results(
-                    outputs_path=f'{cwd}/{result_folder}',
-                    _type=target_columns_type,
-                    k=2,
-                    alpha=alpha,
-                    per=per,
-                    glo=glo,
-                    mix=gap,
-                    isRand=True,
-                    match=lambda x: True,
-                    attributs=[dirnames for _, dirnames, _ in
-                               os.walk(f'{cwd}/{result_folder}/{alpha}/{target_columns_type}/mlna_2')][0],
-                    isBest=True,
-                    dataset_delimiter=dataset_delimiter,
-                    encoding=encoding,
-                    index_col=index_col
-                ),
-                classic_f,
-                macro_store,
-                result_folder,
-                list_of_accuracy,
-                2
-            )
+            if os.path.isdir(f'{cwd}/{result_folder}/{alpha}/{target_columns_type}/mlna_2'):
+                list_of_accuracy, macro_store = analyse_files(
+                    models_name,
+                    metrics,
+                    load_results(
+                        outputs_path=f'{cwd}/{result_folder}',
+                        _type=target_columns_type,
+                        k=2,
+                        alpha=alpha,
+                        per=per,
+                        glo=glo,
+                        mix=gap,
+                        isRand=True,
+                        match=lambda x: True,
+                        attributs=[dirnames for _, dirnames, _ in
+                                   os.walk(f'{cwd}/{result_folder}/{alpha}/{target_columns_type}/mlna_2')][0],
+                        isBest=True,
+                        dataset_delimiter=dataset_delimiter,
+                        encoding=encoding,
+                        index_col=index_col
+                    ),
+                    classic_f,
+                    macro_store,
+                    result_folder,
+                    list_of_accuracy,
+                    2
+                )
             ## identify the number of existing layer storage in best k
             mlna_folders_names = \
                 [dirnames for _, dirnames, _ in os.walk(f'{cwd}/{result_folder}/{alpha}/{target_columns_type}/select')][
@@ -343,6 +348,7 @@ def shap_extraction(
         alphas.append(0.85)
 
     # fetch completed folders
+    print('coml',completed_folder)
     shapStore = {
         k: {
             'MlC': {
@@ -404,7 +410,7 @@ def shap_extraction(
                                                             temp['MCA']['BOT']['CXY']
 
     if sum([f'classic_metric' in file for _, _, files in
-            os.walk(cwd + f'{result_folder}/evaluation') for
+            os.walk(cwd + f'/{result_folder}/evaluation') for
             file in files]) == 0:
         print("❌ Unable to access baseline models evaluation")
         pass
@@ -463,20 +469,26 @@ def main():
 
     index_col = None if config["SPLIT"]["index_col"] in ["None", ""] else config.getint("SPLIT", "index_col")
     metrics = ['accuracy', 'f1-score']
+    environment = load_env_with_path()
+
+    print(args.cwd,environment['alphas'])
 
     if sum([f'reporting_completed.dtvni' in file for _, _, files in
             os.walk(args.cwd + f'/{results_dir}{domain}/') for
-            file in files]) == 0:
+            file in files]) != 0:
         print("✅ Stage already completed")
         exit(0)
 
     folders = check_completed_folder(
         results_path=f"{args.cwd}/{results_dir}",
-        target_columns_type=target_columns_type
+        target_columns_type=target_columns_type,
+        alphas=environment['alphas'],
+        motif='model_turn_2_completed.dtvni'
     )
+    print(folders)
     macro_store, selection_store = metric_extraction(
         completed_folder=folders,
-        alphas=None,
+        alphas=environment['alphas'],
         configs=None,
         logics=None,
         approach=None,
@@ -493,7 +505,7 @@ def main():
 
     shapPlots = shap_extraction(
         completed_folder=folders,
-        alphas=None,
+        alphas=environment['alphas'],
         cwd=f"{args.cwd}/{results_dir}",
         target_columns_type=target_columns_type,
         dataset_delimiter=dataset_delimiter,
@@ -633,7 +645,7 @@ def main():
                     """ + shapPlots + footer)
     _file.close()
 
-    environment = load_env_with_path()
+
     SendReport(
         GMAIL_USER_=environment['gmail_user'],
         GMAIL_APP_PASSWORD_=environment['gmail_password'],

@@ -2,6 +2,8 @@
 # Configuration des logs
 # ========================================
 LOG_DIR := logs
+# 2 pour notre framework et 3 pour la recherche aléatoire
+STEP := 2
 TIMESTAMP := $(shell date '+%Y%m%d_%H%M%S')
 USERNAME := $(shell whoami)
 
@@ -22,7 +24,7 @@ mlna_on_adu:
 		echo "👤 Utilisateur: $(USERNAME)"; \
 		echo "📁 Répertoire: $$(pwd)"; \
 		echo ""; \
-		 chmod +x launch.sh &&  ./launch.sh Adult; \
+		 chmod +x launch.sh &&  ./launch.sh Adult $(STEP); \
 		echo "✅ [$(shell date '+%Y-%m-%d %H:%M:%S')] FIN du traitement Adult"; \
 	} > "$$LOG_FILE" 2>&1 && \
 	echo "✅ Adult terminé - Log: $$LOG_FILE"
@@ -47,7 +49,7 @@ mlna_on_ban:
 		echo "👤 Utilisateur: $(USERNAME)"; \
 		echo "📁 Répertoire: $$(pwd)"; \
 		echo ""; \
-		 chmod +x launch.sh &&  ./launch.sh BankMarketing; \
+		 chmod +x launch.sh &&  ./launch.sh BankMarketing $(STEP); \
 		echo "✅ [$(shell date '+%Y-%m-%d %H:%M:%S')] FIN du traitement BankMarketing"; \
 	} > "$$LOG_FILE" 2>&1 && \
 	echo "✅ BankMarketing terminé - Log: $$LOG_FILE"
@@ -72,7 +74,7 @@ mlna_on_car:
 		echo "👤 Utilisateur: $(USERNAME)"; \
 		echo "📁 Répertoire: $$(pwd)"; \
 		echo ""; \
-		 chmod +x launch.sh &&  ./launch.sh CarEvaluation; \
+		 chmod +x launch.sh &&  ./launch.sh CarEvaluation $(STEP); \
 		echo "✅ [$(shell date '+%Y-%m-%d %H:%M:%S')] FIN du traitement CarEvaluation"; \
 	} > "$$LOG_FILE" 2>&1 && \
 	echo "✅ CarEvaluation terminé - Log: $$LOG_FILE"
@@ -97,7 +99,7 @@ mlna_on_crd:
 		echo "👤 Utilisateur: $(USERNAME)"; \
 		echo "📁 Répertoire: $$(pwd)"; \
 		echo ""; \
-		 chmod +x launch.sh &&  ./launch.sh CreditRiskDataset; \
+		 chmod +x launch.sh &&  ./launch.sh CreditRiskDataset $(STEP); \
 		echo "✅ [$(shell date '+%Y-%m-%d %H:%M:%S')] FIN du traitement CreditRiskDataset"; \
 	} > "$$LOG_FILE" 2>&1 && \
 	echo "✅ CreditRiskDataset terminé - Log: $$LOG_FILE"
@@ -122,7 +124,7 @@ mlna_on_dia:
 		echo "👤 Utilisateur: $(USERNAME)"; \
 		echo "📁 Répertoire: $$(pwd)"; \
 		echo ""; \
-		 chmod +x launch.sh &&  ./launch.sh Diabetes; \
+		 chmod +x launch.sh &&  ./launch.sh Diabetes $(STEP); \
 		echo "✅ [$(shell date '+%Y-%m-%d %H:%M:%S')] FIN du traitement Diabetes"; \
 	} > "$$LOG_FILE" 2>&1 && \
 	echo "✅ Diabetes terminé - Log: $$LOG_FILE"
@@ -147,7 +149,7 @@ mlna_on_ger:
 		echo "👤 Utilisateur: $(USERNAME)"; \
 		echo "📁 Répertoire: $$(pwd)"; \
 		echo ""; \
-		 chmod +x launch.sh &&  ./launch.sh GermanCredit; \
+		 chmod +x launch.sh &&  ./launch.sh GermanCredit $(STEP); \
 		echo "✅ [$(shell date '+%Y-%m-%d %H:%M:%S')] FIN du traitement GermanCredit"; \
 	} > "$$LOG_FILE" 2>&1 && \
 	echo "✅ GermanCredit terminé - Log: $$LOG_FILE"
@@ -172,7 +174,7 @@ mlna_on_ld4:
 		echo "👤 Utilisateur: $(USERNAME)"; \
 		echo "📁 Répertoire: $$(pwd)"; \
 		echo ""; \
-		 chmod +x launch.sh &&  ./launch.sh LoanDataforDummyBank; \
+		 chmod +x launch.sh &&  ./launch.sh LoanDataforDummyBank $(STEP); \
 		echo "✅ [$(shell date '+%Y-%m-%d %H:%M:%S')] FIN du traitement LoanDataforDummyBank"; \
 	} > "$$LOG_FILE" 2>&1 && \
 	echo "✅ LoanDataforDummyBank terminé - Log: $$LOG_FILE"
@@ -197,7 +199,7 @@ mlna_on_ldd:
 		echo "👤 Utilisateur: $(USERNAME)"; \
 		echo "📁 Répertoire: $$(pwd)"; \
 		echo ""; \
-		 chmod +x launch.sh &&  ./launch.sh LoanDefaultDataset; \
+		 chmod +x launch.sh &&  ./launch.sh LoanDefaultDataset $(STEP); \
 		echo "✅ [$(shell date '+%Y-%m-%d %H:%M:%S')] FIN du traitement LoanDefaultDataset"; \
 	} > "$$LOG_FILE" 2>&1 && \
 	echo "✅ LoanDefaultDataset terminé - Log: $$LOG_FILE"
@@ -222,7 +224,7 @@ mlna_on_mus:
 		echo "👤 Utilisateur: $(USERNAME)"; \
 		echo "📁 Répertoire: $$(pwd)"; \
 		echo ""; \
-		 chmod +x launch.sh &&  ./launch.sh Mushroom; \
+		 chmod +x launch.sh &&  ./launch.sh Mushroom $(STEP); \
 		echo "✅ [$(shell date '+%Y-%m-%d %H:%M:%S')] FIN du traitement Mushroom"; \
 	} > "$$LOG_FILE" 2>&1 && \
 	echo "✅ Mushroom terminé - Log: $$LOG_FILE"
@@ -247,7 +249,7 @@ mlna_on_nur:
 		echo "👤 Utilisateur: $(USERNAME)"; \
 		echo "📁 Répertoire: $$(pwd)"; \
 		echo ""; \
-		 chmod +x launch.sh &&  ./launch.sh Nursery; \
+		 chmod +x launch.sh &&  ./launch.sh Nursery $(STEP); \
 		echo "✅ [$(shell date '+%Y-%m-%d %H:%M:%S')] FIN du traitement Nursery"; \
 	} > "$$LOG_FILE" 2>&1 && \
 	echo "✅ Nursery terminé - Log: $$LOG_FILE"
@@ -272,7 +274,7 @@ mlna_on_stu:
 		echo "👤 Utilisateur: $(USERNAME)"; \
 		echo "📁 Répertoire: $$(pwd)"; \
 		echo ""; \
-		 chmod +x launch.sh &&  ./launch.sh StudentPerformance; \
+		 chmod +x launch.sh &&  ./launch.sh StudentPerformance $(STEP); \
 		echo "✅ [$(shell date '+%Y-%m-%d %H:%M:%S')] FIN du traitement StudentPerformance"; \
 	} > "$$LOG_FILE" 2>&1 && \
 	echo "✅ StudentPerformance terminé - Log: $$LOG_FILE"
@@ -292,6 +294,7 @@ stop-mlna_on_stu:
 # ========================================
 
 # run parallel execution by default
+# nice -n 10, permet de dire au système que nos execution ne sont pas prioritaires.
 run-all:
 	@echo "🚀 Démarrage de toutes les exécutions en parallèle - $(shell date '+%Y-%m-%d %H:%M:%S')"
 	@LOG_FILE="$(LOG_DIR)/run-all_$(TIMESTAMP).log" && \
@@ -302,7 +305,7 @@ run-all:
 		echo "📁 Répertoire: $$(pwd)"; \
 		echo "📊 Datasets: Adult, BankMarketing, CarEvaluation, CreditRiskDataset, Diabetes, GermanCredit, LoanDataforDummyBank, LoanDefaultDataset, Mushroom, Nursery, StudentPerformance"; \
 		echo ""; \
-		$(MAKE) mlna_on_stu mlna_on_nur mlna_on_mus mlna_on_ldd mlna_on_ld4 mlna_on_ger mlna_on_dia mlna_on_crd mlna_on_car mlna_on_ban mlna_on_adu; \
+		nice -n 10 $(MAKE) -j 1 mlna_on_crd mlna_on_car mlna_on_nur mlna_on_adu mlna_on_dia mlna_on_ld4 mlna_on_ban mlna_on_ger mlna_on_stu mlna_on_mus mlna_on_ldd; \
 		echo "✅ [$(shell date '+%Y-%m-%d %H:%M:%S')] FIN exécution parallèle"; \
 	} > "$$LOG_FILE" 2>&1 && \
 	echo "🎉 Toutes les exécutions terminées - Log global: $$LOG_FILE"
@@ -315,7 +318,7 @@ stop-all:
 		echo "🔹 [$(shell date '+%Y-%m-%d %H:%M:%S')] DÉBUT arrêt de tous les processus"; \
 		echo "👤 Utilisateur: $(USERNAME)"; \
 		echo ""; \
-		$(MAKE) stop-mlna_on_stu stop-mlna_on_nur stop-mlna_on_mus stop-mlna_on_ldd stop-mlna_on_ld4 stop-mlna_on_ger stop-mlna_on_dia stop-mlna_on_crd stop-mlna_on_car stop-mlna_on_ban stop-mlna_on_adu; \
+		$(MAKE) -j 1 stop-mlna_on_crd stop-mlna_on_car stop-mlna_on_nur stop-mlna_on_adu stop-mlna_on_dia stop-mlna_on_ld4 stop-mlna_on_ban stop-mlna_on_ger stop-mlna_on_stu stop-mlna_on_mus stop-mlna_on_ldd; \
 		echo "✅ [$(shell date '+%Y-%m-%d %H:%M:%S')] FIN arrêt de tous les processus"; \
 	} > "$$LOG_FILE" 2>&1 && \
 	echo "🎉 Tous les processus arrêtés - Log: $$LOG_FILE"
