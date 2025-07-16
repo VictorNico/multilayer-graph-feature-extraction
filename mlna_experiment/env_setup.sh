@@ -17,7 +17,7 @@ if [[ ! -f "$VENV_PATH/bin/activate" ]]; then
     echo "L'environnement virtuel n'existe pas à l'emplacement $VENV_PATH"
     # Crée un nouvel environnement pour tester
     echo "creation venv activé"
-    python3.9 -m venv $VENV_PATH
+    python3 -m venv $VENV_PATH
 
     source $VENV_PATH/bin/activate
     echo "venv activé"

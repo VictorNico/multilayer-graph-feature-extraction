@@ -29,13 +29,13 @@
 
 ## Etapes
 
-* Installer Latex 
+* Installer Latex [Facultatif]
 ```{bash}
 chmod +x latex_install.sh
 ./latex_install.sh
 ```
 
-* Installer l'environnement virtuel avec `python3.9`
+* Installer l'environnement virtuel avec `python3`
 ```{bash}
 chmod +x env_setup.sh
 ./env_setup.sh
@@ -48,6 +48,14 @@ Après quoi, elle activera l'environnement.
 ```{bash}
 screen -S pipeline_launcher
 # $name>|
+```
+
+* Définir quel est le type de lancement entre le framework basé sur le protocole et l'analyse exploratoire avec combination aléatoire de tails 2
+```{bash}
+vim Makefile
+# dans l'entête du fichier, y'a une variable STEP
+# mettre la valeur à 2 pour lancer le framework (par défaut)
+# mettre la valeur à 3 pour la combinaire aléatoire 
 ```
 
 * Dans le screen, exécuter a commande
@@ -67,3 +75,4 @@ screen -r pipeline_launcher
 ```
 
 * Pour plus de monitoring, il existe des symboles dans le file Makefile, pour afficher les logs
+* le fichier __vim.md__, montre `les raccourcis action dans vim`

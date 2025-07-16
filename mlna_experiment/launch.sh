@@ -30,11 +30,13 @@ if [[ ! -f "$VENV_PATH/bin/activate" ]]; then
     echo "L'environnement virtuel n'existe pas à l'emplacement $VENV_PATH"
     # Crée un nouvel environnement pour tester
     echo "creation venv activé"
-    python3.9 -m venv $VENV_PATH
+    python3 -m venv $VENV_PATH
 
     source $VENV_PATH/bin/activate
     echo "venv activé"
     echo "Installation des dependances"
+    pip install --upgrade pip
+    pip install setuptools
     pip install -r requirements.txt
 
 
@@ -48,15 +50,15 @@ fi
 
 # Exécution du chargement et du prétraitement des données
 echo "Étape [1/6] : Prétraitement des données..."
-python3.9 -m scripts.01_data_preprocessing --cwd="$cwd" --dataset_folder="$param1"
+python3 -m scripts.01_data_preprocessing --cwd="$cwd" --dataset_folder="$param1"
 
 # Exécution de la séparation des données en jeux de test et d'entrainement
 echo "Étape [2/6] : Split train/test..."
-python3.9 -m scripts.02_data_split --cwd="$cwd" --dataset_folder="$param1"
+python3 -m scripts.02_data_split --cwd="$cwd" --dataset_folder="$param1"
 
 # Exécution de l'entrainement des baselines
 echo "Étape [3/6] : Entrainement des modèles baseline..."
-python3.9 -m scripts.04_model_training --baseline --cwd="$cwd" --dataset_folder="$param1"  --alpha=0.1 --turn=1
+python3 -m scripts.04_model_training --baseline --cwd="$cwd" --dataset_folder="$param1"  --alpha=0.1 --turn=1
 
 
 # Exécution de la construction des graphes et extraction des descripteurs
@@ -80,23 +82,23 @@ for alpha in "${alphas[@]}"; do
       {
         echo \"🔹 [\$(date '+%Y-%m-%d %H:%M:%S')] DÉBUT du traitement pour alpha=$alpha\"
 
-        python3.9 -m scripts.03_graph_construction --cwd=$cwd --dataset_folder=$param1 --alpha=$alpha --turn=1
-        python3.9 -m scripts.04_model_training --cwd=$cwd --dataset_folder=$param1 --alpha=$alpha --turn=1
+        python3 -m scripts.03_graph_construction --cwd=$cwd --dataset_folder=$param1 --alpha=$alpha --turn=1
+        python3 -m scripts.04_model_training --cwd=$cwd --dataset_folder=$param1 --alpha=$alpha --turn=1
 
         parallel ::: \
-          \"python3.9 -m scripts.03_graph_construction --graph_with_class --cwd=$cwd --dataset_folder=$param1 --alpha=$alpha --turn=$param2\" \
-          \"python3.9 -m scripts.03_graph_construction --cwd=$cwd --dataset_folder=$param1 --alpha=$alpha --turn=$param2\"
+          \"python3 -m scripts.03_graph_construction --graph_with_class --cwd=$cwd --dataset_folder=$param1 --alpha=$alpha --turn=$param2\" \
+          \"python3 -m scripts.03_graph_construction --cwd=$cwd --dataset_folder=$param1 --alpha=$alpha --turn=$param2\"
 
         parallel ::: \
-          \"python3.9 -m scripts.04_model_training --cwd=$cwd --dataset_folder=$param1 --alpha=$alpha --turn=$param2\" \
-          \"python3.9 -m scripts.04_model_training --graph_with_class --cwd=$cwd --dataset_folder=$param1 --alpha=$alpha --turn=$param2\"
+          \"python3 -m scripts.04_model_training --cwd=$cwd --dataset_folder=$param1 --alpha=$alpha --turn=$param2\" \
+          \"python3 -m scripts.04_model_training --graph_with_class --cwd=$cwd --dataset_folder=$param1 --alpha=$alpha --turn=$param2\"
 
         echo \"✅ [\$(date '+%Y-%m-%d %H:%M:%S')] FIN du traitement pour alpha=$alpha\"
       } > \"$LOG_FILE\" 2>&1
     "
 
-#    python3.9 -m scripts.03_graph_construction --cwd=$cwd --dataset_folder=$param1  --alpha=$alpha --turn=1
-#    python3.9 -m scripts.04_model_training --cwd="$cwd" --dataset_folder="$param1"  --alpha="$alpha" --turn=1
+#    python3 -m scripts.03_graph_construction --cwd=$cwd --dataset_folder=$param1  --alpha=$alpha --turn=1
+#    python3 -m scripts.04_model_training --cwd="$cwd" --dataset_folder="$param1"  --alpha="$alpha" --turn=1
     echo "Construction du graphe et entrainement pour alpha=${alpha:1} '$SCREEN_NAME'."
 done
 
@@ -112,7 +114,7 @@ done
 # Exécution de la génération de rapport
 echo "Étape [5/5] : Génération du rapport..."
 
-python3.9 -m scripts.05_report_generation --cwd=$cwd --dataset_folder=$param1
+python3 -m scripts.05_report_generation --cwd=$cwd --dataset_folder=$param1
 echo "✅ Tous les écrans sont terminés. Lancement du rapport..."
 
 
