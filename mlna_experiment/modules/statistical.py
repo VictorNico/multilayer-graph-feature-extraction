@@ -10,6 +10,7 @@
         - evaluate the gain of class distance base descriptor in learning process
 
 """
+import re
 from copy import deepcopy
 
 # coding: utf-8
@@ -873,6 +874,7 @@ def analyse_files(
                                     valu1 if 'finan' not in metric else (valu1 if valu1 == 0 else -1 * valu1)
                                     , model)
                             )
+                            macro_metrics['classic'][metric][result_folder].append((round(classic_f.loc[model, metric], 4),model))
 
                             # if 'LD4' in result_folder:
                             #     print(result_folder, layer, config)
@@ -882,6 +884,10 @@ def analyse_files(
                                 list_of_accuracy.append((layer, model, files[approach][logic][config][result].loc[model, metric]))
     return (list_of_accuracy, macro_metrics)
 
+def count_pattern_matches(dataframe, pattern):
+    """Count how many feature names in dataframe match the regex pattern."""
+    return sum(1 for key in dataframe.index if re.match(pattern, key))
+
 def analyse_files_for_shap_value(
         models_name,
         files,
@@ -889,18 +895,30 @@ def analyse_files_for_shap_value(
         top=10
 ):
     template_descripteurs = {
-        'INTER_GLO': [],
-        'INTRA_GLO': [],
-        'COMBINE_GLO': [],
-        'INTER_PER': [],
-        'INTRA_PER': [],
-        'COMBINE_PER': [],
-        'INTER_M_GLO': [],
-        'INTRA_M_GLO': [],
-        'COMBINE_M_GLO': [],
-        'INTER_M_PER': [],
-        'INTRA_M_PER': [],
-        'COMBINE_M_PER': [],
+        'INTER_GLO_CX': [],
+        'INTER_GLO_MX': [],
+        'INTRA_GLO_CX': [],
+        'INTRA_GLO_MX': [],
+        'COMBINE_GLO_CX': [],
+        'COMBINE_GLO_MX': [],
+        'INTER_PER_CX': [],
+        'INTER_PER_MX': [],
+        'INTRA_PER_CX': [],
+        'INTRA_PER_MX': [],
+        'COMBINE_PER_CX': [],
+        'COMBINE_PER_MX': [],
+        'INTER_M_GLO_CX': [],
+        'INTER_M_GLO_MX': [],
+        'INTRA_M_GLO_CX': [],
+        'INTRA_M_GLO_MX': [],
+        'COMBINE_M_GLO_CX': [],
+        'COMBINE_M_GLO_MX': [],
+        'INTER_M_PER_CX': [],
+        'INTER_M_PER_MX': [],
+        'INTRA_M_PER_CX': [],
+        'INTRA_M_PER_MX': [],
+        'COMBINE_M_PER_CX': [],
+        'COMBINE_M_PER_MX': [],
 
         'YN_COMBINE_PER': [],
         'YP_COMBINE_PER': [],
@@ -912,17 +930,18 @@ def analyse_files_for_shap_value(
 
     }
     global_details_metrics_depth_1 = {}
+
+    pretty_print(files)
     for index4, model in enumerate(models_name):
         global_details_metrics_depth_1[model] = {key: deepcopy(template_descripteurs) for key in
                                                  result_folders}
         for result_folder in result_folders:
-            # print(result_folder)
             for result in list(range(len(files[result_folder]["MlC"]["BOT"]["CXY"]))):  # each result file's containing evaluation metrics
                 # print(result, len(files[result_folder]["MlC"]["BOT"]["CXY"]), files[result_folder]["MlC"]["BOT"]["CXY"][result].columns)
                 if sum([k in files[result_folder]["MlC"]["BOT"]["CXY"][result].columns for k in ["precision", "accuracy", "recall", "f1-score"]]) == 4:
                     files[result_folder]["MlC"]["BOT"]["CXY"][result].drop(["precision", "accuracy", "recall", "f1-score"], axis=1, inplace=True)
                 colo = files[result_folder]["MlC"]["BOT"]["CXY"][result].columns
-                # print(colo)
+                print(colo)
                 for att in colo:
                     if not (att in ["accuracy", "precision", "recall", "f1-score", "financial-cost"]):
                         if YN_PER_INTER_F(att):
@@ -945,42 +964,78 @@ def analyse_files_for_shap_value(
                             global_details_metrics_depth_1[model][result_folder][
                                 'YP_COMBINE_PER'].append(
                                 [abs(x) for x in parse_vector(files[result_folder]["MlC"]["BOT"]["CXY"][result].loc[model, att])])
-                        elif GLO_INTER_F(att):
+                        elif GLO_INTER_F(att) and GLO_CX_F(att):
                             global_details_metrics_depth_1[model][result_folder][
-                                'INTER_GLO'].append([abs(x) for x in parse_vector(files[result_folder]["MlC"]["BOT"]["CXY"][result].loc[model, att])])
-                        elif GLO_INTRA_F(att):
+                                'INTER_GLO_CX'].append([abs(x) for x in parse_vector(files[result_folder]["MlC"]["BOT"]["CXY"][result].loc[model, att])])
+                        elif GLO_INTER_F(att) and GLO_MX_F(att):
                             global_details_metrics_depth_1[model][result_folder][
-                                'INTRA_GLO'].append([abs(x) for x in parse_vector(files[result_folder]["MlC"]["BOT"]["CXY"][result].loc[model, att])])
-                        elif GLO_COMBINE_F(att):
+                                'INTER_GLO_MX'].append([abs(x) for x in parse_vector(files[result_folder]["MlC"]["BOT"]["CXY"][result].loc[model, att])])
+                        elif GLO_INTRA_F(att) and GLO_MX_F(att):
                             global_details_metrics_depth_1[model][result_folder][
-                                'COMBINE_GLO'].append([abs(x) for x in parse_vector(files[result_folder]["MlC"]["BOT"]["CXY"][result].loc[model, att])])
-                        elif PER_INTER_F(att):
+                                'INTRA_GLO_MX'].append([abs(x) for x in parse_vector(files[result_folder]["MlC"]["BOT"]["CXY"][result].loc[model, att])])
+                        elif GLO_INTRA_F(att) and GLO_CX_F(att):
                             global_details_metrics_depth_1[model][result_folder][
-                                'INTER_PER'].append([abs(x) for x in parse_vector(files[result_folder]["MlC"]["BOT"]["CXY"][result].loc[model, att])])
-                        elif PER_INTRA_F(att):
+                                'INTRA_GLO_CX'].append([abs(x) for x in parse_vector(files[result_folder]["MlC"]["BOT"]["CXY"][result].loc[model, att])])
+                        elif GLO_COMBINE_F(att) and GLO_CX_F(att):
                             global_details_metrics_depth_1[model][result_folder][
-                                'INTRA_PER'].append([abs(x) for x in parse_vector(files[result_folder]["MlC"]["BOT"]["CXY"][result].loc[model, att])])
-                        elif PER_COMBINE_F(att):
+                                'COMBINE_GLO_CX'].append([abs(x) for x in parse_vector(files[result_folder]["MlC"]["BOT"]["CXY"][result].loc[model, att])])
+                        elif GLO_COMBINE_F(att) and GLO_MX_F(att):
                             global_details_metrics_depth_1[model][result_folder][
-                                'COMBINE_PER'].append([abs(x) for x in parse_vector(files[result_folder]["MlC"]["BOT"]["CXY"][result].loc[model, att])])
-                        elif GLO_INTER_M_F(att):
+                                'COMBINE_GLO_MX'].append([abs(x) for x in parse_vector(files[result_folder]["MlC"]["BOT"]["CXY"][result].loc[model, att])])
+                        elif PER_INTER_F(att) and PER_CX_F(att):
                             global_details_metrics_depth_1[model][result_folder][
-                                'INTER_M_GLO'].append([abs(x) for x in parse_vector(files[result_folder]["MlC"]["BOT"]["CXY"][result].loc[model, att])])
-                        elif GLO_INTRA_M_F(att):
+                                'INTER_PER_CX'].append([abs(x) for x in parse_vector(files[result_folder]["MlC"]["BOT"]["CXY"][result].loc[model, att])])
+                        elif PER_INTER_F(att) and PER_MX_F(att):
                             global_details_metrics_depth_1[model][result_folder][
-                                'INTRA_M_GLO'].append([abs(x) for x in parse_vector(files[result_folder]["MlC"]["BOT"]["CXY"][result].loc[model, att])])
-                        elif GLO_COMBINE_M_F(att):
+                                'INTER_PER_MX'].append([abs(x) for x in parse_vector(files[result_folder]["MlC"]["BOT"]["CXY"][result].loc[model, att])])
+                        elif PER_INTRA_F(att) and PER_CX_F(att):
                             global_details_metrics_depth_1[model][result_folder][
-                                'COMBINE_M_GLO'].append([abs(x) for x in parse_vector(files[result_folder]["MlC"]["BOT"]["CXY"][result].loc[model, att])])
-                        elif PER_INTER_M_F(att):
+                                'INTRA_PER_CX'].append([abs(x) for x in parse_vector(files[result_folder]["MlC"]["BOT"]["CXY"][result].loc[model, att])])
+                        elif PER_INTRA_F(att) and PER_MX_F(att):
                             global_details_metrics_depth_1[model][result_folder][
-                                'INTER_M_PER'].append([abs(x) for x in parse_vector(files[result_folder]["MlC"]["BOT"]["CXY"][result].loc[model, att])])
-                        elif PER_INTRA_M_F(att):
+                                'INTRA_PER_MX'].append([abs(x) for x in parse_vector(files[result_folder]["MlC"]["BOT"]["CXY"][result].loc[model, att])])
+                        elif PER_COMBINE_F(att) and PER_CX_F(att):
                             global_details_metrics_depth_1[model][result_folder][
-                                'INTRA_M_PER'].append([abs(x) for x in parse_vector(files[result_folder]["MlC"]["BOT"]["CXY"][result].loc[model, att])])
-                        elif PER_COMBINE_M_F(att):
+                                'COMBINE_PER_CX'].append([abs(x) for x in parse_vector(files[result_folder]["MlC"]["BOT"]["CXY"][result].loc[model, att])])
+                        elif PER_COMBINE_F(att) and PER_MX_F(att):
                             global_details_metrics_depth_1[model][result_folder][
-                                'COMBINE_M_PER'].append([abs(x) for x in parse_vector(files[result_folder]["MlC"]["BOT"]["CXY"][result].loc[model, att])])
+                                'COMBINE_PER_MX'].append([abs(x) for x in parse_vector(files[result_folder]["MlC"]["BOT"]["CXY"][result].loc[model, att])])
+                        elif GLO_INTER_M_F(att) and GLO_CX_F(att):
+                            global_details_metrics_depth_1[model][result_folder][
+                                'INTER_M_GLO_CX'].append([abs(x) for x in parse_vector(files[result_folder]["MlC"]["BOT"]["CXY"][result].loc[model, att])])
+                        elif GLO_INTER_M_F(att) and GLO_MX_F(att):
+                            global_details_metrics_depth_1[model][result_folder][
+                                'INTER_M_GLO_MX'].append([abs(x) for x in parse_vector(files[result_folder]["MlC"]["BOT"]["CXY"][result].loc[model, att])])
+                        elif GLO_INTRA_M_F(att) and GLO_CX_F(att):
+                            global_details_metrics_depth_1[model][result_folder][
+                                'INTRA_M_GLO_CX'].append([abs(x) for x in parse_vector(files[result_folder]["MlC"]["BOT"]["CXY"][result].loc[model, att])])
+                        elif GLO_INTRA_M_F(att) and GLO_MX_F(att):
+                            global_details_metrics_depth_1[model][result_folder][
+                                'INTRA_M_GLO_MX'].append([abs(x) for x in parse_vector(files[result_folder]["MlC"]["BOT"]["CXY"][result].loc[model, att])])
+                        elif GLO_COMBINE_M_F(att) and GLO_CX_F(att):
+                            global_details_metrics_depth_1[model][result_folder][
+                                'COMBINE_M_GLO_CX'].append([abs(x) for x in parse_vector(files[result_folder]["MlC"]["BOT"]["CXY"][result].loc[model, att])])
+                        elif GLO_COMBINE_M_F(att) and GLO_MX_F(att):
+                            global_details_metrics_depth_1[model][result_folder][
+                                'COMBINE_M_GLO_MX'].append([abs(x) for x in parse_vector(files[result_folder]["MlC"]["BOT"]["CXY"][result].loc[model, att])])
+                        elif PER_INTER_M_F(att) and PER_MX_F(att):
+                            global_details_metrics_depth_1[model][result_folder][
+                                'INTER_M_PER_MX'].append([abs(x) for x in parse_vector(files[result_folder]["MlC"]["BOT"]["CXY"][result].loc[model, att])])
+                        elif PER_INTER_M_F(att) and PER_CX_F(att):
+                            global_details_metrics_depth_1[model][result_folder][
+                                'INTER_M_PER_CX'].append([abs(x) for x in parse_vector(files[result_folder]["MlC"]["BOT"]["CXY"][result].loc[model, att])])
+                        elif PER_INTRA_M_F(att) and PER_MX_F(att):
+                            global_details_metrics_depth_1[model][result_folder][
+                                'INTRA_M_PER_MX'].append([abs(x) for x in parse_vector(files[result_folder]["MlC"]["BOT"]["CXY"][result].loc[model, att])])
+                        elif PER_INTRA_M_F(att) and PER_CX_F(att):
+                            global_details_metrics_depth_1[model][result_folder][
+                                'INTRA_M_PER_CX'].append([abs(x) for x in parse_vector(files[result_folder]["MlC"]["BOT"]["CXY"][result].loc[model, att])])
+                        elif PER_COMBINE_M_F(att) and PER_MX_F(att):
+                            global_details_metrics_depth_1[model][result_folder][
+                                'COMBINE_M_PER_MX'].append([abs(x) for x in parse_vector(files[result_folder]["MlC"]["BOT"]["CXY"][result].loc[model, att])])
+                        elif PER_COMBINE_M_F(att) and PER_CX_F(att):
+                            global_details_metrics_depth_1[model][result_folder][
+                                'COMBINE_M_PER_CX'].append([abs(x) for x in parse_vector(files[result_folder]["MlC"]["BOT"]["CXY"][result].loc[model, att])])
                         elif DEGREE_F(att):
                             global_details_metrics_depth_1[model][result_folder][
                                 'DEGREE'].append([abs(x) for x in parse_vector(files[result_folder]["MlC"]["BOT"]["CXY"][result].loc[model, att])])
@@ -995,14 +1050,22 @@ def analyse_files_for_shap_value(
                             global_details_metrics_depth_1[model][result_folder][
                                 var].append([abs(x) for x in parse_vector(files[result_folder]["MlC"]["BOT"]["CXY"][result].loc[model, att])])
 
+    pretty_print(global_details_metrics_depth_1)
     for model in global_details_metrics_depth_1.keys():
         for folder in global_details_metrics_depth_1[model].keys():
             for att in global_details_metrics_depth_1[model][folder].keys():
                 # print(global_details_metrics_depth_1[model][folder][att], model, folder, att)
+                print(model, folder)
+                pretty_print(global_details_metrics_depth_1[model][folder])
+                pretty_print(np.mean(global_details_metrics_depth_1[model][folder][att], axis=0))
                 global_details_metrics_depth_1[model][folder][att] = np.mean(global_details_metrics_depth_1[model][folder][att], axis=0)
 
     shapes = f"""
     """
+
+    pretty_print(global_details_metrics_depth_1)
+    summary = {model: {folder: {'GLO_CX': 0, 'GLO_MX': 0, 'PER_CX': 0, 'PER_MX': 0, 'PER_CY': 0} for folder in result_folders} for model in models_name}
+    counter1 = {'GLO_CX': 0, 'GLO_MX': 0, 'PER_CX': 0, 'PER_MX': 0, 'PER_CY': 0}
     for model in models_name:
         tt = []
         shapes += """
@@ -1015,12 +1078,97 @@ def analyse_files_for_shap_value(
             agg['total_importance'] = agg.abs().sum(axis=1)
             agg = agg.sort_values('total_importance', ascending=False)
             agg = agg.drop('total_importance', axis=1)
+            summary[model][fold]['GLO_CX'] = count_pattern_matches(agg.head(top), r'^.*_GLO_CX$')
+            summary[model][fold]['GLO_MX'] = count_pattern_matches(agg.head(top), r'^.*_GLO_MX$')
+            summary[model][fold]['PER_MX'] = count_pattern_matches(agg.head(top), r'^.*_PER_MX$')
+            summary[model][fold]['PER_CX'] = count_pattern_matches(agg.head(top), r'^.*_PER_CX$')
+            summary[model][fold]['PER_CY'] = count_pattern_matches(agg.head(top), r'^Y.*_PER$')
+            summary[model][fold]['nbAtt'] = len(agg.index)
 
             tt.append(f"{{{create_standalone_shap_plot(agg.head(top), model, fold, top)}}}")
         shapes += """
         """.join(tt)
 
-    return shapes
+        # ----------------------------- print the summary ----------------------------
+        table_header = """
+            %\\begin{sidewaystable}
+            \\resizebox{\\textwidth}{!}{
+
+            \\begin{tabular}{|c|c|"""
+
+        # setup information columns headears
+        nbMCol = 1+len(global_details_metrics_depth_1)
+        table_header += "r|" * nbMCol
+        # add col for total results
+        table_header += "} "
+        # add separator clines
+        nb_cols = (2 + nbMCol)
+        table_header += " \\cline{1-" + str(nb_cols) + "}"  # corresponding to the number of columns
+
+        # build the first line: metrics' line
+        lines = ''
+        # add the blank block
+        lines += """
+            \\multicolumn{2}{|c|}{}"""
+        # add cols for metric
+        for model in models_name:
+            lines += " & \\textbf{" + model + "}"
+        # add the total name
+        lines += " & \\textbf{TOTAL} \\\\ "
+        lines += " \\cline{1-" + str(nb_cols) + """}
+            """
+
+        # lambda function for sum
+        sum_type = lambda store, folder, type: sum([store[model][folder][type] for model in store.keys()])
+        max_sum_type = lambda store, folder, types: max(
+            [sum([store[model][folder][type] for model in store.keys()]) for type in types])
+        sum_mod = lambda store, model, types: sum(
+            [store[model][folder][type] for folder in store[model].keys() for type in types])
+        max_sum_mod = lambda store, types: max(
+            [sum([store[model][folder][type] for folder in store[model].keys() for type in types]) for model in
+             store.keys()])
+        # fetch folders
+        for folder in result_folders:
+            print(summary)
+            lines += """
+                \\multirow{3}{*}{\\textbf{""" + folder + """ (""" + str(summary[list(models_name.keys())[0]][folder]['nbAtt']) + """)}}
+                """
+            # fetch descriptors type
+            for di, desc in enumerate(counter1.keys()):
+                lines += """& """ + str(desc).replace('_', '\\_')
+                # fetch models
+                for model in models_name:
+                    # add desc info for each model
+                    lines += """& """ + str(summary[model][folder][desc])
+                # add total of the current
+                lines += """& """ + str(sum_type(summary, folder, desc)) if max_sum_type(summary, folder,
+                                                                                         counter1.keys()) != sum_type(
+                    summary, folder, desc) else "& \\textbf{" + str(sum_type(summary, folder, desc)) + "}"
+                # back to next line
+                lines += " \\\\ "
+                lines += " \\cline{1-" + str(nb_cols) + """}
+                    """ if di == len(counter1.keys()) - 1 else " \\cline{2-" + str(nb_cols) + """}
+                    """
+        # add total line
+        lines += """
+            \\multicolumn{2}{|c|}{\\textbf{TOTAL}}"""
+        for model in models_name:
+            lines += " & " + str(sum_mod(summary, model, counter1.keys())) if sum_mod(summary, model,
+                                                                                      counter1.keys()) != max_sum_mod(
+                summary, counter1.keys()) else "& \\textbf{" + str(sum_mod(summary, model, counter1.keys())) + "}"
+        lines += " & "
+        lines += " \\\\ "
+        lines += " \\cline{1-" + str(nb_cols) + """}
+            \\end{tabular}}"""
+
+
+    res = f"{shapes}" + """
+            \\begin{table}[H]
+            \\center"""+ table_header + lines +"""
+            \\caption{Nombre d'attributs de type GLO, PER et PER\\_Y des graphes multicouches qui sont présents dans le Top-20 des attributs qui contribuent le plus aux décisions des modèles de prédiction dans les différents jeux de données. Entre parenthèse, c'est le nombre total d'attributs du jeu de données associé.}
+            \\label{tab:recapTab}
+            \\end{table}"""
+    return res
 
 # === 4. Définir les couleurs pour chaque classe ===
 class_colors = {

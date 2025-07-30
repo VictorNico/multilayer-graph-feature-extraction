@@ -7,7 +7,7 @@ sys.path.append('..')  # Ajoute le répertoire parent au chemin de recherche des
 from modules.preprocessing import *  # Preprocessing functions
 from modules.file import *  # File manipulation functions
 from modules.eda import *  # Exploratory Data Analysis (EDA) functions
-
+from modules.env import *  # Env functions
 
 #################################################
 ##          Methods definition
@@ -311,7 +311,8 @@ def main():
     encoding = config["PREPROCESSING"]["encoding"]
     to_remove = config["PREPROCESSING"]["to_remove"].split(',') if config["PREPROCESSING"]["to_remove"].split(',')[0] != '' else []
     portion = config.getfloat("PREPROCESSING","portion")
-
+    portion = portion / load_env_with_path()['size_divider']
+    print(load_env_with_path()['size_divider'])
     verbose = config.getboolean("GENERAL", "verbose")
 
     # ------------------------------------------------------------------------------------------------------------------

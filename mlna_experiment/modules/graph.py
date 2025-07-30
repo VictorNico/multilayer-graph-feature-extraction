@@ -636,6 +636,7 @@ def standard_extraction(extracts, feats, maxConfig=None):
 
     """
     internalMaxConfig = maxConfig if maxConfig is not None else dict()
+    print(internalMaxConfig,'----')
     if len(list(internalMaxConfig.keys())) == 0:
         for key in feats:
                 internalMaxConfig[key] = max(extracts[key])

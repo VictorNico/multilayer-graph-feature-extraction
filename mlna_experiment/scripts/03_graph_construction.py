@@ -1,5 +1,5 @@
 # 03_graph_construction.py
-
+from .cpu_limitation_usage import *
 import sys
 # Ajoutez le répertoire parent pour pouvoir importer les modules
 sys.path.append('..')  # Ajouter le répertoire parent au chemin de recherche des modules
@@ -7,6 +7,8 @@ from modules.preprocessing import get_combinations  # Preprocessing functions
 from modules.file import *  # File manipulation functions
 from modules.graph import *  # Modeling functions
 import statistics
+
+
 
 def extract_descriptors_from_graph_model(
     graph=None,
@@ -50,18 +52,18 @@ def extract_descriptors_from_graph_model(
         alpha=alpha
     )
 
-    descriptors['Att_INTRA_GLO'] = get_max_modality_pagerank_score(borrower, graph, layers, bipart_intra_pagerank)
-    descriptors['Att_INTER_GLO'] = get_max_modality_pagerank_score(borrower, graph, layers, bipart_inter_pagerank)
-    descriptors['Att_COMBINE_GLO'] = get_max_modality_pagerank_score(borrower, graph, layers, bipart_combine)
-    descriptors['Att_M_INTRA_GLO'] = get_max_borrower_pr(bipart_intra_pagerank)[1][borrower]
-    descriptors['Att_M_INTER_GLO'] = get_max_borrower_pr(bipart_inter_pagerank)[1][borrower]
-    descriptors['Att_M_COMBINE_GLO'] = get_max_borrower_pr(bipart_combine)[1][borrower]
+    descriptors[f'Att_INTRA_GLO_{"CX" if graphWithClass else "MX"}_'] = get_max_modality_pagerank_score(borrower, graph, layers, bipart_intra_pagerank)
+    descriptors[f'Att_INTER_GLO_{"CX" if graphWithClass else "MX"}_'] = get_max_modality_pagerank_score(borrower, graph, layers, bipart_inter_pagerank)
+    descriptors[f'Att_COMBINE_GLO_{"CX" if graphWithClass else "MX"}_'] = get_max_modality_pagerank_score(borrower, graph, layers, bipart_combine)
+    descriptors[f'Att_M_INTRA_GLO_{"CX" if graphWithClass else "MX"}_'] = get_max_borrower_pr(bipart_intra_pagerank)[1][borrower]
+    descriptors[f'Att_M_INTER_GLO_{"CX" if graphWithClass else "MX"}_'] = get_max_borrower_pr(bipart_inter_pagerank)[1][borrower]
+    descriptors[f'Att_M_COMBINE_GLO_{"CX" if graphWithClass else "MX"}_'] = get_max_borrower_pr(bipart_combine)[1][borrower]
 
     ######################################
     ####### Personalized Descriptor ######
     ######################################
     descriptors[f'Att_DEGREE_PER'] = descriptors[f'Att_DEGREE_GLO']
-    descriptors[f'Att_COMBINE_PER'] = get_max_borrower_pr(
+    descriptors[f'Att_COMBINE_PER_{"CX" if graphWithClass else "MX"}_'] = get_max_borrower_pr(
         nx.pagerank(
             graph,
             personalization=compute_personlization(
@@ -107,7 +109,7 @@ def extract_descriptors_from_graph_model(
                 )
         )[1]
 
-    descriptors[f'Att_INTER_PER'] = get_max_borrower_pr(
+    descriptors[f'Att_INTER_PER_{"CX" if graphWithClass else "MX"}_'] = get_max_borrower_pr(
         nx.pagerank(
             graph,
             personalization=compute_personlization(
@@ -153,7 +155,7 @@ def extract_descriptors_from_graph_model(
             )
         )[1]
 
-    descriptors[f'Att_INTRA_PER'] = get_max_borrower_pr(
+    descriptors[f'Att_INTRA_PER_{"CX" if graphWithClass else "MX"}_'] = get_max_borrower_pr(
         nx.pagerank(
             graph,
             personalization=compute_personlization(
@@ -199,7 +201,7 @@ def extract_descriptors_from_graph_model(
             )
         )[1]
 
-    descriptors[f'Att_M_COMBINE_PER'] = get_max_modality_pagerank_score(
+    descriptors[f'Att_M_COMBINE_PER_{"CX" if graphWithClass else "MX"}_'] = get_max_modality_pagerank_score(
         borrower,
         graph,
         1,
@@ -217,7 +219,7 @@ def extract_descriptors_from_graph_model(
         )
     )
 
-    descriptors[f'Att_M_INTER_PER'] = get_max_modality_pagerank_score(
+    descriptors[f'Att_M_INTER_PER_{"CX" if graphWithClass else "MX"}_'] = get_max_modality_pagerank_score(
         borrower,
         graph,
         1,
@@ -235,7 +237,7 @@ def extract_descriptors_from_graph_model(
         )
     )
 
-    descriptors[f'Att_M_INTRA_PER'] = get_max_modality_pagerank_score(
+    descriptors[f'Att_M_INTRA_PER_{"CX" if graphWithClass else "MX"}_'] = get_max_modality_pagerank_score(
         borrower,
         graph,
         1,
@@ -403,27 +405,39 @@ def make_mlna_1_variable_v2(
 
         extracts_g = {
             "Att_DEGREE_GLO" : [],
-            "Att_INTRA_GLO" : [],
-            "Att_INTER_GLO" : [],
-            "Att_COMBINE_GLO" : [],
-            "Att_M_INTRA_GLO" : [],
-            "Att_M_INTER_GLO" : [],
-            "Att_M_COMBINE_GLO" : []
+            "Att_INTRA_GLO_CX_" : [],
+            "Att_INTRA_GLO_MX_" : [],
+            "Att_INTER_GLO_CX_" : [],
+            "Att_INTER_GLO_MX_" : [],
+            "Att_COMBINE_GLO_CX_" : [],
+            "Att_COMBINE_GLO_MX_" : [],
+            "Att_M_INTRA_GLO_MX_" : [],
+            "Att_M_INTRA_GLO_CX_" : [],
+            "Att_M_INTER_GLO_MX_" : [],
+            "Att_M_INTER_GLO_CX_" : [],
+            "Att_M_COMBINE_GLO_MX_" : [],
+            "Att_M_COMBINE_GLO_CX_": []
         }
         extracts_p = {
             "Att_DEGREE_PER" : [], # GLO
-            "Att_COMBINE_PER" : [],
+            "Att_COMBINE_PER_CX_" : [],
+            "Att_COMBINE_PER_MX_" : [],
             "YN_COMBINE_PER" : [],
             "YP_COMBINE_PER" : [],# COM
-            "Att_INTER_PER" : [],
+            "Att_INTER_PER_MX_" : [],
+            "Att_INTER_PER_CX_" : [],
             "YN_INTER_PER" : [],
             "YP_INTER_PER" : [],#INTER
-            "Att_INTRA_PER" : [],
+            "Att_INTRA_PER_CX_" : [],
+            "Att_INTRA_PER_MX_" : [],
             "YN_INTRA_PER" : [],
             "YP_INTRA_PER" : [],#INTRA
-            "Att_M_COMBINE_PER" : [],
-            "Att_M_INTER_PER" : [],
-            "Att_M_INTRA_PER" : []
+            "Att_M_COMBINE_PER_CX_" : [],
+            "Att_M_COMBINE_PER_MX_" : [],
+            "Att_M_INTER_PER_CX_" : [],
+            "Att_M_INTER_PER_MX_" : [],
+            "Att_M_INTRA_PER_CX_" : [],
+            "Att_M_INTRA_PER_MX_": []
         }
         extracts_g_t = copy.deepcopy(extracts_g)
         extracts_p_t = copy.deepcopy(extracts_p)
@@ -476,14 +490,25 @@ def make_mlna_1_variable_v2(
         if graphWithClass is False:
             # Deleting a class descriptor using del
             for key in list(extracts_g.keys()):
-                if 'Y' in key:
+                if 'Y' in key or 'CX_' in key:
                     del extracts_g_t[key]
                     del extracts_g[key]
             for key in list(extracts_p.keys()):
-                if 'Y' in key:
+                if 'Y' in key or 'CX_' in key:
                     del extracts_p[key]
                     del extracts_p_t[key]
 
+        if graphWithClass is True:
+            # Deleting a class descriptor using del
+            for key in list(extracts_g_t.keys()):
+                if 'MX_' in key:
+                    del extracts_g_t[key]
+                    del extracts_g[key]
+            for key in list(extracts_p_t.keys()):
+                if 'MX_' in key:
+                    del extracts_p[key]
+                    del extracts_p_t[key]
+        print(extracts_g.keys(),'++', extracts_p.keys(),'++',extracts_g_t.keys(),'++', extracts_p_t.keys())
         # get the max value of each descriptor in both train and test dataset
         maxGDesc = standard_extraction(extracts_g, extracts_g.keys())
         # print(extracts_p.keys())
@@ -561,27 +586,39 @@ def make_mlna_k_variable_v2(
             )
             extracts_g = {
                 "Att_DEGREE_GLO": [],
-                "Att_INTRA_GLO": [],
-                "Att_INTER_GLO": [],
-                "Att_COMBINE_GLO": [],
-                "Att_M_INTRA_GLO": [],
-                "Att_M_INTER_GLO": [],
-                "Att_M_COMBINE_GLO": []
+                "Att_INTRA_GLO_CX_": [],
+                "Att_INTRA_GLO_MX_": [],
+                "Att_INTER_GLO_CX_": [],
+                "Att_INTER_GLO_MX_": [],
+                "Att_COMBINE_GLO_CX_": [],
+                "Att_COMBINE_GLO_MX_": [],
+                "Att_M_INTRA_GLO_MX_": [],
+                "Att_M_INTRA_GLO_CX_": [],
+                "Att_M_INTER_GLO_MX_": [],
+                "Att_M_INTER_GLO_CX_": [],
+                "Att_M_COMBINE_GLO_MX_": [],
+                "Att_M_COMBINE_GLO_CX_": []
             }
             extracts_p = {
                 "Att_DEGREE_PER": [],  # GLO
-                "Att_COMBINE_PER": [],
+                "Att_COMBINE_PER_CX_": [],
+                "Att_COMBINE_PER_MX_": [],
                 "YN_COMBINE_PER": [],
                 "YP_COMBINE_PER": [],  # COM
-                "Att_INTER_PER": [],
+                "Att_INTER_PER_MX_": [],
+                "Att_INTER_PER_CX_": [],
                 "YN_INTER_PER": [],
                 "YP_INTER_PER": [],  # INTER
-                "Att_INTRA_PER": [],
+                "Att_INTRA_PER_CX_": [],
+                "Att_INTRA_PER_MX_": [],
                 "YN_INTRA_PER": [],
                 "YP_INTRA_PER": [],  # INTRA
-                "Att_M_COMBINE_PER": [],
-                "Att_M_INTER_PER": [],
-                "Att_M_INTRA_PER": []
+                "Att_M_COMBINE_PER_CX_": [],
+                "Att_M_COMBINE_PER_MX_": [],
+                "Att_M_INTER_PER_CX_": [],
+                "Att_M_INTER_PER_MX_": [],
+                "Att_M_INTRA_PER_CX_": [],
+                "Att_M_INTRA_PER_MX_": []
             }
             extracts_g_t = copy.deepcopy(extracts_g)
             extracts_p_t = copy.deepcopy(extracts_p)
@@ -634,14 +671,24 @@ def make_mlna_k_variable_v2(
             if graphWithClass is False:
                 # Deleting a class descriptor using del
                 for key in list(extracts_g.keys()):
-                    if 'Y' in key:
+                    if 'Y' in key or 'CX_' in key:
                         del extracts_g_t[key]
                         del extracts_g[key]
                 for key in list(extracts_p.keys()):
-                    if 'Y' in key:
+                    if 'Y' in key or 'CX_' in key:
                         del extracts_p[key]
                         del extracts_p_t[key]
 
+            if graphWithClass is True:
+                # Deleting a class descriptor using del
+                for key in list(extracts_g_t.keys()):
+                    if 'MX_' in key:
+                        del extracts_g_t[key]
+                        del extracts_g[key]
+                for key in list(extracts_p_t.keys()):
+                    if 'MX_' in key:
+                        del extracts_p[key]
+                        del extracts_p_t[key]
             # get the max value of each descriptor in both train and test dataset
             maxGDesc = standard_extraction(extracts_g, extracts_g.keys())
             maxPDesc = standard_extraction(extracts_p, extracts_p.keys())
@@ -714,27 +761,39 @@ def make_mlna_top_k_variable_v2(
         )
         extracts_g = {
             "Att_DEGREE_GLO": [],
-            "Att_INTRA_GLO": [],
-            "Att_INTER_GLO": [],
-            "Att_COMBINE_GLO": [],
-            "Att_M_INTRA_GLO": [],
-            "Att_M_INTER_GLO": [],
-            "Att_M_COMBINE_GLO": []
+            "Att_INTRA_GLO_CX_": [],
+            "Att_INTRA_GLO_MX_": [],
+            "Att_INTER_GLO_CX_": [],
+            "Att_INTER_GLO_MX_": [],
+            "Att_COMBINE_GLO_CX_": [],
+            "Att_COMBINE_GLO_MX_": [],
+            "Att_M_INTRA_GLO_MX_": [],
+            "Att_M_INTRA_GLO_CX_": [],
+            "Att_M_INTER_GLO_MX_": [],
+            "Att_M_INTER_GLO_CX_": [],
+            "Att_M_COMBINE_GLO_MX_": [],
+            "Att_M_COMBINE_GLO_CX_": []
         }
         extracts_p = {
             "Att_DEGREE_PER": [],  # GLO
-            "Att_COMBINE_PER": [],
+            "Att_COMBINE_PER_CX_": [],
+            "Att_COMBINE_PER_MX_": [],
             "YN_COMBINE_PER": [],
             "YP_COMBINE_PER": [],  # COM
-            "Att_INTER_PER": [],
+            "Att_INTER_PER_MX_": [],
+            "Att_INTER_PER_CX_": [],
             "YN_INTER_PER": [],
             "YP_INTER_PER": [],  # INTER
-            "Att_INTRA_PER": [],
+            "Att_INTRA_PER_CX_": [],
+            "Att_INTRA_PER_MX_": [],
             "YN_INTRA_PER": [],
             "YP_INTRA_PER": [],  # INTRA
-            "Att_M_COMBINE_PER": [],
-            "Att_M_INTER_PER": [],
-            "Att_M_INTRA_PER": []
+            "Att_M_COMBINE_PER_CX_": [],
+            "Att_M_COMBINE_PER_MX_": [],
+            "Att_M_INTER_PER_CX_": [],
+            "Att_M_INTER_PER_MX_": [],
+            "Att_M_INTRA_PER_CX_": [],
+            "Att_M_INTRA_PER_MX_": []
         }
         extracts_g_t = copy.deepcopy(extracts_g)
         extracts_p_t = copy.deepcopy(extracts_p)
@@ -787,11 +846,21 @@ def make_mlna_top_k_variable_v2(
         if graphWithClass is False:
             # Deleting a class descriptor using del
             for key in list(extracts_g_t.keys()):
-                if 'Y' in key:
+                if 'Y' in key or 'CX_' in key:
                     del extracts_g_t[key]
                     del extracts_g[key]
             for key in list(extracts_p_t.keys()):
-                if 'Y' in key:
+                if 'Y' in key or 'CX_' in key:
+                    del extracts_p[key]
+                    del extracts_p_t[key]
+        if graphWithClass is True:
+            # Deleting a class descriptor using del
+            for key in list(extracts_g_t.keys()):
+                if 'MX_' in key:
+                    del extracts_g_t[key]
+                    del extracts_g[key]
+            for key in list(extracts_p_t.keys()):
+                if 'MX_' in key:
                     del extracts_p[key]
                     del extracts_p_t[key]
 

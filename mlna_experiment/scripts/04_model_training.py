@@ -1,5 +1,6 @@
 # 04_model_training.py
 
+from .cpu_limitation_usage import *
 import sys
 # Ajoutez le répertoire parent pour pouvoir importer les modules
 sys.path.append('..')  # Ajouter le répertoire parent au chemin de recherche des modules
@@ -11,6 +12,7 @@ from modules.graph import *  # Modeling functions
 from modules.report import *  # Report functions
 from modules.statistical import *  # Report functions
 import ast
+
 
 
 def make_builder(

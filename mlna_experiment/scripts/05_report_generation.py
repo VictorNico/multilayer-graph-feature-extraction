@@ -7,28 +7,9 @@ sys.path.append('..')  # Ajouter le répertoire parent au chemin de recherche de
 
 from modules.statistical import *  # Report functions
 from modules.mailing import *  # Report functions
+from modules.env import *  # Env functions
 
-from dotenv import load_dotenv
 
-
-def load_env_with_path():
-    """Chargement avec chemin spécifique vers le fichier .env"""
-    # Chemin vers le fichier .env
-    env_path = Path('.') / '.env'
-
-    # Chargement avec chemin explicite
-    load_dotenv(dotenv_path=env_path)
-
-    # Ou depuis un répertoire parent
-    # load_dotenv(dotenv_path=Path('..') / '.env')
-
-    return {
-        'gmail_user': os.getenv('GMAIL_USER'),
-        'gmail_password': os.getenv('GMAIL_APP_PASSWORD'),
-        'recipients': os.getenv('EMAIL_RECIPIENTS', '').split(','),
-        'email_cc': os.getenv('EMAIL_CC', '').split(','),
-        'alphas': [float(al) for al in os.getenv('ALPHAS','').split(',')]
-    }
 
 def check_completed_folder(
         results_path="",
@@ -76,6 +57,7 @@ def check_completed_folder(
 
 def build_macro_store(approach, logics, configs, metrics, datasets):
     results = {}
+    results['classic'] = {}
     for app in approach:
         for logic in logics:
             for config in configs:
@@ -84,6 +66,7 @@ def build_macro_store(approach, logics, configs, metrics, datasets):
                     results[key] = {}
                     for metric in metrics:
                         results[key][metric] = {ds: [] for ds in datasets}
+                        results['classic'][metric] = {ds: [] for ds in datasets}
 
     return results
 
@@ -388,7 +371,7 @@ def shap_extraction(
                    os.walk(f'{cwd}/{result_folder}/{alpha}/{target_columns_type}/select/mlna_{elb}_b')][0]
 
             temp = load_results(
-                f'{cwd}/{result_folder}',
+                f'{cwd}{result_folder}',
                 target_columns_type,
                 elb,
                 alpha,
@@ -404,6 +387,8 @@ def shap_extraction(
                 encoding=encoding,
                 index_col=index_col
             )
+            print(f'{cwd}{result_folder}/{alpha}/{target_columns_type}/select/mlna_{elb}_b/{att}/mixed/both/evaluation')
+            pretty_print(temp)
             shapStore[result_folder]['MlC']['BOT']['CXY'] = shapStore[result_folder]['MlC']['BOT']['CXY'] + \
                                                             temp['MlC']['BOT']['CXY']
             shapStore[result_folder]['MCA']['BOT']['CXY'] = shapStore[result_folder]['MCA']['BOT']['CXY'] + \
@@ -558,15 +543,16 @@ def main():
         for metric, cat_data in metric_data.items():
             # print(config, metric, cat_data)
             for cat, (value, algo) in cat_data.items():
-                if value > best_values[metric][cat][0]:
+                if value > best_values[metric][cat][0] and not("classic" in config):
                     best_values[metric][cat] = (value, algo)
 
     # Compter le nombre de fois qu'une ligne détient les meilleurs résultats
     for config, metric_data in macro_store.items():
         for metric in metrics:
             for cat in folders:
-                if round(macro_store[config][metric][cat][0], 1) == round(best_values[metric][cat][0], 1):
+                if round(macro_store[config][metric][cat][0], 1) == round(best_values[metric][cat][0], 1) and not("classic" in config):
                     total_best_counts[config] += 1
+    total_best_counts['classic'] = 0
 
     # Trier les configurations par total décroissant
     sorted_totals = sorted(total_best_counts.items(), key=lambda x: x[1], reverse=True)
@@ -593,15 +579,6 @@ def main():
                 formatted_value = f"\\textbf{{{value:.1f}}}" if round(value, 1) == round(best_value,
                                                                                          1) else f"{value:.1f}"
                 row += f" & {formatted_value} ({algo})"
-        # Formater la colonne Total
-
-        # if total_value == best_total:
-        #     formatted_total = "\\textbf{\\color{blue}"+str(total_value)+"}"
-        # elif total_value == second_best_total:
-        #     formatted_total = "\\underline{\\color{green}"+str(total_value)+"}"
-        # elif total_value == third_best_total:
-        #     formatted_total = "\\textit{\\color{red}"+str(total_value)+"}"
-        # else:
         formatted_total = f"{total_value}"
         if total_value == best_total:
             formatted_total = f"\\textbf{{{total_value}}}"
@@ -610,7 +587,7 @@ def main():
         elif total_value == third_best_total:
             formatted_total = f"\\textit{{{total_value}}}"
 
-        row += f" & {formatted_total} \\\\ \\hline\n"
+        row += f" & {formatted_total if not('classic' in config) else ''} \\\\ \\hline\n"
         latex_table += row
 
     latex_table += "\\end{tabular}"

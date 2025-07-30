@@ -1,11 +1,13 @@
 # 02_data_split.py
-
+from .cpu_limitation_usage import *
 import sys
 # Ajoutez le répertoire parent pour pouvoir importer les modules
 sys.path.append('..')  # Ajoute le répertoire parent au chemin de recherche des modules
 from modules.file import *  # File manipulation functions
 from modules.modeling import *  # Modeling functions
 import statistics
+from modules.env import *  # Env functions
+
 
 
 def try_split_all_models(df, target, test_size, max_perf, max_tries=100, reset_index=False, verbose=True):
