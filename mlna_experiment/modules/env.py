@@ -22,5 +22,5 @@ def load_env_with_path():
         'email_cc': os.getenv('EMAIL_CC', '').split(','),
         'alphas': [float(al) for al in os.getenv('ALPHAS','').split(',')],
         'max_core': os.getenv('MAX_CORE'),
-        'size_divider': int(os.getenv('SIZE_DIVIDER'))
+        'size_divider': float(os.getenv('SIZE_DIVIDER'))
     }
