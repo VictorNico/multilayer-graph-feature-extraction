@@ -105,6 +105,8 @@ def model_desc():
         'DT': 'DT',
         'RF': 'RF',
         'XGB': 'XGB',
+        'MLP': 'MLP',
+        'PER': 'PER'
     }
     return modelD
 

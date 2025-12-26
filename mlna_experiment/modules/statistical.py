@@ -24,6 +24,7 @@ import statistics
 import math
 from scipy.spatial.distance import euclidean
 
+
 # Initialize colorama for Windows compatibility
 init()
 
@@ -539,42 +540,56 @@ def build_compare_feature_selection_protocole(
         %\\begin{sidewaystable}
         \\resizebox{\\textwidth}{!}{
 
-        \\begin{tabular}{|c|c|""" + ("c|" * len(alphas))
+        \\begin{tabular}{|c|c|""" + ("c|" * len(datasets))
     # setup information columns headears
-    nbMCol = 10
+    nbMCol = len(datasets)
     # add col for total results
-    table_header += "} "
+    table_header += "c|} "
     # add separator clines
-    nb_cols = (2 + nbMCol)
-    table_header += " \\cline{1-" + str(len(alphas)+2) + "}"  # corresponding to the number of columns
+    nb_cols = (2 + nbMCol + 1)
+    table_header += " \\cline{1-" + str(nb_cols) + "}"  # corresponding to the number of columns
 
     # build the first line: metrics' line
     lines = ''
     # add the blank block
     lines += """
-    \\multicolumn{2}{|c|}{}"""
+    \\multirow{2}{*}{\\textbf{$\\alpha$}} & \\multirow{2}{*}{\\textbf{Method}} & \\multicolumn{"""+str(len(datasets))+"""}{c|}{Dataset} & \\multirow{2}{*}{\\textbf{Score}}
+    """
+    lines += """\\\\
+     \\cline{3-""" + str(nb_cols-1) + """}
+      & 
+    """
 
 
     # add alpha for metric
-    for alpha in alphas:
-        lines += f" & {alpha}"
+    for fold in datasets:
+        lines += f" & {fold}"
     # add the total name
-    lines += " \\\\ "
-    lines += " \\cline{1-" + str(len(alphas)+2) + """}
+    lines += """ & \\\\ 
+    \\hline
+    \\hline
     """
-    for folder in datasets:
-        # fetch on model
+    # pretty_print(methods)
+    for ai, alpha in enumerate(alphas):
         lines += """
-            \\multirow{3}{*}{""" + folder + """}"""
+        \\multirow{3}{*}{""" + str(alpha) + """}"""
         for mi, meth in enumerate(methods):
             lines += f""" & {meth}"""
-            for ai, alpha in enumerate(alphas):  # MlC, MCA
-                lines += f""" & {store[folder][meth][alpha]}""" if alpha in list(store[folder][meth].keys()) else " & "
-            lines += ("""\\\\ """ + """ \\cline{2-""" + str(len(alphas)+2) + """}
+            for folder in datasets:
+                lines += (
+                    f""" & {store[folder][meth][alpha]}"""
+                    if store[folder][meth][alpha] < store[folder]['réel'][alpha] or ( 'réel' in meth)
+                    else f""" & \\textbf{{{store[folder][meth][alpha]}}}"""
+                ) if alpha in list(store[folder][meth].keys()) else " & "
+            lines += (""" & \\\\ """ + """ \\cline{2-""" + str(nb_cols) + """}
 
-                    """) if mi != len(methods) - 1 else ("""\\\\ """ + """ \\cline{1-""" + str(len(alphas)+2) + """}
-
-                    """)
+                                        """) if mi != len(methods) - 1 else (
+                        """ & \\\\ """)
+        lines += """ 
+        \\hline 
+        \\hline
+        
+        """
 
     lines += """
 
@@ -631,6 +646,34 @@ def elbow_method(accuracies):
     dists_from_line = [euclidean((0,0), vec_reject(vec_from_first(coord))) for coord in coords]
     return dists_from_line.index(max(dists_from_line)) + 1
 
+
+def elbow_method_v2(accuracies):
+    sorted_accuracies = sorted(accuracies, reverse=True)
+    n = len(sorted_accuracies)
+
+    # Vecteur de la ligne du premier au dernier point
+    line_vec = (n - 1, sorted_accuracies[-1] - sorted_accuracies[0])
+    line_vec_norm = math.sqrt(line_vec[0] ** 2 + line_vec[1] ** 2)
+
+    max_dist = 0
+    elbow_idx = 0
+
+    for i, acc in enumerate(sorted_accuracies):
+        # Vecteur du premier point au point courant
+        point_vec = (i, acc - sorted_accuracies[0])
+
+        # Produit vectoriel en 2D: |a×b| = |a_x*b_y - a_y*b_x|
+        cross_product = abs(point_vec[0] * line_vec[1] - point_vec[1] * line_vec[0])
+
+        # Distance perpendiculaire
+        dist = cross_product / line_vec_norm
+
+        if dist > max_dist:
+            max_dist = dist
+            elbow_idx = i
+
+    return elbow_idx
+
 def proto_precision_tikz(
         tolerances,
         elbow_results,
@@ -652,12 +695,12 @@ def proto_precision_tikz(
 
     # Configuration par défaut du layout
     default_config = {
-        'matrices_per_row': 2,
-        'matrix_spacing_x': 4,
+        'matrices_per_row': len(datasets),
+        'matrix_spacing_x': 3.7,
         'matrix_spacing_y': 5,
-        'cell_width': '1.5cm',
+        'cell_width': '1.7cm',
         'cell_height': '0.6cm',
-        'header_width': '3.05cm',
+        'header_width': '3.4cm',
         'header_height': '0.6cm'
     }
 
@@ -672,6 +715,7 @@ def proto_precision_tikz(
 
 """
 
+    first_x = -1.0
     # Calculer positions des matrices
     positions = []
     matrices_per_row = config['matrices_per_row']
@@ -693,7 +737,7 @@ def proto_precision_tikz(
         # Créer la matrice
         latex_content += f"""% Matrice pour {dataset}
 \\matrix ({matrix_name}) [matrix of nodes, nodes in empty cells,
-    nodes={{draw, minimum width={config['cell_width']}, minimum height={config['cell_height']}, anchor=center, text centered}}] at ({x},{y})
+    nodes={{draw, minimum width={config['cell_width']}, minimum height={config['cell_height']}, anchor=center, text centered}}] at ({x if i != 0 else first_x},{y})
 {{
 """
 
@@ -728,7 +772,7 @@ def proto_precision_tikz(
         # Ajouter le titre du dataset
         header_y = y + (len(tolerances)/2+.4) * 0.6 + 0.57  # Ajuster selon la hauteur des cellules
         latex_content += f"""% Titre pour {dataset}
-\\node[draw, rectangle, minimum width={config['header_width']}, minimum height={config['header_height']}] ({matrix_name}_title) at ({x + 0.75 if x == 0 else x},{header_y}) {{{dataset}}};
+\\node[draw, rectangle, minimum width={config['header_width']}, minimum height={config['header_height']}] ({matrix_name}_title) at ({(x if i != 0 else first_x)+ 0.85 if x == 0 else x},{header_y}) {{{dataset}}};
 
 """
 
@@ -755,6 +799,27 @@ def vector_matching_precision(v1, v2, tolerance=0):
 
     return precision
 
+
+def find_knee_manual(x, y):
+    """
+    Finds the knee point by calculating the maximum distance from a line.
+    """
+    # Normalize the data
+    x_norm = (x - x.min()) / (x.max() - x.min())
+    y_norm = (y - y.min()) / (y.max() - y.min())
+
+    # Line connecting the first and last points
+    line_coeffs = np.polyfit(np.array([x_norm[0], x_norm[-1]]),
+                             np.array([y_norm[0], y_norm[-1]]), 1)
+
+    # Calculate perpendicular distance from each point to the line
+    distances = np.abs(line_coeffs[0] * x_norm - y_norm + line_coeffs[1]) / np.sqrt(line_coeffs[0] ** 2 + 1)
+
+    # Find the index of the maximum distance
+    knee_index = np.argmax(distances)
+
+    return x[knee_index], y[knee_index]
+
 def selection_proto(records, output_path):
     # result structure
     resultDict = {
@@ -767,7 +832,8 @@ def selection_proto(records, output_path):
         'realThreshold': []
     }
     res = {}
-    getTheBestAcc = lambda store, k: round(max([acc for layer, _, acc in store if k == layer]), 4)
+    p = 4
+    getTheBestAcc = lambda store, k: round(max([acc for layer, _, acc in store if k == layer]), p)
     real_values = {}
     elbow_values = {}
     cusum_values = {}
@@ -783,9 +849,16 @@ def selection_proto(records, output_path):
                 resultDict['dataset'].append(dataset)
                 resultDict['alpha'].append(alpha)
                 # resultDict['QuartileThreshold'].append(getTheBestAcc(records[dataset][alpha]['list'],records[dataset][alpha]['predicted_best_k'][0]))
-                elb = elbow_method(list(records[dataset][alpha]['accuracies']))
+                # elb = elbow_method(list(records[dataset][alpha]['accuracies']))
+                x = range(1, len(list(records[dataset][alpha]['accuracies'])) + 1)
+
+                from kneed import KneeLocator
+                kn = KneeLocator(x, list(records[dataset][alpha]['accuracies']), curve='convex', direction='decreasing')
+                # print(elb, kn.knee, int(kn.knee))
+                elb = int(kn.knee)
                 elb = elb if elb < max([layer for layer, _, _ in records[dataset][alpha]['list']]) else max(
                     [layer for layer, _, _ in records[dataset][alpha]['list']])
+                # print(elb, records[dataset][alpha]['list'])
                 resultDict['elbowThreshold'].append(getTheBestAcc(records[dataset][alpha]['list'], elb))
                 res[dataset]['Elbow'][alpha] = getTheBestAcc(records[dataset][alpha]['list'], elb)
                 elbow_values[dataset].append(res[dataset]['Elbow'][alpha])
@@ -800,8 +873,8 @@ def selection_proto(records, output_path):
 
                 # resultDict['variance_explained_threshold'].append(getTheBestAcc(records[dataset][alpha]['list'],variance_explained_threshold(list(records[dataset][alpha]['accuracies'].values()))))
                 resultDict['realThreshold'].append(
-                    round(max([acc for _, _, acc in records[dataset][alpha]['list']]), 4))
-                res[dataset]['réel'][alpha] = round(max([acc for _, _, acc in records[dataset][alpha]['list']]), 4)
+                    round(max([acc for _, _, acc in records[dataset][alpha]['list']]), p))
+                res[dataset]['réel'][alpha] = round(max([acc for _, _, acc in records[dataset][alpha]['list']]), p)
                 real_values[dataset].append(res[dataset]['réel'][alpha])
 
     dat = pd.DataFrame(resultDict)
@@ -829,50 +902,58 @@ def analyse_files(
                                 files[approach][logic][config]))):  # each result file's containing evaluation metrics
                             # print(files[approach][logic][config][result].columns)
                             # exit(0)
-                            valu = round(
-                                (
-                                        (
-                                                round(
-                                                    files[approach][logic][config][result].loc[model, metric],
-                                                    4
-                                                )
-                                                -
-                                                round(
-                                                    classic_f.loc[model, metric],
-                                                    4
-                                                )
-                                        )
-                                        /
-                                        (round(classic_f.loc[model, metric], 4) if round(classic_f.loc[model, metric],
-                                                                                         4) > 0 else epsilon)
-                                ) * 100,
-                                1
+                            # valu = round(
+                            #     (
+                            #             (
+                            #                     round(
+                            #                         files[approach][logic][config][result].loc[model, metric],
+                            #                         4
+                            #                     )
+                            #                     -
+                            #                     round(
+                            #                         classic_f.loc[model, metric],
+                            #                         4
+                            #                     )
+                            #             )
+                            #             /
+                            #             (round(classic_f.loc[model, metric], 4) if round(classic_f.loc[model, metric],
+                            #                                                              4) > 0 else epsilon)
+                            #     ) * 100,
+                            #     1
+                            # )
+
+                            def calculate_gain_percentage(new_value, baseline_value, epsilon=1e-8):
+                                """Calcule le pourcentage de gain entre deux valeurs."""
+                                new_rounded = round(new_value, 4)
+                                baseline_rounded = round(baseline_value, 4)
+
+                                # Éviter la division par zéro
+                                denominator = baseline_rounded if baseline_rounded != 0 else epsilon
+
+                                gain = ((new_rounded - baseline_rounded) / denominator) * 100
+                                return gain
+
+                            # Usage
+                            valu1 = calculate_gain_percentage(
+                                files[approach][logic][config][result].loc[model, metric],
+                                classic_f.loc[model, metric]
                             )
 
-                            valu1 = (
-                                            (
-                                                    round(
-                                                        files[approach][logic][config][result].loc[model, metric],
-                                                        4
-                                                    )
-                                                    -
-                                                    round(
-                                                        classic_f.loc[model, metric],
-                                                        4
-                                                    )
-                                            )
-                                            /
-                                            (round(classic_f.loc[model, metric], 4) if round(
-                                                classic_f.loc[model, metric], 4) > 0 else epsilon)
-                                    ) * 100
-
-                            main_key = [kjj for kjj in list(macro_metrics.keys()) if
-                                        (logic in kjj) and (approach in kjj) and (config in kjj)]
+                            # main_key = [kjj for kjj in list(macro_metrics['gain'].keys()) if
+                            #             (logic in kjj) and (approach in kjj) and (config in kjj)]
+                            main_key = [kjj for kjj in list(macro_metrics['gain'].keys()) if
+                                        kjj == f"{approach}_{logic}_{config}"]
                             # met = 'Acc' if 'acc' in metric else ('F1-score' if 'f1' in metric else 'Cost')
-                            macro_metrics[main_key[0]][metric][result_folder].append(
+                            macro_metrics['gain'][main_key[0]][metric][result_folder].append(
                                 (
                                     valu1 if 'finan' not in metric else (valu1 if valu1 == 0 else -1 * valu1)
                                     , model)
+                            )
+                            macro_metrics['real'][main_key[0]][metric][result_folder].append(
+                                (round(
+                                    files[approach][logic][config][result].loc[model, metric],
+                                    4
+                                ),model)
                             )
                             macro_metrics['classic'][metric][result_folder].append((round(classic_f.loc[model, metric], 4),model))
 
@@ -882,6 +963,7 @@ def analyse_files(
                                 # if 'LD4' in result_folder:
                                 # print(result_folder, layer)
                                 list_of_accuracy.append((layer, model, files[approach][logic][config][result].loc[model, metric]))
+    print(layer,list_of_accuracy)
     return (list_of_accuracy, macro_metrics)
 
 def count_pattern_matches(dataframe, pattern):
@@ -931,7 +1013,7 @@ def analyse_files_for_shap_value(
     }
     global_details_metrics_depth_1 = {}
 
-    pretty_print(files)
+    # pretty_print(files)
     for index4, model in enumerate(models_name):
         global_details_metrics_depth_1[model] = {key: deepcopy(template_descripteurs) for key in
                                                  result_folders}
@@ -1050,26 +1132,26 @@ def analyse_files_for_shap_value(
                             global_details_metrics_depth_1[model][result_folder][
                                 var].append([abs(x) for x in parse_vector(files[result_folder]["MlC"]["BOT"]["CXY"][result].loc[model, att])])
 
-    pretty_print(global_details_metrics_depth_1)
+    # pretty_print(global_details_metrics_depth_1)
     for model in global_details_metrics_depth_1.keys():
         for folder in global_details_metrics_depth_1[model].keys():
             for att in global_details_metrics_depth_1[model][folder].keys():
                 # print(global_details_metrics_depth_1[model][folder][att], model, folder, att)
                 print(model, folder)
-                pretty_print(global_details_metrics_depth_1[model][folder])
-                pretty_print(np.mean(global_details_metrics_depth_1[model][folder][att], axis=0))
+                # pretty_print(global_details_metrics_depth_1[model][folder])
+                # pretty_print(np.mean(global_details_metrics_depth_1[model][folder][att], axis=0))
                 global_details_metrics_depth_1[model][folder][att] = np.mean(global_details_metrics_depth_1[model][folder][att], axis=0)
 
-    shapes = f"""
-    """
+    tab_shapes = { key: [] for key in models_name }
 
-    pretty_print(global_details_metrics_depth_1)
+
+    # pretty_print(global_details_metrics_depth_1)
     summary = {model: {folder: {'GLO_CX': 0, 'GLO_MX': 0, 'PER_CX': 0, 'PER_MX': 0, 'PER_CY': 0} for folder in result_folders} for model in models_name}
     counter1 = {'GLO_CX': 0, 'GLO_MX': 0, 'PER_CX': 0, 'PER_MX': 0, 'PER_CY': 0}
-    for model in models_name:
+    for i, model in enumerate(models_name):
         tt = []
-        shapes += """
-        """
+        # shapes += """
+        # """
         for fold in result_folders:
             agg = pd.DataFrame(global_details_metrics_depth_1[model][fold]).T
             agg.columns = [f'Classe {i}' for i in range(agg.shape[1])]
@@ -1085,9 +1167,9 @@ def analyse_files_for_shap_value(
             summary[model][fold]['PER_CY'] = count_pattern_matches(agg.head(top), r'^Y.*_PER$')
             summary[model][fold]['nbAtt'] = len(agg.index)
 
-            tt.append(f"{{{create_standalone_shap_plot(agg.head(top), model, fold, top)}}}")
-        shapes += """
-        """.join(tt)
+            tt.append(f"""{{{create_standalone_shap_plot(agg.head(top), model, fold, top)}}}""")
+
+        tab_shapes[model] = tt
 
         # ----------------------------- print the summary ----------------------------
         table_header = """
@@ -1162,12 +1244,48 @@ def analyse_files_for_shap_value(
             \\end{tabular}}"""
 
 
-    res = f"{shapes}" + """
+    n=3
+    sub_shapes = []
+    items = list(tab_shapes.items())
+    for i in range(0, len(items), n):
+        groupe = dict(items[i:i + n])
+        # print(groupe)
+        sous_dict = dict(groupe)  # Si vous avez besoin de manipuler un dictionnaire
+        shapes = """
+        \\begin{table}[H]
+        \\center
+        \\resizebox{\\textwidth}{!}{
+        \\begin{tabular}{"""+("|c"*len(sous_dict.keys()))+"""|}
+        \\hline
+        
+        """+"&".join(["""\\textbf{"""+model+"""}""" for model in sous_dict.keys()])
+
+        for i in range(len(sous_dict[list(sous_dict.keys())[0]])):
+            shapes += """\\\\
+            \\hline
+            """
+            store = []
+            for model in sous_dict.keys():
+                store.append(sous_dict[model][i])
+            shapes += """ 
+            &
+             """.join(store)
+        shapes+="""\\\\ 
+        \\hline
+        \\end{tabular}}
+        \\label{tab:"""+("-".join(sous_dict.keys()))+"""}
+        \\end{table}
+        """
+        sub_shapes.append(shapes)
+
+    res = """
+          """.join(sub_shapes)+ """
             \\begin{table}[H]
             \\center"""+ table_header + lines +"""
             \\caption{Nombre d'attributs de type GLO, PER et PER\\_Y des graphes multicouches qui sont présents dans le Top-20 des attributs qui contribuent le plus aux décisions des modèles de prédiction dans les différents jeux de données. Entre parenthèse, c'est le nombre total d'attributs du jeu de données associé.}
             \\label{tab:recapTab}
             \\end{table}"""
+
     return res
 
 # === 4. Définir les couleurs pour chaque classe ===
@@ -1221,14 +1339,14 @@ def create_standalone_shap_plot(df_shap, model_name, fd, top):
         latex_content += f"\\definecolor{{{color_key}}}{color_def}\n"
 
     latex_content += f"""
-\\begin{{figure}}[H]
-\\centering
+%\\begin{{figure}}[H]
+%\\centering
 \\begin{{tikzpicture}}
 \\begin{{axis}}[
     xbar stacked,
     width=14cm,
     height={max(8, n_features * 0.4)}cm,
-    xlabel={{Importance moyenne |SHAP| par classe}},
+    xlabel={{Average importance |SHAP| by class}},
     ylabel={{Variables}},
     xmin=0,
     xmax={x_max:.3f},
@@ -1271,9 +1389,10 @@ def create_standalone_shap_plot(df_shap, model_name, fd, top):
     latex_content += f"""\\legend{{{legend_entries}}}
 \\end{{axis}}
 \\end{{tikzpicture}}
-\\caption{{Importance des variables SHAP pour le modèle {model_name} (ordre décroissant d'importance top {top})}}
-\\label{{fig:shap_{fd}_{model_name.replace(' ', '_').lower()}}}
-\\end{{figure}}"""
+%\\caption{{Importance des variables SHAP pour le modèle {model_name} (ordre décroissant d'importance top {top})}}
+%\\label{{fig:shap_{fd}_{model_name.replace(' ', '_').lower()}}}
+%\\end{{figure}}
+"""
 
     return latex_content
 
