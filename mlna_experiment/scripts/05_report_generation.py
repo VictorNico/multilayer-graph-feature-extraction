@@ -319,6 +319,7 @@ def shap_extraction(
         index_col=None,
         top=10,
         models=['LDA','LR','SVM','DT','RF','XGB'],
+        n=2,
 ):
     """ @methods metric_extraction
             Look inside completed folder to extract and record saved models performance over some metrics
@@ -445,7 +446,8 @@ def shap_extraction(
         models_name,
         shapStore,
         completed_folder,
-        top=top
+        top=top,
+        n=n,
     )
 
     return res
@@ -518,7 +520,8 @@ def main():
         dataset_delimiter=dataset_delimiter,
         encoding=encoding,
         index_col=index_col,
-        top=top
+        top=top,
+        n=2
     )
 
     # pretty_print(macro_store)

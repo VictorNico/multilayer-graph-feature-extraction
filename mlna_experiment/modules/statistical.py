@@ -974,7 +974,8 @@ def analyse_files_for_shap_value(
         models_name,
         files,
         result_folders,
-        top=10
+        top=10,
+        n=2
 ):
     template_descripteurs = {
         'INTER_GLO_CX': [],
@@ -1244,7 +1245,7 @@ def analyse_files_for_shap_value(
             \\end{tabular}}"""
 
 
-    n=3
+
     sub_shapes = []
     items = list(tab_shapes.items())
     for i in range(0, len(items), n):
