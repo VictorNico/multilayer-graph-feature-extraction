@@ -168,3 +168,5 @@ yarg==0.1.9
 zict==3.0.0
 zipp==3.17.0
 kneed==0.8.5
+jenkspy==0.4.1
+scikit-image==0.24.0

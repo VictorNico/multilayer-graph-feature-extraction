@@ -576,6 +576,7 @@ def build_compare_feature_selection_protocole(
         for mi, meth in enumerate(methods):
             lines += f""" & {meth}"""
             for folder in datasets:
+                # print('---------------',store[folder][meth][alpha])
                 lines += (
                     f""" & {store[folder][meth][alpha]}"""
                     if store[folder][meth][alpha] < store[folder]['réel'][alpha] or ( 'réel' in meth)
@@ -634,45 +635,293 @@ def cumulative_difference_threshold(accuracies, threshold_percent=0.8):
             return i + 1
     return len(accuracies)
 
-def elbow_method(accuracies):
+def cusum_threshold_v1(accuracies, k=0.5, h=5):
     sorted_accuracies = sorted(accuracies, reverse=True)
-    coords = [(i, acc) for i, acc in enumerate(sorted_accuracies)]
-    line_vec = coords[-1][0] - coords[0][0], coords[-1][1] - coords[0][1]
-    line_vec_norm = math.sqrt(sum(x*x for x in line_vec))
-    vec_from_first = lambda coord: (coord[0] - coords[0][0], coord[1] - coords[0][1])
-    scalar_proj = lambda vec: (vec[0]*line_vec[0] + vec[1]*line_vec[1]) / line_vec_norm
-    vec_proj = lambda vec: ((scalar_proj(vec) / line_vec_norm) * line_vec[0], (scalar_proj(vec) / line_vec_norm) * line_vec[1])
-    vec_reject = lambda vec: (vec[0] - vec_proj(vec)[0], vec[1] - vec_proj(vec)[1])
-    dists_from_line = [euclidean((0,0), vec_reject(vec_from_first(coord))) for coord in coords]
-    return dists_from_line.index(max(dists_from_line)) + 1
+    mean_acc = np.mean(sorted_accuracies)
 
-
-def elbow_method_v2(accuracies):
-    sorted_accuracies = sorted(accuracies, reverse=True)
-    n = len(sorted_accuracies)
-
-    # Vecteur de la ligne du premier au dernier point
-    line_vec = (n - 1, sorted_accuracies[-1] - sorted_accuracies[0])
-    line_vec_norm = math.sqrt(line_vec[0] ** 2 + line_vec[1] ** 2)
-
-    max_dist = 0
-    elbow_idx = 0
-
+    cusum = 0
     for i, acc in enumerate(sorted_accuracies):
-        # Vecteur du premier point au point courant
-        point_vec = (i, acc - sorted_accuracies[0])
+        # Détecter une baisse significative
+        cusum = max(0, cusum + (mean_acc - acc - k))
+        if cusum > h:
+            return i
+    return len(accuracies)
 
-        # Produit vectoriel en 2D: |a×b| = |a_x*b_y - a_y*b_x|
-        cross_product = abs(point_vec[0] * line_vec[1] - point_vec[1] * line_vec[0])
+def cusum_threshold_v2(accuracies, h_threshold=1.0, drift=0.01):
+    """
+    Détecte le point de stabilisation (changement de régime) via CUSUM.
 
-        # Distance perpendiculaire
-        dist = cross_product / line_vec_norm
+    Parameters:
+    - accuracies: Liste des scores de précision.
+    - h_threshold: Seuil de décision (sensibilité).
+    - drift: Marge de changement tolérée (souvent la moyenne des variations attendues).
+    """
+    n = len(accuracies)
+    if n < 2: return 0
 
-        if dist > max_dist:
-            max_dist = dist
-            elbow_idx = i
+    # Calcul des différences
+    diffs = np.diff(accuracies)
+    # On centre sur une cible (généralement on veut détecter quand le gain tombe vers 0)
+    target = np.mean(diffs)
 
-    return elbow_idx
+    s_high = 0
+    # Liste pour stocker les cumuls
+    s_pos = []
+
+    for d in diffs:
+        # On accumule les écarts positifs par rapport à la cible + dérive
+        s_high = max(0, s_high + (d - target - drift))
+        s_pos.append(s_high)
+
+    # Le seuil est l'indice où la somme cumulée s'écarte de manière significative
+    for i, val in enumerate(s_pos):
+        if val > h_threshold:
+            return i + 1  # Point de rupture détecté
+
+    return n - 1  # Pas de rupture franche détectée
+
+
+def elbow_method(accuracies):
+    """
+    Détecte le point de coude (elbow) dans une courbe de précisions triées.
+
+    Cette méthode géométrique identifie le point qui s'éloigne le plus de la droite
+    reliant le premier et le dernier point de la courbe. Ce point représente le
+    compromis optimal entre le nombre de features et la performance.
+
+    Principe mathématique :
+    ----------------------
+    1. Trace une droite entre le premier point (meilleure précision) et le dernier
+    2. Pour chaque point, calcule sa distance perpendiculaire à cette droite
+    3. Le coude est le point avec la distance maximale
+
+    La distance perpendiculaire est calculée via projection orthogonale :
+    - Projection du vecteur point-origine sur la droite
+    - Calcul du vecteur de rejet (composante perpendiculaire)
+    - Distance = norme euclidienne du vecteur de rejet
+
+    Args:
+        accuracies (list[float]): Liste des précisions (non triées)
+
+    Returns:
+        int: Indice du coude dans la liste triée (décroissante)
+             Retourne len(accuracies) - 1 si le coude est aux positions 0 ou 1
+
+    Example:
+        >>> accuracies = [0.95, 0.94, 0.92, 0.85, 0.80, 0.78]
+        >>> elbow_method(accuracies)
+        3  # Correspond à la précision 0.85 dans la liste triée
+
+    Notes:
+        - Les précisions sont automatiquement triées par ordre décroissant
+        - La fonction utilise l'indice dans la liste triée, pas la liste originale
+        - Si le coude détecté est à l'indice 0 ou 1, retourne le dernier indice
+          (cas où il n'y a pas de coude significatif)
+    """
+    # Trier les précisions par ordre décroissant
+    sorted_accuracies = sorted(accuracies, reverse=True)
+
+    # Créer des coordonnées (index, précision) pour chaque point
+    coords = [(i, acc) for i, acc in enumerate(sorted_accuracies)]
+
+    # Vecteur de la droite reliant le premier au dernier point
+    line_vec = (coords[-1][0] - coords[0][0],
+                coords[-1][1] - coords[0][1])
+
+    # Norme (longueur) du vecteur de la droite
+    line_vec_norm = math.sqrt(sum(x * x for x in line_vec))
+
+    # Lambda: vecteur du premier point au point donné
+    vec_from_first = lambda coord: (coord[0] - coords[0][0],
+                                    coord[1] - coords[0][1])
+
+    # Lambda: projection scalaire d'un vecteur sur la droite
+    # Formule: (v · l) / ||l||
+    scalar_proj = lambda vec: (vec[0] * line_vec[0] + vec[1] * line_vec[1]) / line_vec_norm
+
+    # Lambda: projection vectorielle d'un vecteur sur la droite
+    # Formule: ((v · l) / ||l||²) * l
+    vec_proj = lambda vec: ((scalar_proj(vec) / line_vec_norm) * line_vec[0],
+                            (scalar_proj(vec) / line_vec_norm) * line_vec[1])
+
+    # Lambda: composante perpendiculaire (rejet) d'un vecteur par rapport à la droite
+    # Formule: v - proj_l(v)
+    vec_reject = lambda vec: (vec[0] - vec_proj(vec)[0],
+                              vec[1] - vec_proj(vec)[1])
+
+    # Calculer la distance perpendiculaire de chaque point à la droite
+    # Distance = norme euclidienne du vecteur de rejet
+    dists_from_line = [euclidean((0, 0), vec_reject(vec_from_first(coord)))
+                       for coord in coords]
+
+    # Trouver l'indice du point avec la distance maximale augmenté de 1 pour l'acces en list
+    indice = dists_from_line.index(max(dists_from_line)) + 1
+
+    # Retourner l'indice du coude, ou le deuxième indice si le coude est trop tôt
+    # (indice <= 1 indique qu'il n'y a pas de coude significatif)
+    return indice # if indice > 1 else 2
+
+
+def otsu_method(metrics):
+    from skimage.filters import threshold_otsu
+
+    # Votre liste de points (vecteur 1D)
+    data = np.array(metrics)
+
+    # Calcul du seuil optimal
+    seuil = threshold_otsu(data)
+
+    # Trouver l'index de la première valeur >= seuil dans les données triées
+    sorted_metrics = np.sort(data)[::-1]  # Tri décroissant
+    index_seuil = np.searchsorted(-sorted_metrics, -seuil)  # Truc pour tri décroissant
+
+    # S'assurer que l'index est >= 1 (au moins 1 élément dans "Utiles")
+    index_seuil = max(1, index_seuil.item())
+    return index_seuil
+
+
+def jenkspy_method(metrics):
+    import jenkspy
+
+    if len(metrics) < 3:  # Besoin d'au moins 3 valeurs pour 2 classes
+        # Retourner un index par défaut
+        return 1  # ou len(metrics) // 2
+
+    # Vérifier s'il y a de la variance
+    if len(set(metrics)) == 1:
+        # Toutes les valeurs sont identiques
+        return len(metrics) // 2
+
+    scores = sorted(metrics, reverse=True)
+
+    try:
+        breaks = jenkspy.jenks_breaks(scores, n_classes=2)
+        seuil_critique = breaks[1]
+
+        # Trouver l'index
+        index_seuil = sum(1 for score in scores if score >= seuil_critique)
+        index_seuil = max(1, index_seuil)
+
+        return index_seuil
+
+    except ValueError as e:
+        print(f"Erreur Jenkspy: {e}")
+        print(f"Nombre de métriques: {len(metrics)}")
+        print(f"Valeurs uniques: {len(set(metrics))}")
+        # Fallback : retourner le milieu
+        return len(metrics) // 2
+
+def elbow_method_v2(points):
+    """
+    Détecte le point de coude (elbow) dans une courbe de valeurs.
+
+    Cette implémentation vectorisée utilise NumPy pour calculer efficacement
+    les distances perpendiculaires de tous les points à la droite reliant
+    le premier et le dernier point. Le coude est le point le plus éloigné
+    de cette droite.
+
+    Principe mathématique :
+    ----------------------
+    Pour chaque point P_i, on calcule :
+    1. Le vecteur v_i du premier point à P_i
+    2. La projection de v_i sur la droite (premier-dernier point)
+    3. La distance perpendiculaire = ||v_i - proj(v_i)||
+
+    Formule de projection :
+        proj_l(v) = (v · l_norm) * l_norm
+    où l_norm est le vecteur directeur normalisé de la droite.
+
+    Args:
+        points (list ou array): Liste de valeurs numériques représentant
+                                une courbe (ex: précisions, inerties, scores)
+                                Les points n'ont pas besoin d'être triés.
+
+    Returns:
+        int: Indice du point de coude dans la liste
+             - Si moins de 3 points : retourne len(points) - 1
+             - Si le coude est à l'indice 0 ou 1 : retourne len(points) - 1
+               (indique l'absence de coude significatif)
+
+    Complexité:
+        Temps: O(n) où n = len(points)
+        Espace: O(n) pour les tableaux temporaires
+
+    Example:
+        >>> accuracies = [0.95, 0.92, 0.88, 0.75, 0.72, 0.70]
+        >>> elbow_method_v2(accuracies)
+        3  # Le coude est à l'indice 3 (valeur 0.75)
+
+        >>> # Visualisation typique d'un coude
+        >>> # Précision
+        >>> #   |
+        >>> # 1.0|●
+        >>> # 0.9| ●
+        >>> # 0.8|  ●___
+        >>> # 0.7|     ●●●  <- Après le coude, la courbe s'aplatit
+        >>> #   +----------> Nombre de features
+
+    Notes:
+        - Version optimisée avec opérations vectorisées NumPy
+        - Plus performante que les boucles Python pour n > 100
+        - Les coordonnées x sont les indices (0, 1, 2, ..., n-1)
+        - Les coordonnées y sont les valeurs de la liste points
+
+    Voir aussi:
+        - elbow_method() : Version avec lambdas et euclidean()
+        - KneeLocator (kneed package) : Implémentation plus sophistiquée
+    """
+    n_points = len(points)
+
+    # Cas limite : moins de 3 points, pas de coude possible
+    if n_points < 3:
+        return n_points - 1
+
+    # Créer les coordonnées (x, y) de tous les points
+    # x : indices [0, 1, 2, ..., n-1]
+    # y : valeurs de la liste points
+    x = np.arange(n_points)
+    y = np.array(points)
+
+    # Vecteur directeur de la droite reliant le premier au dernier point
+    # vecteur_ligne = (Δx, Δy) = (n-1, y[-1] - y[0])
+    vecteur_ligne = np.array([x[-1] - x[0], y[-1] - y[0]])
+
+    # Normaliser le vecteur pour obtenir un vecteur unitaire
+    # l_norm = l / ||l||
+    # Nécessaire pour les calculs de projection
+    vecteur_ligne_norm = vecteur_ligne / np.sqrt(np.sum(vecteur_ligne ** 2))
+
+    # Créer les vecteurs du premier point (x[0], y[0]) à tous les autres points
+    # vecteurs_points[i] = (x[i] - x[0], y[i] - y[0])
+    # Shape: (n_points, 2) - chaque ligne est un vecteur 2D
+    vecteurs_points = np.vstack([x - x[0], y - y[0]]).T
+
+    # Calcul vectorisé des distances perpendiculaires
+    # -------------------------------------------------
+    # Pour chaque vecteur v_p :
+    # 1. Produit scalaire : v_p · l_norm (résultat: scalaire pour chaque point)
+    # 2. Projection : (v_p · l_norm) * l_norm (vecteur dans la direction de la droite)
+    # 3. Rejet : v_p - proj(v_p) (composante perpendiculaire)
+    # 4. Distance : ||rejet||
+    #
+    # np.outer() crée une matrice où chaque ligne est la projection du point correspondant
+    # Formule finale : distances[i] = ||v_p[i] - proj_l(v_p[i])||
+    distances = np.linalg.norm(
+        vecteurs_points - np.outer(
+            np.dot(vecteurs_points, vecteur_ligne_norm),  # Projections scalaires
+            vecteur_ligne_norm  # Vecteur directeur normalisé
+        ),
+        axis=1  # Calculer la norme de chaque ligne (= chaque vecteur de rejet)
+    )
+
+    # Trouver l'indice du point avec la distance maximale
+    indice = np.argmax(distances)
+
+    # Retourner l'indice du coude
+    # Si indice <= 1, cela indique qu'il n'y a pas de coude clair
+    # (le point le plus éloigné est au début), donc on retourne le dernier indice
+    return indice if indice > 1 else n_points - 1
+
 
 def proto_precision_tikz(
         tolerances,
@@ -781,6 +1030,68 @@ def proto_precision_tikz(
 """
 
     return latex_content
+
+
+def proto_precision_tab(
+        tolerances,
+        datasets,
+        store
+):
+    # add the resize box to ensure the scale of the table will be contain's inside the width space avalable.
+    # start setting up the tabular dimensions setting
+    methods = list(store.keys())
+    table_header = """
+        %\\begin{sidewaystable}
+        \\resizebox{\\textwidth}{!}{
+
+        \\begin{tabular}{|c|""" + ("c|" * (len(datasets)*len(methods)))
+    # setup information columns headears
+    nbMCol = len(datasets)*len(methods)
+    # add col for total results
+    table_header += "} "
+    # add separator clines
+    nb_cols = (1 + nbMCol)
+    table_header += " \\cline{1-" + str(nb_cols) + "}"  # corresponding to the number of columns
+
+    # build the first line: metrics' line
+    lines = " & "
+    # add the blank block
+    lines+= " & ".join(["""\\multicolumn{""" + str(
+        len(methods)) + """}{c|}{"""+str(Dat)+"""}""" for Dat in datasets])
+    lines += """\\\\
+     \\cline{2-""" + str(nb_cols) + """}
+    """
+    lines += (" & "+" & ".join(methods))*len(datasets)
+    lines += """\\\\
+         \\cline{1-""" + str(nb_cols) + """}
+        """
+
+    # pretty_print(methods)
+    for t, tol in enumerate(tolerances):
+        lines += f"P ({tol*100}\\%)"
+        for folder in datasets:
+            for mi, meth in enumerate(methods):
+
+                lines += f""" & {store[meth][tol][folder]:.2f}"""
+        lines += ("""\\\\ """ + """ \\cline{2-""" + str(nb_cols) + """}
+
+                                        """) if t != len(tolerances) - 1 else (
+                """\\\\ """)
+        # lines += """
+        # \\hline
+        # \\hline
+        #
+        # """
+
+    lines += """
+
+    \\end{tabular}
+    }
+    %\\end{sidewaystable}"""
+
+    table = table_header + lines
+    return table
+
 def vector_matching_precision(v1, v2, tolerance=0):
     """
     Calcule la précision de correspondance entre deux vecteurs.
@@ -800,25 +1111,6 @@ def vector_matching_precision(v1, v2, tolerance=0):
     return precision
 
 
-def find_knee_manual(x, y):
-    """
-    Finds the knee point by calculating the maximum distance from a line.
-    """
-    # Normalize the data
-    x_norm = (x - x.min()) / (x.max() - x.min())
-    y_norm = (y - y.min()) / (y.max() - y.min())
-
-    # Line connecting the first and last points
-    line_coeffs = np.polyfit(np.array([x_norm[0], x_norm[-1]]),
-                             np.array([y_norm[0], y_norm[-1]]), 1)
-
-    # Calculate perpendicular distance from each point to the line
-    distances = np.abs(line_coeffs[0] * x_norm - y_norm + line_coeffs[1]) / np.sqrt(line_coeffs[0] ** 2 + 1)
-
-    # Find the index of the maximum distance
-    knee_index = np.argmax(distances)
-
-    return x[knee_index], y[knee_index]
 
 def selection_proto(records, output_path):
     # result structure
@@ -828,42 +1120,38 @@ def selection_proto(records, output_path):
         # 'QuartileThreshold':[],
         'elbowThreshold': [],
         'cumulative_difference_threshold': [],
+        'otsu': [],
+        'jenkspy':[],
         # 'variance_explained_threshold':[],
         'realThreshold': []
     }
     res = {}
-    p = 4
+    p = 6
     getTheBestAcc = lambda store, k: round(max([acc for layer, _, acc in store if k == layer]), p)
     real_values = {}
     elbow_values = {}
     cusum_values = {}
+    otsu_values = {}
+    jenkspy_values = {}
     # walk on the datasets
     for dataset in records.keys():
         # walk on alphas
-        res[dataset] = {key: {} for key in ['CUSUM', 'Elbow', 'réel']}
+        res[dataset] = {key: {} for key in ['CUSUM', 'Elbow', 'otsu', 'jenkspy', 'réel']}
         real_values[dataset] = []
         elbow_values[dataset] = []
         cusum_values[dataset] = []
+        otsu_values[dataset] = []
+        jenkspy_values[dataset] = []
         for alpha in records[dataset].keys():
             if not isinstance(records[dataset][alpha]['predicted_best_k'], list):
                 resultDict['dataset'].append(dataset)
                 resultDict['alpha'].append(alpha)
-                # resultDict['QuartileThreshold'].append(getTheBestAcc(records[dataset][alpha]['list'],records[dataset][alpha]['predicted_best_k'][0]))
-                # elb = elbow_method(list(records[dataset][alpha]['accuracies']))
-                x = range(1, len(list(records[dataset][alpha]['accuracies'])) + 1)
-
-                from kneed import KneeLocator
-                kn = KneeLocator(x, list(records[dataset][alpha]['accuracies']), curve='convex', direction='decreasing')
-                # print(elb, kn.knee, int(kn.knee))
-                elb = int(kn.knee)
-                elb = elb if elb < max([layer for layer, _, _ in records[dataset][alpha]['list']]) else max(
-                    [layer for layer, _, _ in records[dataset][alpha]['list']])
-                # print(elb, records[dataset][alpha]['list'])
+                elb = elbow_method(records[dataset][alpha]['accuracies'])
                 resultDict['elbowThreshold'].append(getTheBestAcc(records[dataset][alpha]['list'], elb))
                 res[dataset]['Elbow'][alpha] = getTheBestAcc(records[dataset][alpha]['list'], elb)
                 elbow_values[dataset].append(res[dataset]['Elbow'][alpha])
 
-                cum = cumulative_difference_threshold(list(records[dataset][alpha]['accuracies']))
+                cum = cusum_threshold_v1(records[dataset][alpha]['accuracies'])
                 cum = cum if cum < max([layer for layer, _, _ in records[dataset][alpha]['list']]) else max(
                     [layer for layer, _, _ in records[dataset][alpha]['list']])
                 resultDict['cumulative_difference_threshold'].append(
@@ -871,14 +1159,35 @@ def selection_proto(records, output_path):
                 res[dataset]['CUSUM'][alpha] = getTheBestAcc(records[dataset][alpha]['list'], cum)
                 cusum_values[dataset].append(res[dataset]['CUSUM'][alpha])
 
+                otsu = otsu_method(records[dataset][alpha]['accuracies'])
+                # print(otsu)
+                otsu = otsu if otsu < max([layer for layer, _, _ in records[dataset][alpha]['list']]) else max(
+                    [layer for layer, _, _ in records[dataset][alpha]['list']])
+                resultDict['otsu'].append(
+                    getTheBestAcc(records[dataset][alpha]['list'], otsu))
+                res[dataset]['otsu'][alpha] = getTheBestAcc(records[dataset][alpha]['list'], otsu)
+                otsu_values[dataset].append(res[dataset]['otsu'][alpha])
+
+                jenkspy = jenkspy_method(records[dataset][alpha]['accuracies'])
+                jenkspy = jenkspy if jenkspy < max([layer for layer, _, _ in records[dataset][alpha]['list']]) else max(
+                    [layer for layer, _, _ in records[dataset][alpha]['list']])
+                resultDict['jenkspy'].append(
+                    getTheBestAcc(records[dataset][alpha]['list'], jenkspy))
+                res[dataset]['jenkspy'][alpha] = getTheBestAcc(records[dataset][alpha]['list'], jenkspy)
+                jenkspy_values[dataset].append(res[dataset]['jenkspy'][alpha])
+
                 # resultDict['variance_explained_threshold'].append(getTheBestAcc(records[dataset][alpha]['list'],variance_explained_threshold(list(records[dataset][alpha]['accuracies'].values()))))
                 resultDict['realThreshold'].append(
                     round(max([acc for _, _, acc in records[dataset][alpha]['list']]), p))
                 res[dataset]['réel'][alpha] = round(max([acc for _, _, acc in records[dataset][alpha]['list']]), p)
-                real_values[dataset].append(res[dataset]['réel'][alpha])
+                real_values[dataset].append(round(max([acc for _, _, acc in records[dataset][alpha]['list']]), p))
+                #
+                # print(f"----elbow {dataset}, {alpha}, {res[dataset]['réel'][alpha]}, {elb}")
+                # print(round(max([acc for layer, _, acc in records[dataset][alpha]['list'] if elb == layer]), p) == res[dataset]['réel'][alpha])
 
     dat = pd.DataFrame(resultDict)
-    return dat, build_compare_feature_selection_protocole(res), (real_values,elbow_values,cusum_values)
+    # pretty_print(res)
+    return dat, build_compare_feature_selection_protocole(res), (real_values,elbow_values,cusum_values, otsu_values, jenkspy_values)
 
 
 def analyse_files(
@@ -889,7 +1198,9 @@ def analyse_files(
         macro_metrics,
         result_folder,
         list_of_accuracy,
-        layer
+        layer,
+        list_of_f1=None
+
 ):
     for index4, model in enumerate(models_name):
         # now fetch ours results to store
@@ -961,14 +1272,38 @@ def analyse_files(
                             #     print(result_folder, layer, config)
                             if 'acc' in metric and 'MX' in config:
                                 # if 'LD4' in result_folder:
-                                # print(result_folder, layer)
+                                # print(result_folder, layer) list_of_f1
                                 list_of_accuracy.append((layer, model, files[approach][logic][config][result].loc[model, metric]))
-    print(layer,list_of_accuracy)
+                            # if 'f1' in metric and 'MX' in config:
+                            #     # if 'LD4' in result_folder:
+                            #     # print(result_folder, layer) list_of_f1
+                            #     list_of_f1.append((layer, model, files[approach][logic][config][result].loc[model, metric]))
+    # print(layer,list_of_accuracy)
+    # print(layer)
     return (list_of_accuracy, macro_metrics)
 
 def count_pattern_matches(dataframe, pattern):
     """Count how many feature names in dataframe match the regex pattern."""
     return sum(1 for key in dataframe.index if re.match(pattern, key))
+
+
+def sum_absolute_matches(dataframe, pattern):
+    """Calcule la somme des valeurs absolues des colonnes pour les lignes correspondant au pattern."""
+    # On filtre les index qui correspondent au regex pattern
+    matched_df = dataframe[dataframe.index.str.contains(pattern, regex=True)]
+
+    # On calcule la somme des valeurs absolues pour chaque ligne (axis=1)
+    # puis on retourne la somme totale ou la série selon votre besoin
+    return matched_df.abs().sum(axis=1)
+
+
+def sum_absolute_matches_total(dataframe, pattern):
+    """Retourne la somme globale des valeurs absolues pour les lignes dont l'index matche le pattern."""
+    # 1. Sélectionner les lignes via l'index avec le regex
+    matched_df = dataframe[dataframe.index.str.contains(pattern, regex=True, na=False)]
+
+    # 2. Somme de toutes les valeurs absolues (toutes lignes et colonnes confondues)
+    return matched_df.abs().to_numpy().sum()
 
 def analyse_files_for_shap_value(
         models_name,
@@ -1013,18 +1348,18 @@ def analyse_files_for_shap_value(
 
     }
     global_details_metrics_depth_1 = {}
-
+    p=3
     # pretty_print(files)
     for index4, model in enumerate(models_name):
         global_details_metrics_depth_1[model] = {key: deepcopy(template_descripteurs) for key in
                                                  result_folders}
-        for result_folder in result_folders:
+        for result_folder in list(files.keys()):
             for result in list(range(len(files[result_folder]["MlC"]["BOT"]["CXY"]))):  # each result file's containing evaluation metrics
                 # print(result, len(files[result_folder]["MlC"]["BOT"]["CXY"]), files[result_folder]["MlC"]["BOT"]["CXY"][result].columns)
                 if sum([k in files[result_folder]["MlC"]["BOT"]["CXY"][result].columns for k in ["precision", "accuracy", "recall", "f1-score"]]) == 4:
                     files[result_folder]["MlC"]["BOT"]["CXY"][result].drop(["precision", "accuracy", "recall", "f1-score"], axis=1, inplace=True)
                 colo = files[result_folder]["MlC"]["BOT"]["CXY"][result].columns
-                print(colo)
+                # print(colo)
                 for att in colo:
                     if not (att in ["accuracy", "precision", "recall", "f1-score", "financial-cost"]):
                         if YN_PER_INTER_F(att):
@@ -1138,7 +1473,7 @@ def analyse_files_for_shap_value(
         for folder in global_details_metrics_depth_1[model].keys():
             for att in global_details_metrics_depth_1[model][folder].keys():
                 # print(global_details_metrics_depth_1[model][folder][att], model, folder, att)
-                print(model, folder)
+                # print(model, folder)
                 # pretty_print(global_details_metrics_depth_1[model][folder])
                 # pretty_print(np.mean(global_details_metrics_depth_1[model][folder][att], axis=0))
                 global_details_metrics_depth_1[model][folder][att] = np.mean(global_details_metrics_depth_1[model][folder][att], axis=0)
@@ -1147,13 +1482,14 @@ def analyse_files_for_shap_value(
 
 
     # pretty_print(global_details_metrics_depth_1)
-    summary = {model: {folder: {'GLO_CX': 0, 'GLO_MX': 0, 'PER_CX': 0, 'PER_MX': 0, 'PER_CY': 0} for folder in result_folders} for model in models_name}
-    counter1 = {'GLO_CX': 0, 'GLO_MX': 0, 'PER_CX': 0, 'PER_MX': 0, 'PER_CY': 0}
+    summary = {model: {folder: {'Classic':0, 'GLO_CX': 0, 'GLO_MX': 0, 'PER_CX': 0, 'PER_MX': 0, 'PER_CY': 0} for folder in result_folders} for model in models_name}
+    counter1 = {'Classic':0, 'GLO_CX': 0, 'GLO_MX': 0, 'PER_CX': 0, 'PER_MX': 0, 'PER_CY': 0}
     for i, model in enumerate(models_name):
         tt = []
         # shapes += """
         # """
-        for fold in result_folders:
+        for fold in files.keys():
+            # print('>>>>>>>>>', fold, model)
             agg = pd.DataFrame(global_details_metrics_depth_1[model][fold]).T
             agg.columns = [f'Classe {i}' for i in range(agg.shape[1])]
 
@@ -1161,17 +1497,19 @@ def analyse_files_for_shap_value(
             agg['total_importance'] = agg.abs().sum(axis=1)
             agg = agg.sort_values('total_importance', ascending=False)
             agg = agg.drop('total_importance', axis=1)
-            summary[model][fold]['GLO_CX'] = count_pattern_matches(agg.head(top), r'^.*_GLO_CX$')
-            summary[model][fold]['GLO_MX'] = count_pattern_matches(agg.head(top), r'^.*_GLO_MX$')
-            summary[model][fold]['PER_MX'] = count_pattern_matches(agg.head(top), r'^.*_PER_MX$')
-            summary[model][fold]['PER_CX'] = count_pattern_matches(agg.head(top), r'^.*_PER_CX$')
-            summary[model][fold]['PER_CY'] = count_pattern_matches(agg.head(top), r'^Y.*_PER$')
+            summary[model][fold]['all'] = sum_absolute_matches_total(agg.head(top), r'.*')
+            summary[model][fold]['GLO_CX'] = round(sum_absolute_matches_total(agg.head(top), r'^.*_GLO_CX$')/summary[model][fold]['all'], p)
+            summary[model][fold]['GLO_MX'] = round(sum_absolute_matches_total(agg.head(top), r'^.*_GLO_MX$')/summary[model][fold]['all'], p)
+            summary[model][fold]['PER_MX'] = round(sum_absolute_matches_total(agg.head(top), r'^.*_PER_MX$')/summary[model][fold]['all'], p)
+            summary[model][fold]['PER_CX'] = round(sum_absolute_matches_total(agg.head(top), r'^.*_PER_CX$')/summary[model][fold]['all'], p)
+            summary[model][fold]['PER_CY'] = round(sum_absolute_matches_total(agg.head(top), r'^Y.*_PER$')/summary[model][fold]['all'], p)
+            summary[model][fold]['Classic'] = round(sum_absolute_matches_total(agg.head(top), r'^(?!.*(?:_GLO_CX|_GLO_MX|_PER_MX|_PER_CX|Y.*_PER)).*$')/summary[model][fold]['all'], p)
             summary[model][fold]['nbAtt'] = len(agg.index)
 
             tt.append(f"""{{{create_standalone_shap_plot(agg.head(top), model, fold, top)}}}""")
 
         tab_shapes[model] = tt
-
+        # pretty_print(summary)
         # ----------------------------- print the summary ----------------------------
         table_header = """
             %\\begin{sidewaystable}
@@ -1211,8 +1549,8 @@ def analyse_files_for_shap_value(
             [sum([store[model][folder][type] for folder in store[model].keys() for type in types]) for model in
              store.keys()])
         # fetch folders
-        for folder in result_folders:
-            print(summary)
+        for folder in files.keys():
+            # print(summary)
             lines += """
                 \\multirow{3}{*}{\\textbf{""" + folder + """ (""" + str(summary[list(models_name.keys())[0]][folder]['nbAtt']) + """)}}
                 """
@@ -1224,9 +1562,9 @@ def analyse_files_for_shap_value(
                     # add desc info for each model
                     lines += """& """ + str(summary[model][folder][desc])
                 # add total of the current
-                lines += """& """ + str(sum_type(summary, folder, desc)) if max_sum_type(summary, folder,
+                lines += """& """ + str(round(sum_type(summary, folder, desc),p)) if max_sum_type(summary, folder,
                                                                                          counter1.keys()) != sum_type(
-                    summary, folder, desc) else "& \\textbf{" + str(sum_type(summary, folder, desc)) + "}"
+                    summary, folder, desc) else "& \\textbf{" + str(round(sum_type(summary, folder, desc),p)) + "}"
                 # back to next line
                 lines += " \\\\ "
                 lines += " \\cline{1-" + str(nb_cols) + """}
@@ -1236,9 +1574,9 @@ def analyse_files_for_shap_value(
         lines += """
             \\multicolumn{2}{|c|}{\\textbf{TOTAL}}"""
         for model in models_name:
-            lines += " & " + str(sum_mod(summary, model, counter1.keys())) if sum_mod(summary, model,
-                                                                                      counter1.keys()) != max_sum_mod(
-                summary, counter1.keys()) else "& \\textbf{" + str(sum_mod(summary, model, counter1.keys())) + "}"
+            lines += " & " + str(round(sum_mod(summary, model, list({*list(counter1.keys())}-{'Classic'})),p)) if sum_mod(summary, model,
+                                                                                      list({*list(counter1.keys())}-{'Classic'})) != max_sum_mod(
+                summary, list({*list(counter1.keys())}-{'Classic'})) else "& \\textbf{" + str(round(sum_mod(summary, model, list({*list(counter1.keys())}-{'Classic'})),p)) + "}"
         lines += " & "
         lines += " \\\\ "
         lines += " \\cline{1-" + str(nb_cols) + """}

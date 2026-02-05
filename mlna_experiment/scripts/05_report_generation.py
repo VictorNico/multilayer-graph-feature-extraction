@@ -39,7 +39,7 @@ def check_completed_folder(
         alphas.append(0.85)
 
     children_folder = [dirnames for _, dirnames, _ in os.walk(f'{results_path}')][0]
-    print(alphas,children_folder)
+    # print(alphas,children_folder)
     # look for a flag file for each child
     completed = []  # where we store completed children
     for child in children_folder:
@@ -122,7 +122,7 @@ def metric_extraction(
     if approach is None:
         approach = ['MlC', 'MCA']
     if logics is None:
-        logics = ['GLO', 'PER', 'GAP']
+        logics = ['GLO', 'PER', 'GAP'] if gap is True else ['GLO', 'PER']
     if configs is None:
         configs = ['MX', 'CX', 'CY', 'CXY']
     if completed_folder is None:
@@ -135,6 +135,7 @@ def metric_extraction(
 
     # define stores
     macro_store = build_macro_store(approach, logics, configs, metrics, completed_folder)
+    elb_macro_store = build_macro_store(approach, logics, configs, metrics, completed_folder)
     selection_store = {
         folder: {key: {'real_best_k': [], 'predicted_best_k': [], 'value': [], 'model': []} for key in alphas} for
         folder in completed_folder
@@ -161,8 +162,11 @@ def metric_extraction(
                               file in files].index(True)
                          ]
             mnifs_config = read_model(path=mnifs_path)
-            selection_store[result_folder][alpha]['accuracies'] = list(mnifs_config['model'].keys())
+            selection_store[result_folder][alpha]['mnifs'] = mnifs_config
+            selection_store[result_folder][alpha]['accuracies'] = list(mnifs_config['model'].values())
             selection_store[result_folder][alpha]['predicted_best_k'] = mnifs_config['bestK']
+            elb = otsu_method(list(mnifs_config['model'].values()))
+            # print('otsu', elb)
 
             if sum([f'classic_metric' in file for _, _, files in
                     os.walk(cwd + f'{result_folder}/evaluation') for
@@ -208,6 +212,7 @@ def metric_extraction(
             #         index_col=index_col
             #     ))
             # exit(0)
+
             list_of_accuracy, macro_store = analyse_files(
                 models_name,
                 metrics,
@@ -234,7 +239,7 @@ def metric_extraction(
                 list_of_accuracy,
                 1
             )
-            print(list_of_accuracy)
+            # print(list_of_accuracy)
             if os.path.isdir(f'{cwd}/{result_folder}/{alpha}/{target_columns_type}/mlna_2'):
                 list_of_accuracy, macro_store = analyse_files(
                     models_name,
@@ -262,12 +267,50 @@ def metric_extraction(
                     list_of_accuracy,
                     2
                 )
+
+
+            elif os.path.isdir(f'{cwd}/{result_folder}/{alpha}/{target_columns_type}{"/select"*(elb>1)}/mlna_{elb}{"_b"*(elb>1)}'):
+                # print(f'{cwd}/{result_folder}/{alpha}/{target_columns_type}{"/select"*(elb>1)}/mlna_{elb}{"_b" * (elb > 1)}')
+
+                att = [dirnames for _, dirnames, _ in
+                       os.walk(f'{cwd}/{result_folder}/{alpha}/{target_columns_type}{"/select"*(elb>1)}/mlna_{elb}{"_b"*(elb>1)}')][0]
+
+                # print(f'{result_folder}/{alpha}/{target_columns_type}/select/mlna_{elb}_b/{att}')
+                # print([dirnames for _, dirnames, _ in
+                #        os.walk(f'{cwd}/{result_folder}/{alpha}/{target_columns_type}/select/mlna_{elb}_b')])
+                list_of_accuracy, elb_macro_store = analyse_files(
+                    models_name,
+                    metrics,
+                    load_results(
+                        f'{cwd}/{result_folder}',
+                        target_columns_type,
+                        elb,
+                        alpha,
+                        per=per,
+                        glo=glo,
+                        mix=gap,
+                        isRand=False,
+                        match=lambda x: True,
+                        attributs=att,
+                        isBest=elb>1,
+                        dataset_delimiter=dataset_delimiter,
+                        encoding=encoding,
+                        index_col=index_col
+                    ),
+                    classic_f,
+                    elb_macro_store,
+                    result_folder,
+                    list_of_accuracy,
+                    elb
+                )
+
             ## identify the number of existing layer storage in best k
             mlna_folders_names = \
                 [dirnames for _, dirnames, _ in os.walk(f'{cwd}/{result_folder}/{alpha}/{target_columns_type}/select')][
                     0]
             mlna_folders_names = sorted([int(el.split("_")[1]) for el in mlna_folders_names if "mlna" in el])
             # print(result_folder, mlna_folders_names, "//", alpha, mlna_folders_names)
+
             for index3, layer in enumerate(mlna_folders_names):  # on layer
                 att = [dirnames for _, dirnames, _ in
                        os.walk(f'{cwd}/{result_folder}/{alpha}/{target_columns_type}/select/mlna_{layer}_b')][0]
@@ -305,8 +348,10 @@ def metric_extraction(
             selection_store[result_folder][alpha]['real_best_k'].append(list_of_accuracy[0][0])
             selection_store[result_folder][alpha]['model'].append(list_of_accuracy[0][1])
             selection_store[result_folder][alpha]['value'].append(list_of_accuracy[0][2])
-
-    return macro_store, selection_store
+    # print(elb_macro_store)
+    # print(macro_store)
+    # print(selection_store)
+    return elb_macro_store, macro_store, selection_store
 
 
 def shap_extraction(
@@ -354,7 +399,7 @@ def shap_extraction(
         alphas.append(0.85)
 
     # fetch completed folders
-    print('coml',completed_folder)
+    # print('coml',completed_folder)
     shapStore = {
         k: {
             'MlC': {
@@ -369,6 +414,8 @@ def shap_extraction(
             }
         } for k in completed_folder
     }
+
+
     for index, alpha in enumerate(alphas):  # on alpha
         for index2, result_folder in enumerate(completed_folder):  # on result folder name
             if sum([f"MNIFS_{result_folder}_best_features" in file for _, _, files in
@@ -388,34 +435,44 @@ def shap_extraction(
                               file in files].index(True)
                          ]
             mnifs_config = read_model(path=mnifs_path)
-            elb = elbow_method(list(mnifs_config['model'].keys()))
-            ## identify the number of existing layer storage in best k
-            att = [dirnames for _, dirnames, _ in
-                   os.walk(f'{cwd}/{result_folder}/{alpha}/{target_columns_type}/select/mlna_{elb}_b')][0]
-
-            temp = load_results(
-                f'{cwd}{result_folder}',
-                target_columns_type,
-                elb,
-                alpha,
-                per=False,
-                glo=False,
-                mix=False,
-                bot=True,
-                isRand=False,
-                match=lambda x: True,
-                attributs=att,
-                isBest=True,
-                dataset_delimiter=dataset_delimiter,
-                encoding=encoding,
-                index_col=index_col
-            )
-            print(f'{cwd}{result_folder}/{alpha}/{target_columns_type}/select/mlna_{elb}_b/{att}/mixed/both/evaluation')
-            # pretty_print(temp)
-            shapStore[result_folder]['MlC']['BOT']['CXY'] = shapStore[result_folder]['MlC']['BOT']['CXY'] + \
-                                                            temp['MlC']['BOT']['CXY']
-            shapStore[result_folder]['MCA']['BOT']['CXY'] = shapStore[result_folder]['MCA']['BOT']['CXY'] + \
+            elb = otsu_method(list(mnifs_config['model'].values()))
+            if elb > 1:
+                # print('/////////////', result_folder, alpha, elb)
+                # print(elb)
+                ## identify the number of existing layer storage in best k
+                att = [dirnames for _, dirnames, _ in
+                       os.walk(f'{cwd}/{result_folder}/{alpha}/{target_columns_type}/select/mlna_{elb}_b')][0]
+                # pretty_print([dirnames for _, dirnames, _ in
+                #        os.walk(f'{cwd}/{result_folder}/{alpha}/{target_columns_type}/select/mlna_{elb}_b')])
+                temp = load_results(
+                    f'{cwd}{result_folder}',
+                    target_columns_type,
+                    elb,
+                    alpha,
+                    per=False,
+                    glo=False,
+                    mix=False,
+                    bot=True,
+                    isRand=False,
+                    match=lambda x: True,
+                    attributs=att,
+                    isBest=True,
+                    dataset_delimiter=dataset_delimiter,
+                    encoding=encoding,
+                    index_col=index_col
+                )
+                # print(f'{cwd}{result_folder}/{alpha}/{target_columns_type}/select/mlna_{elb}_b/{att}/mixed/both/evaluation')
+                # pretty_print(temp)
+                shapStore[result_folder]['MlC']['BOT']['CXY'] = shapStore[result_folder]['MlC']['BOT']['CXY'] + \
+                                                                temp['MlC']['BOT']['CXY']
+                shapStore[result_folder]['MCA']['BOT']['CXY'] = shapStore[result_folder]['MCA']['BOT']['CXY'] + \
                                                             temp['MCA']['BOT']['CXY']
+            else:
+                print('<<<<<<<<', elb, result_folder, shapStore.keys())
+
+    for result_folder in completed_folder:
+        if len(shapStore[result_folder]['MCA']['BOT']['CXY']) == 0 and len(shapStore[result_folder]['MlC']['BOT']['CXY']) == 0:
+            del shapStore[result_folder]
 
     if sum([f'classic_metric' in file for _, _, files in
             os.walk(cwd + f'/{result_folder}/evaluation') for
@@ -463,7 +520,7 @@ def main():
 
     # Récupération des arguments
     args = parser.parse_args()
-    print(args)
+    # print(args)
     config = load_config(f"{args.cwd}/configs/{args.dataset_folder}/config.ini")
 
     encoding = config["PREPROCESSING"]["encoding"]
@@ -479,7 +536,7 @@ def main():
     met_t_name = ['Acc', 'F1']
     environment = load_env_with_path()
 
-    print(args.cwd,environment['alphas'])
+    # print(args.cwd,environment['alphas'])
 
     if sum([f'reporting_completed.dtvni' in file for _, _, files in
             os.walk(args.cwd + f'/{results_dir}{domain}/') for
@@ -494,8 +551,8 @@ def main():
         motif='model_turn_2_completed.dtvni'
     )
     folders = ['ADU', 'GER', 'BAN', 'NUR']
-    print(folders)
-    macro_store, selection_store = metric_extraction(
+    # print(folders)
+    macro_store, elb_macro_store, selection_store = metric_extraction(
         completed_folder=folders,
         alphas=environment['alphas'],
         configs=None,
@@ -504,13 +561,14 @@ def main():
         metrics=metrics,
         glo=True,
         per=True,
-        gap=True,
+        gap=False,
         cwd=f"{args.cwd}/{results_dir}",
         target_columns_type=target_columns_type,
         dataset_delimiter=dataset_delimiter,
         encoding=encoding,
         index_col=index_col
     )
+    # pretty_print(macro_store)
 
     shapPlots = shap_extraction(
         completed_folder=folders,
@@ -525,7 +583,7 @@ def main():
     )
 
     # pretty_print(macro_store)
-    dat, table, (real_values, elbow_values, cusum_values) = selection_proto(selection_store, f"{args.cwd}/{report_dir}")
+    dat, table, (real_values, elbow_values, cusum_values, otsu_values, jenkspy_values) = selection_proto(selection_store, f"{args.cwd}/{report_dir}")
 
     # Tolérances à tester
     tolerances = [0.01, 0.02, 0.03, 0.04, 0.05]
@@ -543,14 +601,32 @@ def main():
     # Calcul des précisions pour chaque tolérance
     elbow_results = {tol: compute_precision(elbow_values, real_values, tol) for tol in tolerances}
     cusum_results = {tol: compute_precision(cusum_values, real_values, tol) for tol in tolerances}
-
-    precision_tab = proto_precision_tikz(
+    otsu_results = {tol: compute_precision(otsu_values, real_values, tol) for tol in tolerances}
+    jenkspy_results = {tol: compute_precision(jenkspy_values, real_values, tol) for tol in tolerances}
+    precision_tab = proto_precision_tab(
                 tolerances,
-                elbow_results,
-                cusum_results,
                 folders,
-                layout_config=None
+                store={
+                    'Elbow': elbow_results,
+                    'CUSUM': cusum_results,
+                    'Otsu': otsu_results,
+                    'Jenkspy': jenkspy_results
+                }
             )
+    # pretty_print({
+    #                 'Elbow': elbow_results,
+    #                 'CUSUM': cusum_results,
+    #                 'Otsu': otsu_results,
+    #                 'Jenkspy': jenkspy_results
+    #             })
+
+    # precision_tab2 = proto_precision_tikz(
+    #     tolerances,
+    #     otsu_results,
+    #     jenkspy_results,
+    #     folders,
+    #     layout_config=None
+    # )
 
     # Sélectionner les meilleures valeurs pour chaque catégorie
     # for config, metric_data in macro_store['real'].items():
@@ -608,25 +684,31 @@ def main():
     # print(macro_store)
     for config, metric_data in macro_store['real'].items():
         for metric, cat_data in metric_data.items():
-            # print(config, metric, cat_data)
-            for cat, (value, algo) in cat_data.items():
-                if value > best_values_real[metric][cat][0] and not("classic" in config):
-                    best_values_real[metric][cat] = (value, algo)
+            print(config, metric, cat_data)
+            for cat, data in cat_data.items():
+                if not isinstance(data, list):
+                #     best_values_real[metric][cat] = (0, "")
+                # else:
+                    (value, algo) = data
+                    if value > best_values_real[metric][cat][0] and not("classic" in config):
+                        best_values_real[metric][cat] = (value, algo)
 
     for config, metric_data in macro_store['gain'].items():
         for metric, cat_data in metric_data.items():
             # print(config, metric, cat_data)
-            for cat, (value, algo) in cat_data.items():
-                if value > best_values_gain[metric][cat][0] and not("classic" in config):
-                    best_values_gain[metric][cat] = (value, algo)
+            for cat, data in cat_data.items():
+                if not isinstance(data, list):
+                    if value > best_values_gain[metric][cat][0] and not("classic" in config):
+                        best_values_gain[metric][cat] = (value, algo)
 
     # Compter le nombre de fois qu'une ligne détient les meilleurs résultats
     # pretty_print(total_best_counts_real)
     for config, metric_data in macro_store['real'].items():
         for metric in metrics:
             # pretty_print(macro_store['real'][config])
+            # pretty_print(macro_store['real'][config][metric])
             for cat in folders:
-                if round(macro_store['real'][config][metric][cat][0], 1) == round(best_values_real[metric][cat][0], 1) and not("classic" in config):
+                if len(macro_store['real'][config][metric][cat]) > 0 and round(macro_store['real'][config][metric][cat][0], 1) == round(best_values_real[metric][cat][0], 1) and not("classic" in config):
                     total_best_counts_real[config] += 1
     total_best_counts_real['classic'] = 0
     # pretty_print(macro_store['gain'])
@@ -634,7 +716,7 @@ def main():
         for metric in metrics:
             # pretty_print(macro_store['gain'][config])
             for cat in folders:
-                if round(macro_store['gain'][config][metric][cat][0], 1) == round(best_values_gain[metric][cat][0], 1) and not("classic" in config):
+                if len(macro_store['gain'][config][metric][cat]) > 0 and round(macro_store['gain'][config][metric][cat][0], 1) == round(best_values_gain[metric][cat][0], 1) and not("classic" in config):
                     total_best_counts_gain[config] += 1
     total_best_counts_gain['classic'] = 0
 
@@ -672,15 +754,19 @@ def main():
             row += config.replace('_', '\\_')
             for metric in metrics:
                 for cat in folders:
-                    value, algo = macro_store[config][metric][cat]
-                    best_value, _ = best_values[metric][cat]
-                    if not real is True:
-                        formatted_value = f"\\textbf{{{value:.1f}}}" if round(value, 1) == round(best_value,
-                                                                                             1) else f"{value:.1f}"
+                    if not isinstance(macro_store[config][metric][cat], list):
+                        value, algo = macro_store[config][metric][cat]
+                        best_value, _ = best_values[metric][cat]
+                        if not real is True:
+                            formatted_value = f"\\textbf{{{value:.1f}}}" if round(value, 1) == round(best_value,
+                                                                                                 1) else f"{value:.1f}"
+                        else:
+                            formatted_value = f"\\textbf{{{value:.3f}}}" if round(value, 3) == round(best_value,
+                                                                                                     3) else f"{value:.3f}"
+                        row += f" & {formatted_value} ({algo})"
                     else:
-                        formatted_value = f"\\textbf{{{value:.3f}}}" if round(value, 3) == round(best_value,
-                                                                                                 3) else f"{value:.3f}"
-                    row += f" & {formatted_value} ({algo})"
+                        best_value, _ = best_values[metric][cat]
+                        row += " & - "
             formatted_total = f"{total_value}"
             if total_value == best_total:
                 formatted_total = f"\\textbf{{{total_value}}}"
@@ -751,12 +837,17 @@ def main():
                         # Trouver les résultats pour ce modèle spécifique
                         model_real_values = sorted(list({(v[0], dictio_prior_conf[conf]  if (not conf in "classic") else 0, conf, macro_store['gain'][conf][metric][folder][index] if (not conf in "classic") else 0) for conf in local_macro.keys() for index, v in enumerate(local_macro[conf][metric][folder]) if v[1] == model}), reverse=True, key= lambda x: (x[0], x[1]))
 
-                        # pretty_print(model_real_values[0])
-                        value = max(list({v[0] for v in local_macro[config][metric][folder] if v[1] == model}))
-                        best_value, _, conf, gain = model_real_values[0]
-                        formatted_value = f"\\textbf{{{value:.3f}}}" if (round(value, 3) == round(best_value,
-                                                                                                     3)) and conf == config else f"{value:.3f}"
-                        row += f" & {formatted_value}"
+                        # pretty_print(local_macro[config][metric][folder])
+                        if len(local_macro[config][metric][folder]) > 0:
+                            value = max(list({v[0] for v in local_macro[config][metric][folder] if v[1] == model}))
+                            best_value, _, conf, gain = model_real_values[0]
+                            # formatted_value = f"\\textbf{{{value:.3f}}}" if (round(value, 3) == round(best_value,
+                            #                                                                              3)) and conf == config else f"{value:.3f}"
+                            formatted_value = f"\\textbf{{{value:.3f}}}" if (round(value, 3) == round(best_value,
+                                                                                                      3)) and (not config in "classic")  else f"{value:.3f}"
+                            row += f" & {formatted_value}"
+                        else:
+                            row += " & -"
 
                 row += f" \\\\ \\hline\n"
                 latex_table += row
@@ -816,13 +907,15 @@ def main():
                 for folder in folders:
                     # chercher les valeurs metrique et les classer
                     # Trouver les résultats pour ce modèle spécifique
-                    model_gain_values = sorted(list({(v[0], dictio_prior_conf[conf]  if (not conf in "classic") else 0, conf, v[1]) for conf in local_macro.keys() for index, v in enumerate(local_macro[conf][metric][folder])}), reverse=True, key= lambda x: (x[0], x[1]))
+                    # model_gain_values = sorted(list({(v[0], dictio_prior_conf[conf]  if (not conf in "classic") else 0, conf, v[1]) for conf in local_macro.keys() for index, v in enumerate(local_macro[conf][metric][folder])}), reverse=True, key= lambda x: (x[0], x[1]))
 
                     # pretty_print(model_gain_values[0])
-                    value = max(list({v[0] for conf in local_macro.keys() for v in local_macro[conf][metric][folder] if v[1] == model}))
-                    best_value, _, conf, algo = model_gain_values[0]
-                    formatted_value = "\\textbf{"+conf.replace('_', '\\_')+f"({value:.1f})"+"}" if (round(value, 1) == round(best_value,
-                                                                                                 1)) and algo == model else conf.replace('_', '\\_')+f"({value:.1f})"
+                    value = list({v[0] for conf in local_macro.keys() for v in local_macro[conf][metric][folder] if v[1] == model})
+                    value = 0 if len(value) < 1 else max(value)
+                    # best_value, _, conf, algo = model_gain_values[0]
+                    # formatted_value = "\\textbf{"+conf.replace('_', '\\_')+f"({value:.1f})"+"}" if (round(value, 1) == round(best_value,
+                    #                                                                              1)) and algo == model else conf.replace('_', '\\_')+f"({value:.1f})"
+                    formatted_value = f"+{value:.1f}\\%" if value > 0 else "+0.0\\%"
                     row += f" & {formatted_value}"
 
             row += f" \\\\ \\hline\n"
@@ -861,7 +954,7 @@ def main():
 
     table_for_config_analysis_per_model_per_metric = compute_table_for_config_analysis_per_model_per_metric(
         macro_store_bak,
-        metrics=['accuracy'],
+        metrics=['accuracy','f1-score'],
         folders=folders
     )
     table_for_config_analysis_per_model_per_metric_1 = compute_table_for_config_analysis_per_model_per_metric(
@@ -933,33 +1026,34 @@ def main():
     _file.close()
 
 
-#     SendReport(
-#         GMAIL_USER_=environment['gmail_user'],
-#         GMAIL_APP_PASSWORD_=environment['gmail_password'],
-#         LATEX_FILE_=filename1,
-#         TO_EMAILS_=environment['recipients'],
-#         CC_EMAILS_=environment['email_cc'],
-#         SUBJECT_=f"Pipeline Report - {timestr}",
-#         EMAIL_BODY_=f"""
-# Hello,
-#
-# Please find attached the automatic report of our machine learning pipeline.
-#
-# This report contains:
-# - Performance analysis of the attribute selection protocol (MNIFS).
-# - The best performance configurations of the experimenetations environment (20 configurations)
-# - SHAPLey values showing attribute contributions for a top k ({top})
-#
-# Report automatically generated on {timestr}.
-#
-# Yours faithfully
-# Pipeline ML System
-# MSc. DJIEMBOU Victor in DS & AI @UY1
-# Junior Data Scientist @freelance
-# Senior FullStack Developer @freelance
-# Community Lead @World
-#     """
-#     )
+    SendReport(
+        GMAIL_USER_=environment['gmail_user'],
+        GMAIL_APP_PASSWORD_=environment['gmail_password'],
+        LATEX_FILE_=filename1,
+        TO_EMAILS_=environment['recipients'],
+        CC_EMAILS_=environment['email_cc'],
+        SUBJECT_=f"Pipeline Report - {timestr}",
+        EMAIL_BODY_=f"""
+Hello,
+
+Please find attached the automatic report of our machine learning pipeline.
+
+This report contains:
+- Performance analysis of the attribute selection protocol (MNIFS).
+- The best performance configurations of the experimenetations environment (20 configurations)
+- SHAPLey values showing attribute contributions for a top k ({top})
+
+Report automatically generated on {timestr}.
+
+Yours faithfully
+Pipeline ML System
+MSc. DJIEMBOU Victor in DS & AI @UY1
+Junior Data Scientist @freelance
+Senior FullStack Developer @freelance
+Community Lead @World
+    """,
+        CAN_SEND=False
+    )
     with open(
             args.cwd + f'/{results_dir}{domain}/reporting_completed.dtvni',
             "a") as fichier:

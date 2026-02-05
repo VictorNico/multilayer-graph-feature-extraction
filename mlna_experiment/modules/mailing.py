@@ -351,7 +351,8 @@ def SendReport(
         TO_EMAILS_,
         CC_EMAILS_,
         SUBJECT_,
-        EMAIL_BODY_
+        EMAIL_BODY_,
+        CAN_SEND=True
 ):
     """Fonction principale - exemple d'utilisation"""
 
@@ -387,17 +388,18 @@ def SendReport(
         pdf_path = sender.compile_latex(LATEX_FILE)
         logger.info("=== FIN COMPILATION LATEX ===")
 
-        # Envoi par email
-        logger.info("=== DÉBUT ENVOI EMAIL ===")
-        sender.send_email(
-            to_emails=TO_EMAILS,
-            cc_emails=CC_EMAILS,
-            subject=SUBJECT,
-            body=EMAIL_BODY,
-            pdf_path=pdf_path,
-            tex_path=LATEX_FILE
-        )
-        logger.info("=== FIN ENVOI EMAIL ===")
+        if CAN_SEND is True:
+            # Envoi par email
+            logger.info("=== DÉBUT ENVOI EMAIL ===")
+            sender.send_email(
+                to_emails=TO_EMAILS,
+                cc_emails=CC_EMAILS,
+                subject=SUBJECT,
+                body=EMAIL_BODY,
+                pdf_path=pdf_path,
+                tex_path=LATEX_FILE
+            )
+            logger.info("=== FIN ENVOI EMAIL ===")
 
         logger.info("🎉 Processus terminé avec succès!")
 
