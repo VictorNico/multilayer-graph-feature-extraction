@@ -107,8 +107,8 @@ def init_models():
         'DT': dtc,
         'RF': rfc,
         'XGB': xgb,
-        'MLP': mlp,
-        'PER': perceptron,
+        # 'MLP': mlp,
+        # 'PER': perceptron,
     }
 
     return clfs

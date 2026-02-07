@@ -78,20 +78,29 @@ for alpha in "${alphas[@]}"; do
     mkdir -p "logs/${short_name}"  # Assure que le dossier logs existe
 
     screen -S "${SCREEN_NAME:0:15}" -dm bash -c "
-      source $VENV_PATH
+      source $VENV_PATH/bin/activate
       {
         echo \"🔹 [\$(date '+%Y-%m-%d %H:%M:%S')] DÉBUT du traitement pour alpha=$alpha\"
 
-        python3 -m scripts.03_graph_construction --cwd=$cwd --dataset_folder=$param1 --alpha=$alpha --turn=1
-        python3 -m scripts.04_model_training --cwd=$cwd --dataset_folder=$param1 --alpha=$alpha --turn=1
+        parallel ::: \
+          \"python3 -m scripts.03_graph_construction --cwd=$cwd --dataset_folder=$param1 --alpha=$alpha --turn=1\" \
+          \"python3 -m scripts.03_graph_construction --graph_with_class --cwd=$cwd --dataset_folder=$param1 --alpha=$alpha --turn=1\"
 
         parallel ::: \
-          \"python3 -m scripts.03_graph_construction --graph_with_class --cwd=$cwd --dataset_folder=$param1 --alpha=$alpha --turn=$param2\" \
-          \"python3 -m scripts.03_graph_construction --cwd=$cwd --dataset_folder=$param1 --alpha=$alpha --turn=$param2\"
+          \"python3 -m scripts.04_model_training --cwd=$cwd --dataset_folder=$param1 --alpha=$alpha --turn=1\" \
+          \"python3 -m scripts.04_model_training --graph_with_class --cwd=$cwd --dataset_folder=$param1 --alpha=$alpha --turn=1\"
 
         parallel ::: \
-          \"python3 -m scripts.04_model_training --cwd=$cwd --dataset_folder=$param1 --alpha=$alpha --turn=$param2\" \
-          \"python3 -m scripts.04_model_training --graph_with_class --cwd=$cwd --dataset_folder=$param1 --alpha=$alpha --turn=$param2\"
+          \"python3 -m scripts.03_graph_construction --graph_with_class --metric='accuracy' --cwd=$cwd --dataset_folder=$param1 --alpha=$alpha --turn=$param2\" \
+          \"python3 -m scripts.03_graph_construction --graph_with_class --metric='f1-score' --cwd=$cwd --dataset_folder=$param1 --alpha=$alpha --turn=$param2\" \
+          \"python3 -m scripts.03_graph_construction --metric='accuracy' --cwd=$cwd --dataset_folder=$param1 --alpha=$alpha --turn=$param2\" \
+          \"python3 -m scripts.03_graph_construction --metric='f1-score' --cwd=$cwd --dataset_folder=$param1 --alpha=$alpha --turn=$param2\"
+
+        parallel ::: \
+          \"python3 -m scripts.04_model_training --metric='accuracy' --cwd=$cwd --dataset_folder=$param1 --alpha=$alpha --turn=$param2\" \
+          \"python3 -m scripts.04_model_training --metric='f1-score' --cwd=$cwd --dataset_folder=$param1 --alpha=$alpha --turn=$param2\" \
+          \"python3 -m scripts.04_model_training --graph_with_class --metric='accuracy' --cwd=$cwd --dataset_folder=$param1 --alpha=$alpha --turn=$param2\" \
+          \"python3 -m scripts.04_model_training --graph_with_class --metric='f1-score' --cwd=$cwd --dataset_folder=$param1 --alpha=$alpha --turn=$param2\"
 
         echo \"✅ [\$(date '+%Y-%m-%d %H:%M:%S')] FIN du traitement pour alpha=$alpha\"
       } > \"$LOG_FILE\" 2>&1
@@ -114,7 +123,10 @@ done
 # Exécution de la génération de rapport
 echo "Étape [5/5] : Génération du rapport..."
 
-python3 -m scripts.05_report_generation --cwd=$cwd --dataset_folder=$param1
+parallel ::: \
+  "python3 -m scripts.05_report_generation --metric='accuracy' --cwd=$cwd --dataset_folder=$param1" \
+  "python3 -m scripts.05_report_generation --metric='f1-score' --cwd=$cwd --dataset_folder=$param1"
+
 echo "✅ Tous les écrans sont terminés. Lancement du rapport..."
 
 

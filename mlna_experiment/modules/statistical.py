@@ -303,7 +303,8 @@ def load_results(
         isBest=False,
         dataset_delimiter=None,
         encoding=None,
-        index_col=None
+        index_col=None,
+        metric=''
 
 ):
     """
@@ -333,7 +334,7 @@ def load_results(
                 'MX': [
                     load_data_set_from_url(path=file, sep=dataset_delimiter, encoding=encoding, index_col=index_col, na_values=None)
                     for attribut in attributs for file in get_filenames(
-                        root_dir=f'{outputs_path}/{alpha}/{_type}{"/select" if isBest is True else ""}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/global/withoutClass/evaluation',
+                        root_dir=f'{outputs_path}/{alpha}/{_type}{"/select/"+metric+"/" if isBest is True else ""}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/global/withoutClass/evaluation',
                         func=lambda x: (MlC_F(x) and GLO_MX_F(x) and (match(x))),
                         verbose=False
                     )
@@ -341,7 +342,7 @@ def load_results(
                 'CX': [
                     load_data_set_from_url(path=file, sep=dataset_delimiter, encoding=encoding, index_col=index_col, na_values=None)
                     for attribut in attributs for file in get_filenames(
-                        root_dir=f'{outputs_path}/{alpha}/{_type}{"/select" if isBest is True else ""}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/global/withClass/evaluation',
+                        root_dir=f'{outputs_path}/{alpha}/{_type}{"/select/"+metric+"/" if isBest is True else ""}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/global/withClass/evaluation',
                         func=lambda x: (MlC_F(x) and GLO_CX_F(x) and (match(x))),
                         verbose=False
                     )
@@ -351,7 +352,7 @@ def load_results(
                 'MX': [
                     load_data_set_from_url(path=file, sep=dataset_delimiter, encoding=encoding, index_col=index_col, na_values=None)
                     for attribut in attributs for file in get_filenames(
-                        root_dir=f'{outputs_path}/{alpha}/{_type}{"/select" if isBest is True else ""}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/personalized/withoutClass/evaluation',
+                        root_dir=f'{outputs_path}/{alpha}/{_type}{"/select/"+metric+"/" if isBest is True else ""}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/personalized/withoutClass/evaluation',
                         func=lambda x: (MlC_F(x) and PER_MX_F(x) and (match(x))),
                         verbose=False
                     )
@@ -359,7 +360,7 @@ def load_results(
                 'CX': [
                     load_data_set_from_url(path=file, sep=dataset_delimiter, encoding=encoding, index_col=index_col, na_values=None)
                     for attribut in attributs for file in get_filenames(
-                        root_dir=f'{outputs_path}/{alpha}/{_type}{"/select" if isBest is True else ""}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/personalized/withClass/evaluation',
+                        root_dir=f'{outputs_path}/{alpha}/{_type}{"/select/"+metric+"/" if isBest is True else ""}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/personalized/withClass/evaluation',
                         func=lambda x: (MlC_F(x) and PER_CX_F(x) and (match(x))),
                         verbose=False
                     )
@@ -367,7 +368,7 @@ def load_results(
                 'CY': [
                     load_data_set_from_url(path=file, sep=dataset_delimiter, encoding=encoding, index_col=index_col, na_values=None)
                     for attribut in attributs for file in get_filenames(
-                        root_dir=f'{outputs_path}/{alpha}/{_type}{"/select" if isBest is True else ""}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/personalized/withClass/evaluation',
+                        root_dir=f'{outputs_path}/{alpha}/{_type}{"/select/"+metric+"/" if isBest is True else ""}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/personalized/withClass/evaluation',
                         func=lambda x: (MlC_F(x) and PER_CY_F(x) and (match(x))),
                         verbose=False
                     )
@@ -375,7 +376,7 @@ def load_results(
                 'CXY': [
                     load_data_set_from_url(path=file, sep=dataset_delimiter, encoding=encoding, index_col=index_col, na_values=None)
                     for attribut in attributs for file in get_filenames(
-                        root_dir=f'{outputs_path}/{alpha}/{_type}{"/select" if isBest is True else ""}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/personalized/withClass/evaluation',
+                        root_dir=f'{outputs_path}/{alpha}/{_type}{"/select/"+metric+"/" if isBest is True else ""}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/personalized/withClass/evaluation',
                         func=lambda x: (MlC_F(x) and PER_CXY_F(x) and (match(x))),
                         verbose=False
                     )
@@ -385,7 +386,7 @@ def load_results(
                 'MX': [
                     load_data_set_from_url(path=file, sep=dataset_delimiter, encoding=encoding, index_col=index_col, na_values=None)
                     for attribut in attributs for file in get_filenames(
-                        root_dir=f'{outputs_path}/{alpha}/{_type}{"/select" if isBest is True else ""}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/mixed/withoutClass/evaluation',
+                        root_dir=f'{outputs_path}/{alpha}/{_type}{"/select/"+metric+"/" if isBest is True else ""}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/mixed/withoutClass/evaluation',
                         func=lambda x: (MlC_F(x) and GAP_MX_F(x) and (match(x))),
                         verbose=False
                     )
@@ -393,7 +394,7 @@ def load_results(
                 'CX': [
                     load_data_set_from_url(path=file, sep=dataset_delimiter, encoding=encoding, index_col=index_col, na_values=None)
                     for attribut in attributs for file in get_filenames(
-                        root_dir=f'{outputs_path}/{alpha}/{_type}{"/select" if isBest is True else ""}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/mixed/withClass/evaluation',
+                        root_dir=f'{outputs_path}/{alpha}/{_type}{"/select/"+metric+"/" if isBest is True else ""}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/mixed/withClass/evaluation',
                         func=lambda x: (MlC_F(x) and GAP_CX_F(x) and (match(x))),
                         verbose=False
                     )
@@ -401,7 +402,7 @@ def load_results(
                 'CY': [
                     load_data_set_from_url(path=file, sep=dataset_delimiter, encoding=encoding, index_col=index_col, na_values=None)
                     for attribut in attributs for file in get_filenames(
-                        root_dir=f'{outputs_path}/{alpha}/{_type}{"/select" if isBest is True else ""}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/mixed/withClass/evaluation',
+                        root_dir=f'{outputs_path}/{alpha}/{_type}{"/select/"+metric+"/" if isBest is True else ""}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/mixed/withClass/evaluation',
                         func=lambda x: (MlC_F(x) and GAP_CY_F(x) and (match(x))),
                         verbose=False
                     )
@@ -409,7 +410,7 @@ def load_results(
                 'CXY': [
                     load_data_set_from_url(path=file, sep=dataset_delimiter, encoding=encoding, index_col=index_col, na_values=None)
                     for attribut in attributs for file in get_filenames(
-                        root_dir=f'{outputs_path}/{alpha}/{_type}{"/select" if isBest is True else ""}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/mixed/withClass/evaluation',
+                        root_dir=f'{outputs_path}/{alpha}/{_type}{"/select/"+metric+"/" if isBest is True else ""}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/mixed/withClass/evaluation',
                         func=lambda x: (MlC_F(x) and GAP_CXY_F(x) and (match(x))),
                         verbose=False
                     )
@@ -420,7 +421,7 @@ def load_results(
                     load_data_set_from_url(path=file, sep=dataset_delimiter, encoding=encoding, index_col=index_col,
                                            na_values=None)
                     for attribut in attributs for file in get_filenames(
-                        root_dir=f'{outputs_path}/{alpha}/{_type}/select/mlna_{k}_b/{attribut}/mixed/both/evaluation',
+                        root_dir=f'{outputs_path}/{alpha}/{_type}/select/{metric}/mlna_{k}_b/{attribut}/mixed/both/evaluation',
                         func=lambda x: (MlC_F(x) and BOT_CXY_F(x) and (match(x))),
                         verbose=False
                     )]
@@ -431,7 +432,7 @@ def load_results(
                 'MX': [
                     load_data_set_from_url(path=file, sep=dataset_delimiter, encoding=encoding, index_col=index_col, na_values=None)
                     for attribut in attributs for file in get_filenames(
-                        root_dir=f'{outputs_path}/{alpha}/{_type}{"/select" if isBest is True else ""}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/global/withoutClass/evaluation',
+                        root_dir=f'{outputs_path}/{alpha}/{_type}{"/select/"+metric+"/" if isBest is True else ""}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/global/withoutClass/evaluation',
                         func=lambda x: (MCA_F(x) and GLO_MX_F(x) and (match(x))),
                         verbose=False
                     )
@@ -439,7 +440,7 @@ def load_results(
                 'CX': [
                     load_data_set_from_url(path=file, sep=dataset_delimiter, encoding=encoding, index_col=index_col, na_values=None)
                     for attribut in attributs for file in get_filenames(
-                        root_dir=f'{outputs_path}/{alpha}/{_type}{"/select" if isBest is True else ""}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/global/withClass/evaluation',
+                        root_dir=f'{outputs_path}/{alpha}/{_type}{"/select/"+metric+"/" if isBest is True else ""}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/global/withClass/evaluation',
                         func=lambda x: (MCA_F(x) and GLO_CX_F(x) and (match(x))),
                         verbose=False
                     )
@@ -449,7 +450,7 @@ def load_results(
                 'MX': [
                     load_data_set_from_url(path=file, sep=dataset_delimiter, encoding=encoding, index_col=index_col, na_values=None)
                     for attribut in attributs for file in get_filenames(
-                        root_dir=f'{outputs_path}/{alpha}/{_type}{"/select" if isBest is True else ""}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/personalized/withoutClass/evaluation',
+                        root_dir=f'{outputs_path}/{alpha}/{_type}{"/select/"+metric+"/" if isBest is True else ""}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/personalized/withoutClass/evaluation',
                         func=lambda x: (MCA_F(x) and PER_MX_F(x) and (match(x))),
                         verbose=False
                     )
@@ -457,7 +458,7 @@ def load_results(
                 'CX': [
                     load_data_set_from_url(path=file, sep=dataset_delimiter, encoding=encoding, index_col=index_col, na_values=None)
                     for attribut in attributs for file in get_filenames(
-                        root_dir=f'{outputs_path}/{alpha}/{_type}{"/select" if isBest is True else ""}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/personalized/withClass/evaluation',
+                        root_dir=f'{outputs_path}/{alpha}/{_type}{"/select/"+metric+"/" if isBest is True else ""}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/personalized/withClass/evaluation',
                         func=lambda x: (MCA_F(x) and PER_CX_F(x) and (match(x))),
                         verbose=False
                     )
@@ -465,7 +466,7 @@ def load_results(
                 'CY': [
                     load_data_set_from_url(path=file, sep=dataset_delimiter, encoding=encoding, index_col=index_col, na_values=None)
                     for attribut in attributs for file in get_filenames(
-                        root_dir=f'{outputs_path}/{alpha}/{_type}{"/select" if isBest is True else ""}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/personalized/withClass/evaluation',
+                        root_dir=f'{outputs_path}/{alpha}/{_type}{"/select/"+metric+"/" if isBest is True else ""}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/personalized/withClass/evaluation',
                         func=lambda x: (MCA_F(x) and PER_CY_F(x) and (match(x))),
                         verbose=False
                     )
@@ -473,7 +474,7 @@ def load_results(
                 'CXY': [
                     load_data_set_from_url(path=file, sep=dataset_delimiter, encoding=encoding, index_col=index_col, na_values=None)
                     for attribut in attributs for file in get_filenames(
-                        root_dir=f'{outputs_path}/{alpha}/{_type}{"/select" if isBest is True else ""}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/personalized/withClass/evaluation',
+                        root_dir=f'{outputs_path}/{alpha}/{_type}{"/select/"+metric+"/" if isBest is True else ""}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/personalized/withClass/evaluation',
                         func=lambda x: (MCA_F(x) and PER_CXY_F(x) and (match(x))),
                         verbose=False
                     )
@@ -483,7 +484,7 @@ def load_results(
                 'MX': [
                     load_data_set_from_url(path=file, sep=dataset_delimiter, encoding=encoding, index_col=index_col, na_values=None)
                     for attribut in attributs for file in get_filenames(
-                        root_dir=f'{outputs_path}/{alpha}/{_type}{"/select" if isBest is True else ""}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/mixed/withoutClass/evaluation',
+                        root_dir=f'{outputs_path}/{alpha}/{_type}{"/select/"+metric+"/" if isBest is True else ""}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/mixed/withoutClass/evaluation',
                         func=lambda x: (MCA_F(x) and GAP_MX_F(x) and (match(x))),
                         verbose=False
                     )
@@ -491,7 +492,7 @@ def load_results(
                 'CX': [
                     load_data_set_from_url(path=file, sep=dataset_delimiter, encoding=encoding, index_col=index_col, na_values=None)
                     for attribut in attributs for file in get_filenames(
-                        root_dir=f'{outputs_path}/{alpha}/{_type}{"/select" if isBest is True else ""}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/mixed/withClass/evaluation',
+                        root_dir=f'{outputs_path}/{alpha}/{_type}{"/select/"+metric+"/" if isBest is True else ""}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/mixed/withClass/evaluation',
                         func=lambda x: (MCA_F(x) and GAP_CX_F(x) and (match(x))),
                         verbose=False
                     )
@@ -499,7 +500,7 @@ def load_results(
                 'CY': [
                     load_data_set_from_url(path=file, sep=dataset_delimiter, encoding=encoding, index_col=index_col, na_values=None)
                     for attribut in attributs for file in get_filenames(
-                        root_dir=f'{outputs_path}/{alpha}/{_type}{"/select" if isBest is True else ""}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/mixed/withClass/evaluation',
+                        root_dir=f'{outputs_path}/{alpha}/{_type}{"/select/"+metric+"/" if isBest is True else ""}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/mixed/withClass/evaluation',
                         func=lambda x: (MCA_F(x) and GAP_CY_F(x) and (match(x))),
                         verbose=False
                     )
@@ -507,7 +508,7 @@ def load_results(
                 'CXY': [
                     load_data_set_from_url(path=file, sep=dataset_delimiter, encoding=encoding, index_col=index_col, na_values=None)
                     for attribut in attributs for file in get_filenames(
-                        root_dir=f'{outputs_path}/{alpha}/{_type}{"/select" if isBest is True else ""}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/mixed/withClass/evaluation',
+                        root_dir=f'{outputs_path}/{alpha}/{_type}{"/select/"+metric+"/" if isBest is True else ""}/{"mlna_" + str(k) if k == 1 else("mlna_" + str(k) if isRand == True else "mlna_" + str(k) + "_b")}/{attribut}/mixed/withClass/evaluation',
                         func=lambda x: (MCA_F(x) and GAP_CXY_F(x) and (match(x))),
                         verbose=False
                     )
@@ -518,7 +519,7 @@ def load_results(
                     load_data_set_from_url(path=file, sep=dataset_delimiter, encoding=encoding, index_col=index_col,
                                            na_values=None)
                     for attribut in attributs for file in get_filenames(
-                        root_dir=f'{outputs_path}/{alpha}/{_type}/select/mlna_{k}_b/{attribut}/mixed/both/evaluation',
+                        root_dir=f'{outputs_path}/{alpha}/{_type}/select/{metric}/mlna_{k}_b/{attribut}/mixed/both/evaluation',
                         func=lambda x: (MCA_F(x) and BOT_CXY_F(x) and (match(x))),
                         verbose=False
                     )]
@@ -1112,7 +1113,7 @@ def vector_matching_precision(v1, v2, tolerance=0):
 
 
 
-def selection_proto(records, output_path):
+def selection_proto(records, output_path, metric):
     # result structure
     resultDict = {
         'dataset': [],
@@ -1146,12 +1147,12 @@ def selection_proto(records, output_path):
             if not isinstance(records[dataset][alpha]['predicted_best_k'], list):
                 resultDict['dataset'].append(dataset)
                 resultDict['alpha'].append(alpha)
-                elb = elbow_method(records[dataset][alpha]['accuracies'])
+                elb = elbow_method(records[dataset][alpha][metric])
                 resultDict['elbowThreshold'].append(getTheBestAcc(records[dataset][alpha]['list'], elb))
                 res[dataset]['Elbow'][alpha] = getTheBestAcc(records[dataset][alpha]['list'], elb)
                 elbow_values[dataset].append(res[dataset]['Elbow'][alpha])
 
-                cum = cusum_threshold_v1(records[dataset][alpha]['accuracies'])
+                cum = cusum_threshold_v1(records[dataset][alpha][metric])
                 cum = cum if cum < max([layer for layer, _, _ in records[dataset][alpha]['list']]) else max(
                     [layer for layer, _, _ in records[dataset][alpha]['list']])
                 resultDict['cumulative_difference_threshold'].append(
@@ -1159,7 +1160,7 @@ def selection_proto(records, output_path):
                 res[dataset]['CUSUM'][alpha] = getTheBestAcc(records[dataset][alpha]['list'], cum)
                 cusum_values[dataset].append(res[dataset]['CUSUM'][alpha])
 
-                otsu = otsu_method(records[dataset][alpha]['accuracies'])
+                otsu = otsu_method(records[dataset][alpha][metric])
                 # print(otsu)
                 otsu = otsu if otsu < max([layer for layer, _, _ in records[dataset][alpha]['list']]) else max(
                     [layer for layer, _, _ in records[dataset][alpha]['list']])
@@ -1168,7 +1169,7 @@ def selection_proto(records, output_path):
                 res[dataset]['otsu'][alpha] = getTheBestAcc(records[dataset][alpha]['list'], otsu)
                 otsu_values[dataset].append(res[dataset]['otsu'][alpha])
 
-                jenkspy = jenkspy_method(records[dataset][alpha]['accuracies'])
+                jenkspy = jenkspy_method(records[dataset][alpha][metric])
                 jenkspy = jenkspy if jenkspy < max([layer for layer, _, _ in records[dataset][alpha]['list']]) else max(
                     [layer for layer, _, _ in records[dataset][alpha]['list']])
                 resultDict['jenkspy'].append(
@@ -1199,7 +1200,7 @@ def analyse_files(
         result_folder,
         list_of_accuracy,
         layer,
-        list_of_f1=None
+        metricA='accuracy'
 
 ):
     for index4, model in enumerate(models_name):
@@ -1270,7 +1271,7 @@ def analyse_files(
 
                             # if 'LD4' in result_folder:
                             #     print(result_folder, layer, config)
-                            if 'acc' in metric and 'MX' in config:
+                            if metricA in metric and 'MX' in config:
                                 # if 'LD4' in result_folder:
                                 # print(result_folder, layer) list_of_f1
                                 list_of_accuracy.append((layer, model, files[approach][logic][config][result].loc[model, metric]))
