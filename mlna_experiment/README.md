@@ -27,6 +27,39 @@
     |- requirements.txt             # list des depentances
     |_ vim.md                       # manuel d'utilisation de vim, un editeur en terminal comme nano
 
+
+## Requierement (.env)
+```dotenv
+# ==============================================
+# CONFIGURATION EMAIL - Fichier .env
+# ==============================================
+
+# Identifiants Gmail
+GMAIL_USER=<EmailAccount>
+GMAIL_APP_PASSWORD=<yourAppPassword>
+
+# Configuration SMTP (optionnel, par défaut Gmail)
+SMTP_SERVER=<smtp.gmail.com | yourSMTP>
+SMTP_PORT=587
+# Can value in set be : 0 < value < 1
+ALPHAS="0.20, 0.50, 0.8"
+# ==============================================
+# DESTINATAIRES EMAIL
+# ==============================================
+
+# Destinataires principaux (séparés par des virgules)
+EMAIL_RECIPIENTS=recipientName1 <Email1>, <...>
+
+# Destinataires en copie (optionnel)
+EMAIL_CC=followName1 <Email1>,<...>
+
+
+# ============================ CODE ===========================
+MAX_CORE=<yourLimit>
+SIZE_DIVIDER=1
+```
+
+
 ## Etapes
 
 * Installer Latex [Facultatif]
