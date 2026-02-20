@@ -221,3 +221,9 @@
 **/data*/
 **/logs*/
 **/reports*/
+!**/data.zip
+
+**/CLAUDE.md
+BATCH3_COMPLETION_STATUS.md
+**/launch2.sh
+**/*-commented.*

@@ -108,7 +108,8 @@ def build_mlg(data, features):
 
     # build edges
     list_of_edges = []
-    list_of_nodes = []
+    nodes_dict = {}   # clé = label nœud, valeur = attributs
+
 
     LIST_OF_CUSTOMERS = get_persons(data)
     LEN_OF_FEATURES = len(features)
@@ -141,19 +142,18 @@ def build_mlg(data, features):
         # layer building
         for i in range(LEN_OF_FEATURES):
             # add nodes
-            list_of_nodes.append(('C' + str(i) + '-U-' + str(el), {'color': 'g'}))
+            nodes_dict[f'C{i}-U-{el}'] = {'color': 'g'}
             for attr in features[i].tolist():  # fetch on home ownership encode values
                 code = f"#{format(255 - 10 * i, '02x')}{format(150 + 9 * i, '02x')}{format(55 + 10 * i, '02x')}"
                 # print(f"{el} <-{data.loc[el,attr]}-> {attr}")
                 if int(data.loc[el, attr]) == 1:  # check if exists relation between both
                     # print(f"{el} <--> {attr}")
-                    # bidirectional relation between home ownership and user
                     list_of_edges.append(('C' + str(i) + '-U-' + str(el), 'C' + str(i) + '-M-' + attr,
                                           {'color': 'b'}))  # add edge to list
                     list_of_edges.append(('C' + str(i) + '-M-' + attr, 'C' + str(i) + '-U-' + str(el),
                                           {'color': 'b'}))  # add edge to list
                     # add nodes
-                    list_of_nodes.append(('C' + str(i) + '-M-' + attr, {'color': colors[i]}))
+                    nodes_dict[f'C{i}-M-{attr}'] = {'color': colors[i]}  # écrasement idempotent
             # add directed relation between user node from C1 and C2
             if i + 1 < LEN_OF_FEATURES:
                 list_of_edges.append(('C' + str(i) + '-U-' + str(el),
@@ -164,7 +164,7 @@ def build_mlg(data, features):
 
     # add edges to the oriented graph
     # print(list_of_nodes)
-    CRP_G.add_nodes_from(list_of_nodes)
+    CRP_G.add_nodes_from(nodes_dict.items())
     CRP_G.add_edges_from(list_of_edges)
 
     # return the graph
@@ -185,11 +185,12 @@ def add_specific_loan_in_mlg(graph, data, features):
     New graph with specific loan in graph
     """
 
-    CRP_G = copy.deepcopy(graph)  # create an empty directed graph
+    CRP_G = graph
 
     # build edges
     list_of_edges = []
     list_of_nodes = []
+    new_modality_nodes = []  # modalités absentes du graphe train
 
     LIST_OF_CUSTOMERS = get_persons(data)
     LEN_OF_FEATURES = len(features)
@@ -230,12 +231,18 @@ def add_specific_loan_in_mlg(graph, data, features):
                 if int(data.loc[el, attr]) == 1:  # check if exists relation between both
                     # print(f"{el} <--> {attr}")
                     # bidirectional relation between attribut and user
+                    modality_node = f"C{i}-M-{attr}"
                     list_of_edges.append(('C' + str(i) + '-U-' + str(el), 'C' + str(i) + '-M-' + attr,
                                           {'color': 'b'}))  # add edge to list
                     list_of_edges.append(('C' + str(i) + '-M-' + attr, 'C' + str(i) + '-U-' + str(el),
                                           {'color': 'b'}))  # add edge to list
                     # add nodes
                     list_of_nodes.append(('C' + str(i) + '-M-' + attr, {'color': colors[i]}))
+
+                    # Nouvelle modalité absente du graphe train
+                    if not graph.has_node(modality_node):
+                        new_modality_nodes.append(modality_node)
+
             # add directed relation between user node from C1 and C2
             if i + 1 < LEN_OF_FEATURES:
                 list_of_edges.append(('C' + str(i) + '-U-' + str(el),
@@ -249,7 +256,11 @@ def add_specific_loan_in_mlg(graph, data, features):
     CRP_G.add_nodes_from(list_of_nodes)
     CRP_G.add_edges_from(list_of_edges)
     # print(f"{list_of_nodes} - {list_of_edges}")
-    return CRP_G
+    return [f"C{i}-U-{el}" for el in LIST_OF_CUSTOMERS for i in range(LEN_OF_FEATURES)], new_modality_nodes
+
+def remove_specific_loan_from_mlg(graph, borrower_nodes, new_modality_nodes):
+    graph.remove_nodes_from(borrower_nodes)      # arêtes supprimées automatiquement
+    graph.remove_nodes_from(new_modality_nodes)  # nettoyage des modalités orphelines
 
 # @profile
 def find_indices(list_to_check, item_to_find):
@@ -382,6 +393,24 @@ def get_inter_node_label(graph):
     return inters
 
 
+def get_all_perso_nodes_labels(graph, borrower, layers):
+    edges = [
+        (A, B)
+        for i in range(layers)
+        for (A, B) in graph.edges([f'C{i}-U-{borrower}'])
+    ]
+    combine, intra, inter = set(), set(), set()
+    for A, B in edges:
+        combine.add(A)
+        combine.add(B)
+        if '-M-' in B: intra.add(B)
+        if '-M-' in A: intra.add(A)
+        if '-U-' in B: inter.add(B)
+        if '-U-' in A: inter.add(A)
+    return list(combine), list(intra), list(inter)
+
+
+
 # @profile
 def get_combine_perso_nodes_label(graph, borrowers, layers):
     """Get borrower liked nodel labels
@@ -465,7 +494,6 @@ def compute_personlization(node_list, graph):
 
     personlized = dict()
     # print(len(node_list))
-    #a = [ personlized.update({ k : 1/len(node_list) }) for k in node_list ]
     a = [personlized.update({k: (1 / len(node_list)) if k in node_list else 0}) for k in graph.nodes()]
     # print(personlized)
     return personlized
@@ -500,7 +528,7 @@ def get_number_of_borrowers_with_same_n_layer_value(borrower, graph, layer_nber=
 
 
 # @profile
-def get_max_borrower_pr(pr):
+def get_max_borrower_pr(pr, target=None):
     """Get max modality of borrower in the pagerank output
     Args:
       pr: a specify pagerank
@@ -508,6 +536,13 @@ def get_max_borrower_pr(pr):
     Returns:
       A list of max modality pagerank for each borrower
     """
+
+    if target is not None:
+        # Scan ciblé : uniquement les nœuds de cet emprunteur
+        return max(
+            (val for key, val in pr.items() if f'-U-{target}' in key),
+            default=0
+        )
 
     borrower = {}
     for key, val in pr.items():
@@ -706,7 +741,7 @@ def build_mlg_with_class(data, features, className):
 
     # build edges
     list_of_edges = []
-    list_of_nodes = []
+    nodes_dict = {}   # clé = label nœud, valeur = attributs
 
     LIST_OF_CUSTOMERS = data.index.values.tolist()
     LEN_OF_FEATURES = len(features)
@@ -739,7 +774,8 @@ def build_mlg_with_class(data, features, className):
         # layer building
         for i in range(LEN_OF_FEATURES):
             # add nodes
-            list_of_nodes.append(('C' + str(i) + '-U-' + str(el), {'color': 'g'}))
+
+            nodes_dict[f'C{i}-U-{el}'] = {'color': 'g'}
             for attr in features[i].tolist():  # fetch on home ownership encode values
                 #code = f"#{format(255-10*i, '02x')}{format(150+9*i, '02x')}{format(55+10*i, '02x')}"
                 if int(data.loc[el, attr]) == 1:  # check if exists relation between both
@@ -749,7 +785,7 @@ def build_mlg_with_class(data, features, className):
                     list_of_edges.append(('C' + str(i) + '-M-' + attr, 'C' + str(i) + '-U-' + str(el),
                                           {'color': 'b'}))  # add edge to list
                     # add nodes
-                    list_of_nodes.append(('C' + str(i) + '-M-' + attr, {'color': colors[i]}))
+                    nodes_dict[f'C{i}-M-{attr}'] = {'color': colors[i]}  # écrasement idempotent
             # add directed relation between user node from C1 and C2
             list_of_edges.append(('C' + str(i) + '-U-' + str(el), 'C' + str(i + 1) + '-U-' + str(el),
                                   {'color': 'r'}))  # add edge to list
@@ -757,9 +793,8 @@ def build_mlg_with_class(data, features, className):
                                   {'color': 'r'}))  # add edge to list
         #code = f"#{format(255-10*LEN_OF_FEATURES, '02x')}{format(150+9*LEN_OF_FEATURES, '02x')}{format(55+10*LEN_OF_FEATURES, '02x')}"
         # add class nodes
-        list_of_nodes.append(('C' + str(LEN_OF_FEATURES) + '-U-' + str(el), {'color': 'g'}))
-        list_of_nodes.append(
-            ('C' + str(LEN_OF_FEATURES) + '-M-C-' + str(data.loc[el, className]), {'color': colors[LEN_OF_FEATURES]}))
+        nodes_dict[f'C{str(LEN_OF_FEATURES)}-U-{el}'] = {'color': 'g'}
+        nodes_dict[f'C{str(LEN_OF_FEATURES)}-M-C-{str(data.loc[el, className])}'] = {'color': colors[LEN_OF_FEATURES]}
         # bidirectional relation between home ownership and user
         list_of_edges.append(('C' + str(LEN_OF_FEATURES) + '-U-' + str(el),
                               'C' + str(LEN_OF_FEATURES) + '-M-C-' + str(data.loc[el, className]),
@@ -773,7 +808,7 @@ def build_mlg_with_class(data, features, className):
                               'C' + str(LEN_OF_FEATURES) + '-U-' + str(el), {'color': 'r'}))  # add edge to list
     # add edges to the oriented graph
     # print(list_of_nodes)
-    CRP_G.add_nodes_from(list_of_nodes)
+    CRP_G.add_nodes_from(nodes_dict.items())
     CRP_G.add_edges_from(list_of_edges)
 
     # return the graph
@@ -1065,19 +1100,34 @@ def removeEdge(graph, k, label, loan_id):
     -------
     modified_graph
     """
-    # Format loan node and decision label node
-    # print(f"""
-    # {k},
-    # {label}
-    # {loan_id}
-    # """)
+
     loan_node = f"C{k}-U-{loan_id}"
     decision_label_node = f"C{k}-M-C-{label}"
-    # Remove edge between start_node and end_node
-    modified_graph = copy.deepcopy(graph)
+    modified_graph = graph
     if modified_graph.has_edge(loan_node, decision_label_node) is True:
         modified_graph.remove_edge(loan_node, decision_label_node)
-        # modified_graph.remove_node(loan_node)
-    # print(f"{loan_node} - {decision_label_node} still exist {modified_graph.has_edge(loan_node, decision_label_node)}")
+
+    return modified_graph
+
+def addEdge(graph, k, label, loan_id):
+    """
+
+    Parameters
+    ----------
+    graph
+    k
+    label
+    loan_id
+
+    Returns
+    -------
+    modified_graph
+    """
+
+    loan_node = f"C{k}-U-{loan_id}"
+    decision_label_node = f"C{k}-M-C-{label}"
+    modified_graph = graph
+    if modified_graph.has_edge(loan_node, decision_label_node) is False:
+        modified_graph.add_edge(loan_node, decision_label_node)
 
     return modified_graph
