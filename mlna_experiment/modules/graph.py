@@ -33,6 +33,7 @@ import copy
 from .file import *
 
 
+
 # from memory_profiler import profile
 
 ###### End
@@ -292,13 +293,13 @@ def build_modalities_graph(X, Y, n):
 
     # join X and Y
     data = X.copy()
-    data.astype('int')
+    data = data.astype('int')
     temp = data.copy()
     data["CLASS"] = Y.values
     data = data.head(n)
 
-    # cast columns type to int
-    data.astype('int')
+    # cast columns type to int (CLASS inclus après head())
+    data = data.astype('int')
 
     # build edges
     LIST_OF_CUSTOMERS = data.index.values.tolist()

@@ -910,7 +910,8 @@ def make_mlna_1_variable_v2(
         rate_divider,
         financialOption,
         original,
-        graphWithClass=False
+        graphWithClass=False,
+        both=False
 ):
     ## visualization of result
     modelD = model_desc()
@@ -926,8 +927,10 @@ def make_mlna_1_variable_v2(
     logic_p = []
     logic_pg = []
     # variable to store OHE which outperform default model
-    outperformers = {}
+    outAccperformers = {}
+    outF1performers = {}
     NbGood = 0
+    NbGoodF = 0
     for i in range(len(OHE)):
         # logic storage
         logic_i_g = []
@@ -949,6 +952,19 @@ def make_mlna_1_variable_v2(
              file in files].index(True)
         ]
         config_df = read_model(path=config_df_path)
+        # load opposite-class config when both=True (mirrors make_mlna_top_k_variable_v2)
+        config_df2 = None
+        if both:
+            config_df_path2 = cwd + f'/mlna_1/{nominal_factor_colums[i]}/' + [file for _, _, files in
+                  os.walk(
+                      cwd + f'/mlna_1/{nominal_factor_colums[i]}/')
+                  for
+                  file in files][
+                [f'config_df_for_{nominal_factor_colums[i]}_{"withoutClass" if graphWithClass else "withClass"}' in file for _, _, files in
+                 os.walk(cwd + f'/mlna_1/{nominal_factor_colums[i]}/') for
+                 file in files].index(True)
+            ]
+            config_df2 = read_model(path=config_df_path2)
         ##########################################
         ####### Build MlC config            ######
         ##########################################
@@ -974,7 +990,9 @@ def make_mlna_1_variable_v2(
             logic_i_pg=logic_i_pg,
             mlnL='/mlna_1',
             original = original,
-            name=nominal_factor_colums[i]
+            name=nominal_factor_colums[i],
+            config_df2=config_df2,
+            both=both
         )
 
         ## default - MLNa
@@ -1010,11 +1028,19 @@ def make_mlna_1_variable_v2(
             mlc_cf=mlc_cf,
             mlnL='/mlna_1',
             original = original,
-            name=nominal_factor_colums[i]
+            name=nominal_factor_colums[i],
+            config_df2=config_df2,
+            both=both
         )
         # print(logic_i_p)
         bestp = logic_i_p[5 if graphWithClass else 1][1].sort_values(
             by="accuracy",
+            axis=0,
+            ascending=False
+            # ,key=lambda row: abs(row)
+        ).head(1)
+        bestf1 = logic_i_p[5 if graphWithClass else 1][1].sort_values(
+            by="f1-score",
             axis=0,
             ascending=False
             # ,key=lambda row: abs(row)
@@ -1026,14 +1052,24 @@ def make_mlna_1_variable_v2(
             ascending=False
             # ,key=lambda row: abs(row)
         ).head(1)
+        bestfi = default[1].sort_values(
+            by="f1-score",
+            axis=0,
+            ascending=False
+            # ,key=lambda row: abs(row)
+        ).head(1)
 
         if (bestp["accuracy"][list(bestp.index)[0]] > bestf["accuracy"][list(bestf.index)[0]]):
             NbGood += 1
+        if (bestf1["f1-score"][list(bestf1.index)[0]] > bestfi["f1-score"][list(bestfi.index)[0]]):
+            NbGoodF += 1
         print(
             f'{list(bestp.index)[0]}--{bestp["accuracy"][list(bestp.index)[0]]}--' +
             f'{round(((round(bestp["accuracy"][list(bestp.index)[0]], 4) - round(bestf["accuracy"][list(bestf.index)[0]], 4)) / round(bestf["accuracy"][list(bestf.index)[0]], 4)) * 100, 4)} gain personalized model')
-        outperformers[i] = round(((round(bestp["accuracy"][list(bestp.index)[0]], 4) - round(
+        outAccperformers[i] = round(((round(bestp["accuracy"][list(bestp.index)[0]], 4) - round(
             bestf["accuracy"][list(bestf.index)[0]], 4)) / round(bestf["accuracy"][list(bestf.index)[0]], 4)) * 100, 4)
+        outF1performers[i] = round(((round(bestf1["f1-score"][list(bestf1.index)[0]], 4) - round(
+            bestfi["f1-score"][list(bestfi.index)[0]], 4)) / round(bestfi["f1-score"][list(bestfi.index)[0]], 4)) * 100, 4)
         ########### END
         #########################################################################
         logic_p = [*logic_p, *logic_i_p]
@@ -1052,7 +1088,7 @@ def make_mlna_1_variable_v2(
     logic_g = None
     logic_p = None
     logic_pg = None
-    return (outperformers, NbGood)
+    return (outAccperformers, outF1performers, NbGood, NbGoodF)
 
 def make_mlna_k_variable_v2(
         default,
@@ -1399,6 +1435,7 @@ def main():
     parser.add_argument('--turn', type=int, required=True, help='Valeur du tour')
     parser.add_argument('--baseline', action="store_true", required=False, help='Entrainement sur les données de base ?')
     parser.add_argument('--graph_with_class', action="store_true", required=False, help='integrant les classes?')
+    parser.add_argument('--metric', type=str, required=False, help='Nom de la metrique à analyser')
 
     # Récupération des arguments
     args = parser.parse_args()
@@ -1588,10 +1625,10 @@ def main():
     if args.turn == 1: # check if we are onto the first turn
         if sum(['model_turn_1_completed.dtvni' == file for _, _, files in
                 os.walk(args.cwd + f'/{results_dir}{domain}/{args.alpha}/{target_columns_type}/mlna_1') for
-                file in files]) > 0:
+                file in files]) > 0 and args.graph_with_class is False:
             print("✅ MLNA 1 Modeling already completed")
         else:
-            (outperformers, NbGood) = make_mlna_1_variable_v2(
+            (outAccperformers, outF1performers, NbGood, NbGoodF) = make_mlna_1_variable_v2(
                 x_traini=x_traini,
                 x_testi=x_testi,
                 y_traini=y_traini,
@@ -1601,7 +1638,7 @@ def main():
                 cwd = args.cwd + f'/{results_dir}{domain}/{args.alpha}/{target_columns_type}',
                 domain= domain,
                 target_variable= target_variable,
-                graphWithClass=False,
+                graphWithClass=args.graph_with_class,
                 fix_imbalance=False,
                 withCost=cost,
                 financialOption = ast.literal_eval(financialOption) if cost else None,
@@ -1610,35 +1647,50 @@ def main():
                 original=original,
                 default=default,
                 clfs=clfs,
-                verbose=verbose
+                verbose=verbose,
+                both=True
             )
-            outperformers = dict(sorted(outperformers.items(), key=lambda x: x[1], reverse=True))
-            bestK = bestThreshold(list(outperformers)) + 1 if len(outperformers) > 2 else len(outperformers)
-            # elbow = elbow_method(list(outperformers))
-            # cusum = cumulative_difference_threshold(list(outperformers))
-            print(f"{outperformers}, {NbGood} Goods and the best top k is {bestK}")
-            save_model(
-                cwd=args.cwd + f'/{results_dir}{domain}/{args.alpha}/{target_columns_type}',
-                clf={
-                    'model': outperformers,
-                    'nbGood': NbGood,
-                    'bestK': bestK,
-                    "name": [prepro_config["categorial_col"][i] for i in list(outperformers.keys())],
-                },
-                prefix="",
-                clf_name=f"MNIFS_{domain}_best_features",
-                sub="",
-                times=False
-            )
-            contenu = f"""
-                'model': {outperformers},
-                'nbGood': {NbGood},
-                'bestK': {bestK},
-                'name':{[prepro_config['categorial_col'][i] for i in list(outperformers.keys())]},
-                'BName':{[prepro_config['categorial_col'][i] for i in list(outperformers.keys())[:bestK]]},
-                """
-            with open(args.cwd + f'/{results_dir}{domain}/{args.alpha}/{target_columns_type}/mlna_1/model_turn_1_completed.dtvni', "a") as fichier:
-                fichier.write(contenu)
+            if args.graph_with_class is False:
+                outAccperformers = dict(sorted(outAccperformers.items(), key=lambda x: x[1], reverse=True))
+                outF1performers = dict(sorted(outF1performers.items(), key=lambda x: x[1], reverse=True))
+                bestAccK = bestThreshold(list(outAccperformers)) + 1 if len(outAccperformers) > 2 else len(outAccperformers)
+                bestF1K = bestThreshold(list(outF1performers)) + 1 if len(outF1performers) > 2 else len(outF1performers)
+                # elbow = elbow_method(list(outperformers))
+                # cusum = cumulative_difference_threshold(list(outperformers))
+                # print(f"{outperformers}, {NbGood} Goods and the best top k is {bestK}")
+                save_model(
+                    cwd=args.cwd + f'/{results_dir}{domain}/{args.alpha}/{target_columns_type}',
+                    clf={
+                        'model': {
+                            'accuracy':outAccperformers,
+                            'f1-score':outF1performers
+                        },
+                        'nbGoodAcc': NbGood,
+                        'nbGoodF1': NbGoodF,
+                        'bestAccK': bestAccK,
+                        'bestF1K': bestF1K,
+                        "name": {
+                            'accuracy':[prepro_config["categorial_col"][i] for i in list(outAccperformers.keys())],
+                            'f1-score':[prepro_config["categorial_col"][i] for i in list(outF1performers.keys())]
+                        },
+                    },
+                    prefix="",
+                    clf_name=f"MNIFS_{domain}_best_features",
+                    sub="",
+                    times=False
+                )
+                contenu = f"""
+                    'model-accuracy': {outAccperformers},
+                    'model-f1': {outF1performers},
+                    'nbGoodAcc': {NbGood},
+                    'nbGoodF1': {NbGoodF},
+                    'bestAccK': {bestAccK},
+                    'bestF1K': {bestF1K},
+                    'name-accuracy':{[prepro_config['categorial_col'][i] for i in list(outAccperformers.keys())]},
+                    'name-accuracy':{[prepro_config['categorial_col'][i] for i in list(outF1performers.keys())]},
+                    """
+                with open(args.cwd + f'/{results_dir}{domain}/{args.alpha}/{target_columns_type}/mlna_1/model_turn_1_completed.dtvni', "a") as fichier:
+                    fichier.write(contenu)
     if args.turn == 2:  # check if we are onto the first turn
         if sum([f"MNIFS_{domain}_best_features" in file for _, _, files in
                 os.walk(args.cwd + f'/{results_dir}{domain}/{args.alpha}/{target_columns_type}') for
@@ -1647,7 +1699,7 @@ def main():
             exit(1)
 
         if sum(['model_turn_2_completed.dtvni' == file for _, _, files in
-                os.walk(args.cwd + f'/{results_dir}{domain}/{args.alpha}/{target_columns_type}/select') for
+                os.walk(args.cwd + f'/{results_dir}{domain}/{args.alpha}/{target_columns_type}/select{"/"+args.metric if args.metric.strip() else ""}/') for
                 file in files]) > 0:
             print("✅ MLNA k Best model already completed")
         else:
@@ -1671,12 +1723,12 @@ def main():
                 y_testi=y_testi,
                 OHE=OHE,
                 nominal_factor_colums=columns,
-                cwd=args.cwd + f'/{results_dir}{domain}/{args.alpha}/{target_columns_type}/select',
+                cwd=args.cwd + f'/{results_dir}{domain}/{args.alpha}/{target_columns_type}/select{"/"+args.metric if args.metric.strip() else ""}/',
                 domain=domain,
                 target_variable=target_variable,
                 alpha=args.alpha,
                 graphWithClass=args.graph_with_class,
-                topR=list(mnifs_config['model'].keys()),
+                topR=list(mnifs_config['model'][args.metric].keys() if args.metric.strip() else mnifs_config['model'].keys()),
                 fix_imbalance=False,
                 withCost=cost,
                 financialOption = ast.literal_eval(financialOption) if cost else None,
@@ -1689,7 +1741,7 @@ def main():
                 both=True
             )
             with open(
-                    args.cwd + f'/{results_dir}{domain}/{args.alpha}/{target_columns_type}/select/model_turn_2_completed.dtvni',
+                    args.cwd + f'/{results_dir}{domain}/{args.alpha}/{target_columns_type}/select{"/"+args.metric if args.metric.strip() else ""}/model_turn_2_completed.dtvni',
                     "a") as fichier:
                 fichier.write("")
     if args.turn == 3:

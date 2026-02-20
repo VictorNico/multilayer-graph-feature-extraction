@@ -140,16 +140,12 @@ def numeric_standardization_with_outliers(data, variables_list):
         # c) compute sup and inf
         sup = Q3 + (1.5 * IQR)
         inf = Q1 - (1.5 * IQR)
-        for line in dataframe.index.values.tolist():
-            # if less than inf
-            if dataframe.loc[line, var] < inf:
-                dataframe.loc[line, var] = inf/sup
-            # else greater than sup
-            elif dataframe.loc[line, var] > sup:
-                dataframe.loc[line, var] = 1
-            # else
-            else:
-                dataframe.loc[line, var] = dataframe.loc[line, var]/sup
+        # vectorisation numpy : O(n) au lieu de O(n) × coût pandas.loc par ligne
+        # AVANT : boucle for + .loc[line, var] → N appels Python × N lignes (lent sur grand dataset)
+        col = dataframe[var]
+        dataframe[var] = np.where(col < inf, inf / sup,
+                         np.where(col > sup, 1.0,
+                                  col / sup))
     return dataframe
 
 # @profile
@@ -225,9 +221,11 @@ def discretise_numeric_dimension(columns, dataframe, inplace=False, verbose=Fals
     if isinstance(columns, list) and isinstance(dataframe, pd.DataFrame):
         for col in columns:
             # define boundaries
-            bins = sorted(list({0, data[col].quantile(0.05), data[col].quantile(0.15), data[col].quantile(0.25),
-                                data[col].quantile(0.5), data[col].quantile(0.75), data[col].quantile(0.85),
-                                np.float64('inf')}))
+            # bins = sorted(list({0, data[col].quantile(0.05), data[col].quantile(0.15), data[col].quantile(0.25),
+            #                     data[col].quantile(0.5), data[col].quantile(0.75), data[col].quantile(0.85),
+            #                     np.float64('inf')}))
+            qs = data[col].quantile([0.05, 0.15, 0.25, 0.5, 0.75, 0.85])
+            bins = sorted({0, *qs.values, np.float64('inf')})
 
             # discretize the column
             discretizer = KBinsDiscretizer(n_bins=len(bins)+1, encode='ordinal', strategy='quantile')

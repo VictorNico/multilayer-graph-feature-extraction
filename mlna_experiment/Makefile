@@ -308,7 +308,7 @@ run-all:
 		\
 		: nice -n 10 $(MAKE) -j 1 mlna_on_crd mlna_on_car mlna_on_nur mlna_on_adu mlna_on_dia mlna_on_ld4 mlna_on_ban mlna_on_ger mlna_on_stu mlna_on_mus mlna_on_ldd; \
 		\
-		nice -n 10 $(MAKE) -j 1 mlna_on_adu mlna_on_ban mlna_on_ger mlna_on_nur; \
+		nice -n 10 $(MAKE) -j 1 mlna_on_crd mlna_on_car mlna_on_nur mlna_on_adu mlna_on_dia mlna_on_ld4 mlna_on_ban mlna_on_ger mlna_on_stu mlna_on_mus mlna_on_ldd; \
 		echo "✅ [$(shell date '+%Y-%m-%d %H:%M:%S')] FIN exécution parallèle"; \
 	} > "$$LOG_FILE" 2>&1 && \
 	echo "🎉 Toutes les exécutions terminées - Log global: $$LOG_FILE"
@@ -324,7 +324,7 @@ stop-all:
 		\
 		: $(MAKE) -j 1 stop-mlna_on_crd stop-mlna_on_car stop-mlna_on_nur stop-mlna_on_adu stop-mlna_on_dia stop-mlna_on_ld4 stop-mlna_on_ban stop-mlna_on_ger stop-mlna_on_stu stop-mlna_on_mus stop-mlna_on_ldd; \
 		\
-		$(MAKE) -j 1 stop-mlna_on_adu stop-mlna_on_ban stop-mlna_on_ger stop-mlna_on_nur; \
+		$(MAKE) -j 1 stop-mlna_on_crd stop-mlna_on_car stop-mlna_on_nur stop-mlna_on_adu stop-mlna_on_dia stop-mlna_on_ld4 stop-mlna_on_ban stop-mlna_on_ger stop-mlna_on_stu stop-mlna_on_mus stop-mlna_on_ldd; \
 		echo "✅ [$(shell date '+%Y-%m-%d %H:%M:%S')] FIN arrêt de tous les processus"; \
 	} > "$$LOG_FILE" 2>&1 && \
 	echo "🎉 Tous les processus arrêtés - Log: $$LOG_FILE"

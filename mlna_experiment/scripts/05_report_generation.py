@@ -91,6 +91,7 @@ def metric_extraction(
         encoding=None,
         index_col=None,
         models=['LDA','LR','SVM','DT','RF','XGB'],
+        metric='accuracy'
 ):
     """ @methods metric_extraction
             Look inside completed folder to extract and record saved models performance over some metrics
@@ -150,7 +151,7 @@ def metric_extraction(
                     file in files]) == 0:
                 print("❌ Unable to access selection protocol results")
                 pass
-
+            # print(os.listdir(cwd + f'{result_folder}/{alpha}/{target_columns_type}'), completed_folder)
             mnifs_path = cwd + f'{result_folder}/{alpha}/{target_columns_type}/' + \
                          [file for _, _, files in
                           os.walk(
@@ -163,9 +164,9 @@ def metric_extraction(
                          ]
             mnifs_config = read_model(path=mnifs_path)
             selection_store[result_folder][alpha]['mnifs'] = mnifs_config
-            selection_store[result_folder][alpha]['accuracies'] = list(mnifs_config['model'].values())
-            selection_store[result_folder][alpha]['predicted_best_k'] = mnifs_config['bestK']
-            elb = otsu_method(list(mnifs_config['model'].values()))
+            selection_store[result_folder][alpha][metric if metric.strip() else 'accuracy'] = list(mnifs_config['model'][metric].values() if metric.strip() else mnifs_config['model'].values())
+            selection_store[result_folder][alpha]['predicted_best_k'] = mnifs_config['bestAccK'] if metric.strip() else mnifs_config['bestK']
+            elb = otsu_method(list(mnifs_config['model'][metric].values() if metric.strip() else mnifs_config['model'].values()))
             # print('otsu', elb)
 
             if sum([f'classic_metric' in file for _, _, files in
@@ -269,11 +270,11 @@ def metric_extraction(
                 )
 
 
-            elif os.path.isdir(f'{cwd}/{result_folder}/{alpha}/{target_columns_type}{"/select"*(elb>1)}/mlna_{elb}{"_b"*(elb>1)}'):
+            elif os.path.isdir(f'{cwd}/{result_folder}/{alpha}/{target_columns_type}{("/select/"+(metric+"/" if metric.strip() else ""))*(elb>1)}/mlna_{elb}{"_b"*(elb>1)}'):
                 # print(f'{cwd}/{result_folder}/{alpha}/{target_columns_type}{"/select"*(elb>1)}/mlna_{elb}{"_b" * (elb > 1)}')
 
                 att = [dirnames for _, dirnames, _ in
-                       os.walk(f'{cwd}/{result_folder}/{alpha}/{target_columns_type}{"/select"*(elb>1)}/mlna_{elb}{"_b"*(elb>1)}')][0]
+                       os.walk(f'{cwd}/{result_folder}/{alpha}/{target_columns_type}{("/select/"+(metric+"/" if metric.strip() else ""))*(elb>1)}/mlna_{elb}{"_b"*(elb>1)}')][0]
 
                 # print(f'{result_folder}/{alpha}/{target_columns_type}/select/mlna_{elb}_b/{att}')
                 # print([dirnames for _, dirnames, _ in
@@ -295,13 +296,15 @@ def metric_extraction(
                         isBest=elb>1,
                         dataset_delimiter=dataset_delimiter,
                         encoding=encoding,
-                        index_col=index_col
+                        index_col=index_col,
+                        metric=metric
                     ),
                     classic_f,
                     elb_macro_store,
                     result_folder,
                     list_of_accuracy,
-                    elb
+                    elb,
+                    metricA=metric
                 )
 
             ## identify the number of existing layer storage in best k
@@ -313,7 +316,7 @@ def metric_extraction(
 
             for index3, layer in enumerate(mlna_folders_names):  # on layer
                 att = [dirnames for _, dirnames, _ in
-                       os.walk(f'{cwd}/{result_folder}/{alpha}/{target_columns_type}/select/mlna_{layer}_b')][0]
+                       os.walk(f'{cwd}/{result_folder}/{alpha}/{target_columns_type}{"/select"+(metric+"/" if metric.strip() else "")}/mlna_{layer}_b')][0]
 
                 list_of_accuracy, macro_store = analyse_files(
                     models_name,
@@ -332,13 +335,15 @@ def metric_extraction(
                         isBest=True,
                         dataset_delimiter=dataset_delimiter,
                         encoding=encoding,
-                        index_col=index_col
+                        index_col=index_col,
+                        metric=metric
                     ),
                     classic_f,
                     macro_store,
                     result_folder,
                     list_of_accuracy,
-                    layer
+                    layer,
+                    metricA=metric if metric.strip() else "accuracy"
                 )
 
             # analyse impact of layers and identify the best mlna as k
@@ -350,7 +355,7 @@ def metric_extraction(
             selection_store[result_folder][alpha]['value'].append(list_of_accuracy[0][2])
     # print(elb_macro_store)
     # print(macro_store)
-    # print(selection_store)
+    print(selection_store)
     return elb_macro_store, macro_store, selection_store
 
 
@@ -365,6 +370,7 @@ def shap_extraction(
         top=10,
         models=['LDA','LR','SVM','DT','RF','XGB'],
         n=2,
+        metric='accuracy'
 ):
     """ @methods metric_extraction
             Look inside completed folder to extract and record saved models performance over some metrics
@@ -435,15 +441,18 @@ def shap_extraction(
                               file in files].index(True)
                          ]
             mnifs_config = read_model(path=mnifs_path)
-            elb = otsu_method(list(mnifs_config['model'].values()))
-            if elb > 1:
+            elb = otsu_method(list(mnifs_config['model'][metric].values() if metric.strip() else mnifs_config['model'].values()))
+            # print(result_folder, alpha, elb)
+            if elb > 0:
                 # print('/////////////', result_folder, alpha, elb)
                 # print(elb)
                 ## identify the number of existing layer storage in best k
                 att = [dirnames for _, dirnames, _ in
-                       os.walk(f'{cwd}/{result_folder}/{alpha}/{target_columns_type}/select/mlna_{elb}_b')][0]
+                       os.walk(f'{cwd}/{result_folder}/{alpha}/{target_columns_type}{("/select"+(metric+"/" if metric.strip() else ""))*(elb>1)}/mlna_{elb}{"_b"*(elb>1)}')][0]
                 # pretty_print([dirnames for _, dirnames, _ in
                 #        os.walk(f'{cwd}/{result_folder}/{alpha}/{target_columns_type}/select/mlna_{elb}_b')])
+
+
                 temp = load_results(
                     f'{cwd}{result_folder}',
                     target_columns_type,
@@ -456,11 +465,14 @@ def shap_extraction(
                     isRand=False,
                     match=lambda x: True,
                     attributs=att,
-                    isBest=True,
+                    isBest=elb>1,
                     dataset_delimiter=dataset_delimiter,
                     encoding=encoding,
-                    index_col=index_col
+                    index_col=index_col,
+                    metric=metric
                 )
+                # if elb == 1:
+                #     print(temp)
                 # print(f'{cwd}{result_folder}/{alpha}/{target_columns_type}/select/mlna_{elb}_b/{att}/mixed/both/evaluation')
                 # pretty_print(temp)
                 shapStore[result_folder]['MlC']['BOT']['CXY'] = shapStore[result_folder]['MlC']['BOT']['CXY'] + \
@@ -470,6 +482,7 @@ def shap_extraction(
             else:
                 print('<<<<<<<<', elb, result_folder, shapStore.keys())
 
+    # print(shapStore)
     for result_folder in completed_folder:
         if len(shapStore[result_folder]['MCA']['BOT']['CXY']) == 0 and len(shapStore[result_folder]['MlC']['BOT']['CXY']) == 0:
             del shapStore[result_folder]
@@ -517,6 +530,7 @@ def main():
     parser = argparse.ArgumentParser(description='Exécution du pipeline MLNA - SPLIT DATASET')
     parser.add_argument('--cwd', type=str, required=True, help='Répertoire de travail courant')
     parser.add_argument('--dataset_folder', type=str, required=True, help='Nom du dataset')
+    parser.add_argument('--metric', type=str, required=False, help='Nom de la metrique à analyser')
 
     # Récupération des arguments
     args = parser.parse_args()
@@ -550,7 +564,7 @@ def main():
         alphas=environment['alphas'],
         motif='model_turn_2_completed.dtvni'
     )
-    folders = ['ADU', 'GER', 'BAN', 'NUR']
+    # folders = ['ADU', 'GER', 'BAN', 'NUR']
     # print(folders)
     macro_store, elb_macro_store, selection_store = metric_extraction(
         completed_folder=folders,
@@ -566,7 +580,8 @@ def main():
         target_columns_type=target_columns_type,
         dataset_delimiter=dataset_delimiter,
         encoding=encoding,
-        index_col=index_col
+        index_col=index_col,
+        metric=args.metric
     )
     # pretty_print(macro_store)
 
@@ -579,11 +594,16 @@ def main():
         encoding=encoding,
         index_col=index_col,
         top=top,
-        n=2
+        n=2,
+        metric=args.metric
     )
 
     # pretty_print(macro_store)
-    dat, table, (real_values, elbow_values, cusum_values, otsu_values, jenkspy_values) = selection_proto(selection_store, f"{args.cwd}/{report_dir}")
+    dat, table, (real_values, elbow_values, cusum_values, otsu_values, jenkspy_values) = selection_proto(
+        selection_store,
+        f"{args.cwd}/{report_dir}",
+        args.metric if args.metric.strip() else "accuracy",
+    )
 
     # Tolérances à tester
     tolerances = [0.01, 0.02, 0.03, 0.04, 0.05]
@@ -932,7 +952,7 @@ def main():
             best_total_real,
             second_best_total_real,
             third_best_total_real,
-            folders=['ADU', 'GER', 'BAN', 'NUR'],
+            folders=folders,
             real=True
     )
     latex_table_gain = compute_table(
@@ -964,8 +984,8 @@ def main():
     )
     # saving
     timestr = time.strftime("%Y_%m_%d_%H_%M_%S")
-    create_domain(f"{args.cwd}/{report_dir}{timestr}")
-    filename1 = f"{args.cwd}/{report_dir}{timestr}/report_{timestr}.tex"
+    create_domain(f"{args.cwd}/{report_dir}{timestr}_{'_'.join(folders)}_{args.metric}")
+    filename1 = f"{args.cwd}/{report_dir}{timestr}_{'_'.join(folders)}_{args.metric}/report_{timestr}.tex"
     _file = open(filename1, "w", encoding='utf-8')
     _file.write(header + """
                     \\begin{table}[H]
@@ -1012,12 +1032,6 @@ def main():
                 \\begin{table}[H]
                 \\centering
                 """ + table_for_config_analysis_per_model_per_metric + """
-                \\end{table}
-                """
-                + """
-                \\begin{table}[H]
-                \\centering
-                """ + table_for_config_analysis_per_model_per_metric_1 + """
                 \\end{table}
                 \\newpage
                 """

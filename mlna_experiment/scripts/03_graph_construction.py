@@ -51,6 +51,8 @@ from modules.preprocessing import get_combinations  # Génération de combinaiso
 from modules.file import *   # Fonctions de gestion de fichiers
 from modules.graph import *  # Fonctions de construction de graphes
 import statistics # Calculs statistiques
+import numpy as np
+import scipy.sparse as sp
 
 
 
@@ -61,7 +63,6 @@ import statistics # Calculs statistiques
 
 def extract_descriptors_from_graph_model(
     graph=None,           # Graphe multicouche sans classe
-    y_graph=None,         # Graphe multicouche avec classe
     graphWithClass=None,  # Flag indiquant si on utilise les classes
     alpha=.85,            # Facteur d'amortissement pour PageRank
     borrower=None,        # ID de l'emprunteur analysé
@@ -85,8 +86,6 @@ def extract_descriptors_from_graph_model(
     -----------
     graph : networkx.DiGraph
         Graphe multicouche représentant les relations emprunteur-modalité
-    y_graph : networkx.DiGraph
-        Graphe incluant les nœuds de classe (pour graphWithClass=True)
     graphWithClass : bool
         Si True, inclut les descripteurs basés sur les classes
     alpha : float (défaut=0.85)
@@ -128,7 +127,7 @@ def extract_descriptors_from_graph_model(
     ################################
     ####### Descripteurs Globaux ###
     ################################
-
+    nodes_combine, nodes_intra, nodes_inter = get_all_perso_nodes_labels(graph, borrower, layers)
     # DEGREE: Nombre d'emprunteurs ayant les mêmes valeurs de modalités
     # Pour une seule couche (layers=1), on compte les voisins directs
     # Pour plusieurs couches, on compte les emprunteurs partageant toutes les modalités
@@ -145,239 +144,106 @@ def extract_descriptors_from_graph_model(
             custom_layer=list(range(layers)) # Toutes les couches spécifiées
         )[1]
     )
+    # -----------------------------------------------------------------------
+    # PageRank batché : 1 conversion graph→scipy + 1 SpMM par itération
+    # au lieu de 6 nx.pagerank() séquentiels (6 conversions + 6×50 SpMV)
+    # -----------------------------------------------------------------------
+    node_list = list(graph.nodes())
+    node_idx  = {n: i for i, n in enumerate(node_list)}
+    N = len(node_list)
 
-    # PageRank COMBINÉ: Calcul standard sur tout le graphe
-    # Utilise la formule: PR(A) = (1-α)/N + α * Σ(PR(Ti)/C(Ti))
-    # où α=0.85, N=nombre de nœuds, Ti=nœuds pointant vers A, C(Ti)=degré sortant
-    bipart_combine = nx.pagerank(graph, alpha=alpha)
+    # Matrice de transition row-normalisée (une seule fois)
+    A = nx.to_scipy_sparse_array(graph, nodelist=node_list, format='csr', dtype=float)
+    out_deg = np.array(A.sum(axis=1)).flatten()
+    is_dangling = np.where(out_deg == 0)[0]
+    inv_deg = np.where(out_deg > 0, 1.0 / out_deg, 0.0)
+    A_norm = sp.diags(inv_deg) @ A   # row-normalisée
+    AT     = A_norm.T.tocsr()        # pour x_new = AT @ x_old (right-multiply)
 
+    # Vecteur de personnalisation pour chaque colonne : p(nodes) = 1/|nodes| si dans nodes, 0 sinon
+    def _make_p(nodes_for_perso):
+        if not nodes_for_perso:
+            return np.full(N, 1.0 / N)
+        p = np.zeros(N)
+        w = 1.0 / len(nodes_for_perso)
+        for n in nodes_for_perso:
+            if n in node_idx:
+                p[node_idx[n]] = w
+        return p
 
-    # PageRank INTRA: Personnalisé pour les nœuds de modalités (nœuds '-M-')
-    # Donne plus d'importance aux modalités dans le calcul
-    bipart_intra_pagerank = nx.pagerank(
-        graph,
-        personalization=compute_personlization(
-            get_intra_node_label(graph), # Liste des nœuds modalités
-            graph
-        ),
-        alpha=alpha
-    )
+    all_intra = [n for n in node_list if '-M-' in n]
+    all_inter = [n for n in node_list if '-U-' in n]
 
+    # Matrice de personnalisation P : (N, 6)
+    # col 0 → combine_GLO (uniforme)   col 3 → combine_PER (voisins du borrower)
+    # col 1 → intra_GLO  (tous -M-)    col 4 → inter_PER
+    # col 2 → inter_GLO  (tous -U-)    col 5 → intra_PER
+    P = np.column_stack([
+        _make_p([]),           # col 0
+        _make_p(all_intra),    # col 1
+        _make_p(all_inter),    # col 2
+        _make_p(nodes_combine),# col 3
+        _make_p(nodes_inter),  # col 4
+        _make_p(nodes_intra),  # col 5
+    ])
 
-    # PageRank INTER: Personnalisé pour les nœuds emprunteurs (nœuds '-U-')
-    # Donne plus d'importance aux emprunteurs dans le calcul
-    bipart_inter_pagerank = nx.pagerank(
-        graph,
-        personalization=compute_personlization(
-            get_inter_node_label(graph),  # Liste des nœuds d'observations
-            graph
-        ),
-        alpha=alpha
-    )
+    # Power iteration batché — même formule que NetworkX 3.x _pagerank_scipy
+    # x_new = alpha * (AT @ x + dangling_sum * p) + (1-alpha) * p
+    X = P.copy()
+    for _ in range(500):
+        D = X[is_dangling, :].sum(axis=0)                          # (6,)
+        X_new = alpha * (AT.dot(X) + P * D[np.newaxis, :]) + (1.0 - alpha) * P
+        if np.abs(X_new - X).sum(axis=0).max() < N * 1e-6:
+            break
+        X = X_new
 
-    descriptors[f'Att_INTRA_GLO_{"CX" if graphWithClass else "MX"}_'] = get_max_modality_pagerank_score(borrower, graph, layers, bipart_intra_pagerank)
-    descriptors[f'Att_INTER_GLO_{"CX" if graphWithClass else "MX"}_'] = get_max_modality_pagerank_score(borrower, graph, layers, bipart_inter_pagerank)
-    descriptors[f'Att_COMBINE_GLO_{"CX" if graphWithClass else "MX"}_'] = get_max_modality_pagerank_score(borrower, graph, layers, bipart_combine)
-    descriptors[f'Att_M_INTRA_GLO_{"CX" if graphWithClass else "MX"}_'] = get_max_borrower_pr(bipart_intra_pagerank)[1][borrower]
-    descriptors[f'Att_M_INTER_GLO_{"CX" if graphWithClass else "MX"}_'] = get_max_borrower_pr(bipart_inter_pagerank)[1][borrower]
-    descriptors[f'Att_M_COMBINE_GLO_{"CX" if graphWithClass else "MX"}_'] = get_max_borrower_pr(bipart_combine)[1][borrower]
+    # Reconstruction des dicts pour compatibilité avec les fonctions aval
+    bipart_combine        = dict(zip(node_list, X[:, 0]))
+    bipart_intra_pagerank = dict(zip(node_list, X[:, 1]))
+    bipart_inter_pagerank = dict(zip(node_list, X[:, 2]))
+    _pr_perso_combine     = dict(zip(node_list, X[:, 3]))
+    _pr_perso_inter       = dict(zip(node_list, X[:, 4]))
+    _pr_perso_intra       = dict(zip(node_list, X[:, 5]))
 
-    # Extraction des scores PageRank pour chaque type de personnalisation
-    # CX = avec classe, MX = sans classe
-    descriptors[f'Att_DEGREE_PER'] = descriptors[f'Att_DEGREE_GLO']
-    descriptors[f'Att_COMBINE_PER_{"CX" if graphWithClass else "MX"}_'] = get_max_borrower_pr(
-        nx.pagerank(
-            graph,
-            personalization=compute_personlization(
-                get_combine_perso_nodes_label(
-                    graph,
-                    [borrower],
-                    1
-                )[0][0],
-                graph
-            ),
-            alpha=alpha
-        )
-    )[1][borrower]
+    # ref = nx.pagerank(graph, alpha=alpha, max_iter=500)
+    # custom = dict(zip(node_list, X[:, 0]))
+    # max_diff = max(abs(ref[n] - custom[n]) for n in node_list)
+    # status = "✅ ISO" if max_diff < 1e-5 else f"❌ Ecart : {max_diff:.2e}"
+    # print(f"[PageRank batch] max_diff={max_diff:.2e} | {status}")
+    # -----------------------------------------------------------------------
 
+    suffix = "CX" if graphWithClass else "MX"
+
+    descriptors[f'Att_INTRA_GLO_{suffix}_']   = get_max_modality_pagerank_score(borrower, graph, layers, bipart_intra_pagerank)
+    descriptors[f'Att_INTER_GLO_{suffix}_']   = get_max_modality_pagerank_score(borrower, graph, layers, bipart_inter_pagerank)
+    descriptors[f'Att_COMBINE_GLO_{suffix}_'] = get_max_modality_pagerank_score(borrower, graph, layers, bipart_combine)
+    descriptors[f'Att_M_INTRA_GLO_{suffix}_'] = get_max_borrower_pr(bipart_intra_pagerank, target=borrower)
+    descriptors[f'Att_M_INTER_GLO_{suffix}_'] = get_max_borrower_pr(bipart_inter_pagerank, target=borrower)
+    descriptors[f'Att_M_COMBINE_GLO_{suffix}_'] = get_max_borrower_pr(bipart_combine, target=borrower)
+
+    descriptors['Att_DEGREE_PER'] = descriptors['Att_DEGREE_GLO']
+
+    descriptors[f'Att_COMBINE_PER_{suffix}_'] = get_max_borrower_pr(_pr_perso_combine, target=borrower)
     if graphWithClass is True:
-        descriptors[f'YN_COMBINE_PER'] = get_class_pr(
-            nx.pagerank(
-                y_graph,
-                personalization=compute_personlization(
-                    get_combine_perso_nodes_label(
-                        y_graph,
-                        [borrower],
-                        1
-                    )[0][0],
-                    y_graph
-                ),
-                alpha=alpha
-            )
-        )[0]
+        _class_scores = get_class_pr(_pr_perso_combine)
+        descriptors['YN_COMBINE_PER'] = _class_scores[0]
+        descriptors['YP_COMBINE_PER'] = _class_scores[1]
 
-        descriptors[f'YP_COMBINE_PER'] = get_class_pr(
-            nx.pagerank(
-                y_graph,
-                personalization=compute_personlization(
-                    get_combine_perso_nodes_label(
-                        y_graph,
-                        [borrower],
-                        1
-                    )[0][0],
-                    y_graph
-                ),
-                alpha=alpha
-                )
-        )[1]
-
-    descriptors[f'Att_INTER_PER_{"CX" if graphWithClass else "MX"}_'] = get_max_borrower_pr(
-        nx.pagerank(
-            graph,
-            personalization=compute_personlization(
-                get_inter_perso_nodes_label(
-                    graph,
-                    [borrower],
-                    1
-                )[0][0],
-                graph
-            ),
-            alpha=alpha
-        )
-        )[1][borrower]
-
+    descriptors[f'Att_INTER_PER_{suffix}_'] = get_max_borrower_pr(_pr_perso_inter, target=borrower)
     if graphWithClass is True:
-        descriptors[f'YN_INTER_PER'] = get_class_pr(
-            nx.pagerank(
-                y_graph,
-                personalization=compute_personlization(
-                    get_inter_perso_nodes_label(
-                        y_graph,
-                        [borrower],
-                        1
-                    )[0][0],
-                    y_graph
-                ),
-                alpha=alpha
-            )
-        )[0]
+        _class_inter = get_class_pr(_pr_perso_inter)
+        descriptors['YN_INTER_PER'] = _class_inter[0]
+        descriptors['YP_INTER_PER'] = _class_inter[1]
 
-        descriptors[f'YP_INTER_PER'] = get_class_pr(
-            nx.pagerank(
-                y_graph,
-                personalization=compute_personlization(
-                    get_inter_perso_nodes_label(
-                        y_graph,
-                        [borrower],
-                        1
-                    )[0][0],
-                    y_graph
-                ),
-                alpha=alpha
-            )
-        )[1]
-
-    descriptors[f'Att_INTRA_PER_{"CX" if graphWithClass else "MX"}_'] = get_max_borrower_pr(
-        nx.pagerank(
-            graph,
-            personalization=compute_personlization(
-                get_intra_perso_nodes_label(
-                    graph,
-                    [borrower],
-                    1
-                )[0][0],
-                graph
-            ),
-            alpha=alpha
-        )
-    )[1][borrower]
-
+    descriptors[f'Att_INTRA_PER_{suffix}_'] = get_max_borrower_pr(_pr_perso_intra, target=borrower)
     if graphWithClass is True:
-        descriptors[f'YN_INTRA_PER'] = get_class_pr(
-            nx.pagerank(
-                y_graph,
-                personalization=compute_personlization(
-                    get_intra_perso_nodes_label(
-                        y_graph,
-                        [borrower],
-                        1
-                    )[0][0],
-                    y_graph
-                ),
-                alpha=alpha
-            )
-        )[0]
+        _class_intra = get_class_pr(_pr_perso_intra)
+        descriptors['YN_INTRA_PER'] = _class_intra[0]
+        descriptors['YP_INTRA_PER'] = _class_intra[1]
 
-        descriptors[f'YP_INTRA_PER'] = get_class_pr(
-            nx.pagerank(
-                y_graph,
-                personalization=compute_personlization(
-                    get_intra_perso_nodes_label(
-                        y_graph,
-                        [borrower],
-                        1
-                    )[0][0],
-                    y_graph
-                ),
-                alpha=alpha
-            )
-        )[1]
-
-    # Maximum des scores PageRank parmi tous les nœuds emprunteurs
-    # get_max_borrower_pr retourne (liste_scores, dict_scores_par_id)
-    descriptors[f'Att_M_COMBINE_PER_{"CX" if graphWithClass else "MX"}_'] = get_max_modality_pagerank_score(
-        borrower,
-        graph,
-        1,
-        nx.pagerank(
-            graph,
-            personalization=compute_personlization(
-                get_combine_perso_nodes_label(
-                    graph,
-                    [borrower],
-                    1
-                )[0][0],
-                graph
-            ),
-            alpha=alpha
-        )
-    )
-
-    descriptors[f'Att_M_INTER_PER_{"CX" if graphWithClass else "MX"}_'] = get_max_modality_pagerank_score(
-        borrower,
-        graph,
-        1,
-        nx.pagerank(
-            graph,
-            personalization=compute_personlization(
-                get_inter_perso_nodes_label(
-                    graph,
-                    [borrower],
-                    1
-                )[0][0],
-                graph
-            ),
-            alpha=alpha
-        )
-    )
-
-    descriptors[f'Att_M_INTRA_PER_{"CX" if graphWithClass else "MX"}_'] = get_max_modality_pagerank_score(
-        borrower,
-        graph,
-        1,
-        nx.pagerank(
-            graph,
-            personalization=compute_personlization(
-                get_intra_perso_nodes_label(
-                    graph,
-                    [borrower],
-                    1
-                )[0][0],
-                graph
-            ),
-            alpha=alpha
-        )
-    )
+    descriptors[f'Att_M_COMBINE_PER_{suffix}_'] = get_max_modality_pagerank_score(borrower, graph, 1, _pr_perso_combine)
+    descriptors[f'Att_M_INTER_PER_{suffix}_']   = get_max_modality_pagerank_score(borrower, graph, 1, _pr_perso_inter)
+    descriptors[f'Att_M_INTRA_PER_{suffix}_']   = get_max_modality_pagerank_score(borrower, graph, 1, _pr_perso_intra)
 
     return descriptors
 
@@ -696,6 +562,9 @@ def make_mlna_1_variable_v2(
     PERSONS = get_persons(x_train)
     PERSONS_T = get_persons(x_test)
 
+    # Préparation des données: fusion X_train + y_train
+    copT = x_train.copy(deep=True)
+    copT[target_variable] = y_train.copy(deep=True)
     # Boucle sur chaque variable catégorielle
     for i in range(len(OHE)):
         # Vérification si cette variable a déjà été traitée
@@ -705,9 +574,7 @@ def make_mlna_1_variable_v2(
              file in files]) > 0 :
             continue # Variable déjà traitée, passer à la suivante
 
-        # Préparation des données: fusion X_train + y_train
-        copT = x_train.copy(deep=True)
-        copT[target_variable] = y_train.copy(deep=True)
+
 
         # Construction du graphe multicouche
         # build_mlg_with_class: inclut les nœuds de classe
@@ -781,14 +648,18 @@ def make_mlna_1_variable_v2(
         for borrower in PERSONS:
             # Extraction des descripteurs pour l'emprunteur courant
             # removeEdge: retire l'arête vers la classe (leave-one-out)
+            removeEdge(MLN, 1, copT.loc[borrower, target_variable], borrower)
+
             current = extract_descriptors_from_graph_model(
-                graph=removeEdge(MLN, 1, copT.loc[borrower,target_variable], borrower),
-                y_graph=removeEdge(MLN, 1, copT.loc[borrower,target_variable], borrower),
+                graph=MLN,
                 graphWithClass=graphWithClass,
                 alpha=alpha,
                 borrower=borrower,
-                layers=1 # Une seule couche pour MLNA-1
+                layers=1
             )
+
+            # Restaure l'arête sur MLN
+            addEdge(MLN, 1, copT.loc[borrower, target_variable], borrower)
 
             # Répartition des descripteurs entre globaux et personnalisés
             for key in list(current.keys()):
@@ -806,7 +677,7 @@ def make_mlna_1_variable_v2(
         ##################################
         for borrower in PERSONS_T:
             # Ajout de l'emprunteur test au graphe
-            grf = add_specific_loan_in_mlg(
+            borrower_nodes, new_modality_nodes = add_specific_loan_in_mlg(
                 MLN,
                 x_test.loc[[borrower]],
                 [OHE[i]]
@@ -814,13 +685,13 @@ def make_mlna_1_variable_v2(
 
             # Extraction des descripteurs
             current = extract_descriptors_from_graph_model(
-                graph=grf,
-                y_graph=grf,
+                graph=MLN,
                 graphWithClass=graphWithClass,
                 alpha=alpha,
                 borrower=borrower,
                 layers=1
             )
+            remove_specific_loan_from_mlg(MLN, borrower_nodes, new_modality_nodes)
 
             # Répartition des descripteurs
             for key in list(current.keys()):
@@ -857,14 +728,14 @@ def make_mlna_1_variable_v2(
                     del extracts_p[key]
                     del extracts_p_t[key]
 
-        print(extracts_g.keys(),'++', extracts_p.keys(),'++',
-              extracts_g_t.keys(),'++', extracts_p_t.keys())
+        # print(extracts_g.keys(),'++', extracts_p.keys(),'++',
+        #       extracts_g_t.keys(),'++', extracts_p_t.keys())
 
         # Normalisation: mise à l'échelle [0, 1]
         # Récupération des valeurs maximales de l'ensemble d'entraînement
         maxGDesc = standard_extraction(extracts_g, extracts_g.keys())
         maxPDesc = standard_extraction(extracts_p, extracts_p.keys())
-        print(f"{maxGDesc} <------> {maxPDesc}")
+        # print(f"{maxGDesc} <------> {maxPDesc}")
 
         # Application de la même normalisation au test
         standard_extraction(extracts_g_t, extracts_g.keys(),maxGDesc)
@@ -962,6 +833,9 @@ def make_mlna_k_variable_v2(
     x_train, x_test, y_train, y_test = x_traini, x_testi, y_traini, y_testi
     PERSONS = get_persons(x_train)
     PERSONS_T = get_persons(x_test)
+    # Préparation des données
+    copT = x_train.copy(deep=True)
+    copT[target_variable] = y_train.copy(deep=True)
 
     # Boucle sur les valeurs de k (ici fixé à k=2)
     for k in list([2]): # Peut être étendu: range(2, len(OHE)+1)
@@ -970,9 +844,7 @@ def make_mlna_k_variable_v2(
         # get_combinations(range(len(OHE)), k) retourne les indices des variables
         for layer_config in get_combinations(range(len(OHE)), k):  # create subsets of k index of OHE and fetch it
 
-            # Préparation des données
-            copT = x_train.copy(deep=True)
-            copT[target_variable] = y_train.copy(deep=True)
+
 
             # Nom de la configuration: concaténation des noms de variables
             # Exemple: "home_ownership_loan_purpose"
@@ -1053,14 +925,16 @@ def make_mlna_k_variable_v2(
             ##################################
             for borrower in PERSONS:
                 # Extraction avec layers=k
+                removeEdge(MLN, k, copT.loc[borrower, target_variable], borrower)
                 current = extract_descriptors_from_graph_model(
                     graph=MLN,
-                    y_graph=removeEdge(MLN, k, copT.loc[borrower, target_variable], borrower),
                     graphWithClass=graphWithClass,
                     alpha=alpha,
                     borrower=borrower,
                     layers=k
                 )
+                # Restaure l'arête sur MLN
+                addEdge(MLN, k, copT.loc[borrower, target_variable], borrower)
 
                 # Répartition des descripteurs
                 for key in list(current.keys()):
@@ -1074,20 +948,20 @@ def make_mlna_k_variable_v2(
             ##################################
             for borrower in PERSONS_T:
                 # Ajout de l'emprunteur au graphe avec les k couches
-                grf = add_specific_loan_in_mlg(
+                borrower_nodes, new_modality_nodes = add_specific_loan_in_mlg(
                     MLN,
                     x_test.loc[[borrower]],
                     [OHE[i] for i in layer_config]
                 )
 
                 current = extract_descriptors_from_graph_model(
-                    graph=grf,
-                    y_graph=grf,
+                    graph=MLN,
                     graphWithClass=graphWithClass,
                     alpha=alpha,
                     borrower=borrower,
                     layers=k
                 )
+                remove_specific_loan_from_mlg(MLN, borrower_nodes, new_modality_nodes)
 
 
                 for key in list(current.keys()):
@@ -1230,6 +1104,9 @@ def make_mlna_top_k_variable_v2(
     x_train, x_test, y_train, y_test = x_traini, x_testi, y_traini, y_testi
     PERSONS = get_persons(x_train)
     PERSONS_T = get_persons(x_test)
+    # Préparation des données
+    copT = x_train.copy(deep=True)
+    copT[target_variable] = y_train.copy(deep=True)
 
     # Boucle sur k de 2 à len(topR)
     # Construction incrémentale des graphes
@@ -1239,9 +1116,7 @@ def make_mlna_top_k_variable_v2(
         # topR[:k] donne les indices des k meilleures variables
         layer_config = topR[:k]
 
-        # Préparation des données
-        copT = x_train.copy(deep=True)
-        copT[target_variable] = y_train.copy(deep=True)
+
 
         # Construction du nom: concaténation des k variables
         col_targeted = [f'{nominal_factor_colums[i]}' for i in layer_config]
@@ -1319,14 +1194,16 @@ def make_mlna_top_k_variable_v2(
         ##################################
         for borrower in PERSONS:
             # Extraction avec layers=k
+            removeEdge(MLN, k, copT.loc[borrower, target_variable], borrower)
             current = extract_descriptors_from_graph_model(
                 graph=MLN,
-                y_graph=removeEdge(MLN, k, copT.loc[borrower, target_variable], borrower),
                 graphWithClass=graphWithClass,
                 alpha=alpha,
                 borrower=borrower,
                 layers=k
             )
+            # Restaure l'arête sur MLN
+            addEdge(MLN, k, copT.loc[borrower, target_variable], borrower)
 
             # Répartition des descripteurs
             for key in list(current.keys()):
@@ -1340,20 +1217,20 @@ def make_mlna_top_k_variable_v2(
         ##################################
         for borrower in PERSONS_T:
             # Ajout de l'observation au graphe avec k couches
-            grf = add_specific_loan_in_mlg(
+            borrower_nodes, new_modality_nodes = add_specific_loan_in_mlg(
                 MLN,
                 x_test.loc[[borrower]],
                 [OHE[i] for i in layer_config]
             )
 
             current = extract_descriptors_from_graph_model(
-                graph=grf,
-                y_graph=grf,
+                graph=MLN,
                 graphWithClass=graphWithClass,
                 alpha=alpha,
                 borrower=borrower,
                 layers=k
             )
+            remove_specific_loan_from_mlg(MLN, borrower_nodes, new_modality_nodes)
 
 
             for key in list(current.keys()):
@@ -1502,6 +1379,7 @@ def main():
 
     # Argument optionnel
     parser.add_argument('--graph_with_class', action="store_true", required=False, help='integrant les classes?')
+    parser.add_argument('--metric', type=str, required=False, help='Nom de la metrique à analyser')
 
     # Récupération des arguments
     args = parser.parse_args()
@@ -1657,7 +1535,7 @@ def main():
     if args.turn == 1:
         if sum(['graph_turn_1_completed.dtvni' == file for _, _, files in
                 os.walk(args.cwd + f'/{results_dir}{domain}/{args.alpha}/{target_columns_type}/mlna_1') for
-                file in files]) > 0:
+                file in files]) > 0 and args.graph_with_class is False:
             print("✅ MLNA 1 Graph already completed")
         else:
             # Exécution MLNA-1
@@ -1673,8 +1551,9 @@ def main():
                 domain= domain,
                 target_variable= target_variable,
                 alpha= args.alpha,
-                graphWithClass=False
+                graphWithClass=args.graph_with_class
             )
+
             # Création du fichier flag de complétion
             with open(args.cwd + f'/{results_dir}{domain}/{args.alpha}/{target_columns_type}/mlna_1/graph_turn_1_completed.dtvni', "a") as fichier:
                 fichier.write("")
@@ -1692,7 +1571,7 @@ def main():
 
         # Vérification si déjà complété
         if sum(['graph_turn_2_completed.dtvni' == file for _, _, files in
-                os.walk(args.cwd + f'/{results_dir}{domain}/{args.alpha}/{target_columns_type}/select') for
+                os.walk(args.cwd + f'/{results_dir}{domain}/{args.alpha}/{target_columns_type}/select{"/"+args.metric if args.metric.strip() else ""}/') for
                 file in files]) > 0:
             print("✅ MLNA 1 Graph already completed")
         else:
@@ -1717,17 +1596,17 @@ def main():
                 y_testi=y_testi,
                 OHE=OHE,
                 nominal_factor_colums=columns,
-                cwd=args.cwd + f'/{results_dir}{domain}/{args.alpha}/{target_columns_type}/select',
+                cwd=args.cwd + f'/{results_dir}{domain}/{args.alpha}/{target_columns_type}/select{"/"+args.metric if args.metric.strip() else ""}/',
                 root=args.cwd,
                 domain=domain,
                 target_variable=target_variable,
                 alpha=args.alpha,
                 graphWithClass=args.graph_with_class,
-                topR=list(mnifs_config['model'].keys())
+                topR=list(mnifs_config['model'][args.metric].keys() if args.metric.strip() else mnifs_config['model'].keys())
             )
 
             # Création du fichier flag de complétion
-            with open(args.cwd + f'/{results_dir}{domain}/{args.alpha}/{target_columns_type}/select/graph_turn_2_completed.dtvni', "a") as fichier:
+            with open(args.cwd + f'/{results_dir}{domain}/{args.alpha}/{target_columns_type}/select{"/"+args.metric if args.metric.strip() else ""}/graph_turn_2_completed.dtvni', "a") as fichier:
                 fichier.write("")
 
     # ------------------------------------------------------------------------
@@ -1753,7 +1632,7 @@ def main():
                 domain= domain,
                 target_variable= target_variable,
                 alpha= args.alpha,
-                graphWithClass=False
+                graphWithClass=args.graph_with_class
             )
 
             # Création du fichier flag de complétion

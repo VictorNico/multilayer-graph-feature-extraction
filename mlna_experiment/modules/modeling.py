@@ -85,14 +85,14 @@ def init_models():
         kernel='linear',
         probability=True
     )
-    mlp = MLPClassifier(
-        hidden_layer_sizes=(100,),  # 1 couche cachée de 100 neurones
-        activation='relu',
-        solver='adam',
-        max_iter=500,
-        random_state=42
-    )
-    perceptron = Perceptron()
+    # mlp = MLPClassifier(
+    #     hidden_layer_sizes=(100,),  # 1 couche cachée de 100 neurones
+    #     activation='relu',
+    #     solver='adam',
+    #     max_iter=500,
+    #     random_state=42
+    # )
+    # perceptron = Perceptron()
     #mnb = MultinomialNB()
     #abc = AdaBoostClassifier()
     #bc = BaggingClassifier()
@@ -301,34 +301,42 @@ def train_classifier(
     explainer = None
     shap_values = None
 
-    print(f"=== DIAGNOSTIC SHAP pour {name} ===")
-    print(f"Type du modèle: {type(clf)}")
-    print(f"Classes du modèle: {clf.classes_}")
-    print(f"Nombre de classes: {len(clf.classes_)}")
+    # [PERF-1] prints de diagnostic commentés : 6 appels par modèle × N combinaisons × N variables
+    # print(f"=== DIAGNOSTIC SHAP pour {name} ===")
+    # print(f"Type du modèle: {type(clf)}")
+    # print(f"Classes du modèle: {clf.classes_}")
+    # print(f"Nombre de classes: {len(clf.classes_)}")
+
     if isinstance(clf, (LogisticRegression, Perceptron, LinearDiscriminantAnalysis)):
-        print("Utilisation de LinearExplainer")
         explainer = shap.LinearExplainer(clf, X_train)
         shap_values = explainer.shap_values(X_test)
     elif isinstance(clf, (RandomForestClassifier, DecisionTreeClassifier, XGBClassifier)):
-        print("Utilisation de TreeExplainer")
         explainer = shap.TreeExplainer(clf)
+        # [PERF-2] check_additivity=False évite une vérification coûteuse sans impacter les valeurs
+        shap_values = explainer.shap_values(X_test, check_additivity=False)
+    elif isinstance(clf, SVC):
+        # [PERF-3] SVC kernel='linear' → LinearExplainer est exact et O(n_features × n_test)
+        # AVANT : KernelExplainer(clf.predict_proba, X_train) → O(n_train × n_features × n_test), x100-1000 plus lent
+        # SOLUTION ACCEPTÉE : LinearExplainer exploite coef_ du modèle linéaire directement
+        # ALTERNATIVE si tu passes à un kernel non-linéaire : KernelExplainer avec background réduit :
+        #   background = shap.sample(X_train, min(100, len(X_train)))
+        #   explainer = shap.KernelExplainer(clf.predict_proba, background)
+        explainer = shap.LinearExplainer(clf, X_train)
         shap_values = explainer.shap_values(X_test)
     else:
-        print("Utilisation de KernelExplainer")
-        explainer = shap.KernelExplainer(clf.predict_proba, X_train)
+        # [PERF-3b] Pour tout autre modèle boîte noire : limiter le background à 100 échantillons max
+        background = shap.sample(X_train, min(100, len(X_train)))
+        explainer = shap.KernelExplainer(clf.predict_proba, background)
         shap_values = explainer.shap_values(X_test)
 
-    # Diagnostic des valeurs SHAP
-    if isinstance(shap_values, list):
-        print(f"shap_values est une liste de {len(shap_values)} éléments")
-        for i, sv in enumerate(shap_values):
-            print(f"  Classe {i}: forme {sv.shape}")
-    elif isinstance(shap_values, np.ndarray):
-        print(f"shap_values est un array de forme: {shap_values.shape}")
-    else:
-        print(f"shap_values type inattendu: {type(shap_values)}")
+    # [NOTE] shap_values peut être :
+    #   - np.ndarray (n_samples, n_features) pour classification binaire
+    #   - list de n_classes arrays pour multiclasse → np.mean(axis=0) donne (n_samples, n_features), pas (n_features,)
+    #   Dans ce cas utiliser : np.mean(np.abs(np.array(shap_values)), axis=(0, 1))
 
-    # Store SHAP values along with metrics
+    # sv = np.array(shap_values)
+    # # binaire → (n_samples, n_features), multiclasse → (n_classes, n_samples, n_features)
+    # shap_vals_mean = np.mean(np.abs(sv), axis=0) if sv.ndim == 2 else np.mean(np.abs(sv), axis=(0, 1))
     shap_vals_mean = np.mean(np.abs(shap_values), axis=0)  # Mean absolute SHAP values
 
     vals = list(shap_vals_mean)
