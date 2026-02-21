@@ -270,11 +270,11 @@ def metric_extraction(
                 )
 
 
-            elif os.path.isdir(f'{cwd}/{result_folder}/{alpha}/{target_columns_type}{("/select/"+(metric+"/" if metric.strip() else ""))*(elb>1)}/mlna_{elb}{"_b"*(elb>1)}'):
+            elif os.path.isdir(f'{cwd}/{result_folder}/{alpha}/{target_columns_type}{("/select/"+("/"+metric if metric.strip() else ""))*(elb>1)}/mlna_{elb}{"_b"*(elb>1)}'):
                 # print(f'{cwd}/{result_folder}/{alpha}/{target_columns_type}{"/select"*(elb>1)}/mlna_{elb}{"_b" * (elb > 1)}')
 
                 att = [dirnames for _, dirnames, _ in
-                       os.walk(f'{cwd}/{result_folder}/{alpha}/{target_columns_type}{("/select/"+(metric+"/" if metric.strip() else ""))*(elb>1)}/mlna_{elb}{"_b"*(elb>1)}')][0]
+                       os.walk(f'{cwd}/{result_folder}/{alpha}/{target_columns_type}{("/select/"+("/"+metric if metric.strip() else ""))*(elb>1)}/mlna_{elb}{"_b"*(elb>1)}')][0]
 
                 # print(f'{result_folder}/{alpha}/{target_columns_type}/select/mlna_{elb}_b/{att}')
                 # print([dirnames for _, dirnames, _ in
@@ -316,7 +316,7 @@ def metric_extraction(
 
             for index3, layer in enumerate(mlna_folders_names):  # on layer
                 att = [dirnames for _, dirnames, _ in
-                       os.walk(f'{cwd}/{result_folder}/{alpha}/{target_columns_type}{"/select"+(metric+"/" if metric.strip() else "")}/mlna_{layer}_b')][0]
+                       os.walk(f'{cwd}/{result_folder}/{alpha}/{target_columns_type}{"/select"+("/"+metric if metric.strip() else "")}/mlna_{layer}_b')][0]
 
                 list_of_accuracy, macro_store = analyse_files(
                     models_name,
@@ -448,10 +448,10 @@ def shap_extraction(
                 # print(elb)
                 ## identify the number of existing layer storage in best k
                 att = [dirnames for _, dirnames, _ in
-                       os.walk(f'{cwd}/{result_folder}/{alpha}/{target_columns_type}{("/select"+(metric+"/" if metric.strip() else ""))*(elb>1)}/mlna_{elb}{"_b"*(elb>1)}')][0]
-                # pretty_print([dirnames for _, dirnames, _ in
-                #        os.walk(f'{cwd}/{result_folder}/{alpha}/{target_columns_type}/select/mlna_{elb}_b')])
-
+                       os.walk(f'{cwd}/{result_folder}/{alpha}/{target_columns_type}{("/select"+("/"+metric if metric.strip() else ""))*(elb>1)}/mlna_{elb}{"_b"*(elb>1)}')][0]
+                print([dirnames for _, dirnames, _ in
+                       os.walk(f'{cwd}/{result_folder}/{alpha}/{target_columns_type}/select/mlna_{elb}_b')])
+                print(f'{cwd}/{result_folder}/{alpha}/{target_columns_type}{("/select"+("/"+metric if metric.strip() else ""))*(elb>1)}/mlna_{elb}{"_b"*(elb>1)}')
 
                 temp = load_results(
                     f'{cwd}{result_folder}',
@@ -984,8 +984,8 @@ def main():
     )
     # saving
     timestr = time.strftime("%Y_%m_%d_%H_%M_%S")
-    create_domain(f"{args.cwd}/{report_dir}{timestr}_{'_'.join(folders)}_{args.metric}")
-    filename1 = f"{args.cwd}/{report_dir}{timestr}_{'_'.join(folders)}_{args.metric}/report_{timestr}.tex"
+    create_domain(f"{args.cwd}/{report_dir}{args.metric}/{timestr}_{'_'.join(folders)}")
+    filename1 = f"{args.cwd}/{report_dir}{args.metric}/{timestr}_{'_'.join(folders)}/report_{timestr}.tex"
     _file = open(filename1, "w", encoding='utf-8')
     _file.write(header + """
                     \\begin{table}[H]

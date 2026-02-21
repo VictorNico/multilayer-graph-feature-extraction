@@ -328,7 +328,7 @@ def load_results(
     root = f"{outputs_path}/{alpha}/{_type}{select_part}/{layer_part}"
 
     # Racine distincte pour BOT (toujours sous /select/mlna_k_b ou /mlna_1)
-    bot_root = f'{outputs_path}/{alpha}/{_type}{("/select"+(metric+"/" if metric.strip() else ""))*(k>1)}/mlna_{k}{"_b"*(k>1)}'
+    bot_root = f'{outputs_path}/{alpha}/{_type}{("/select"+("/"+metric if metric.strip() else ""))*(k>1)}/mlna_{k}{"_b"*(k>1)}'
 
     # ── Index disque : 1 seul os.walk() pour tous les attributs ─────────────
     # Filtre immédiat : on ne garde que les fichiers *_metric_* (pas _x_ ni _y_)
