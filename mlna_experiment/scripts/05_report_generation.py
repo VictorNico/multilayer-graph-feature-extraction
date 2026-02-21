@@ -777,8 +777,8 @@ def main():
                         value, algo = macro_store[config][metric][cat]
                         best_value, _ = best_values[metric][cat]
                         if not real is True:
-                            formatted_value = f"\\textbf{{{value:.1f}}}" if round(value, 1) == round(best_value,
-                                                                                                 1) else f"{value:.1f}"
+                            formatted_value = f"\\textbf{{{value:.4f}}}" if round(value, 4) == round(best_value,
+                                                                                                 4) else f"{value:.4f}"
                         else:
                             formatted_value = f"\\textbf{{{value:.3f}}}" if round(value, 3) == round(best_value,
                                                                                                      3) else f"{value:.3f}"
