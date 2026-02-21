@@ -167,7 +167,7 @@ def metric_extraction(
             selection_store[result_folder][alpha][metric if metric.strip() else 'accuracy'] = list(mnifs_config['model'][metric].values() if metric.strip() else mnifs_config['model'].values())
             selection_store[result_folder][alpha]['predicted_best_k'] = mnifs_config['bestAccK'] if metric.strip() else mnifs_config['bestK']
             elb = otsu_method(list(mnifs_config['model'][metric].values() if metric.strip() else mnifs_config['model'].values()))
-            # print('otsu', elb)
+            print('otsu', elb, result_folder, alpha)
 
             if sum([f'classic_metric' in file for _, _, files in
                     os.walk(cwd + f'{result_folder}/evaluation') for
@@ -270,11 +270,11 @@ def metric_extraction(
                 )
 
 
-            elif os.path.isdir(f'{cwd}/{result_folder}/{alpha}/{target_columns_type}{("/select/"+("/"+metric if metric.strip() else ""))*(elb>1)}/mlna_{elb}{"_b"*(elb>1)}'):
+            elif os.path.isdir(f'{cwd}/{result_folder}/{alpha}/{target_columns_type}{("/select"+("/"+metric if metric.strip() else ""))*(elb>1)}/mlna_{elb}{"_b"*(elb>1)}'):
                 # print(f'{cwd}/{result_folder}/{alpha}/{target_columns_type}{"/select"*(elb>1)}/mlna_{elb}{"_b" * (elb > 1)}')
 
                 att = [dirnames for _, dirnames, _ in
-                       os.walk(f'{cwd}/{result_folder}/{alpha}/{target_columns_type}{("/select/"+("/"+metric if metric.strip() else ""))*(elb>1)}/mlna_{elb}{"_b"*(elb>1)}')][0]
+                       os.walk(f'{cwd}/{result_folder}/{alpha}/{target_columns_type}{("/select"+("/"+metric if metric.strip() else ""))*(elb>1)}/mlna_{elb}{"_b"*(elb>1)}')][0]
 
                 # print(f'{result_folder}/{alpha}/{target_columns_type}/select/mlna_{elb}_b/{att}')
                 # print([dirnames for _, dirnames, _ in
@@ -309,7 +309,7 @@ def metric_extraction(
 
             ## identify the number of existing layer storage in best k
             mlna_folders_names = \
-                [dirnames for _, dirnames, _ in os.walk(f'{cwd}/{result_folder}/{alpha}/{target_columns_type}/select')][
+                [dirnames for _, dirnames, _ in os.walk(f'{cwd}/{result_folder}/{alpha}/{target_columns_type}/select'+("/"+metric if metric.strip() else ""))][
                     0]
             mlna_folders_names = sorted([int(el.split("_")[1]) for el in mlna_folders_names if "mlna" in el])
             # print(result_folder, mlna_folders_names, "//", alpha, mlna_folders_names)
@@ -450,8 +450,8 @@ def shap_extraction(
                 att = [dirnames for _, dirnames, _ in
                        os.walk(f'{cwd}/{result_folder}/{alpha}/{target_columns_type}{("/select"+("/"+metric if metric.strip() else ""))*(elb>1)}/mlna_{elb}{"_b"*(elb>1)}')][0]
                 print([dirnames for _, dirnames, _ in
-                       os.walk(f'{cwd}/{result_folder}/{alpha}/{target_columns_type}/select/mlna_{elb}_b')])
-                print(f'{cwd}/{result_folder}/{alpha}/{target_columns_type}{("/select"+("/"+metric if metric.strip() else ""))*(elb>1)}/mlna_{elb}{"_b"*(elb>1)}')
+                       os.walk(f'{cwd}/{result_folder}/{alpha}/{target_columns_type}{("/select"+("/"+metric if metric.strip() else ""))*(elb>1)}/mlna_{elb}{"_b"*(elb>1)}')])
+                print(f'{cwd}{result_folder}/{alpha}/{target_columns_type}{("/select"+("/"+metric if metric.strip() else ""))*(elb>1)}/mlna_{elb}{"_b"*(elb>1)}')
 
                 temp = load_results(
                     f'{cwd}{result_folder}',
@@ -601,7 +601,6 @@ def main():
     # pretty_print(macro_store)
     dat, table, (real_values, elbow_values, cusum_values, otsu_values, jenkspy_values) = selection_proto(
         selection_store,
-        f"{args.cwd}/{report_dir}",
         args.metric if args.metric.strip() else "accuracy",
     )
 

@@ -1003,7 +1003,7 @@ def vector_matching_precision(v1, v2, tolerance=0):
 
 
 
-def selection_proto(records, output_path, metric='accuracy'):
+def selection_proto(records, metric='accuracy'):
     # result structure
     resultDict = {
         'dataset': [],
