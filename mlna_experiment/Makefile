@@ -308,7 +308,7 @@ run-all:
 		\
 		: nice -n 10 $(MAKE) -j 1 mlna_on_crd mlna_on_car mlna_on_nur mlna_on_adu mlna_on_dia mlna_on_ld4 mlna_on_ban mlna_on_ger mlna_on_stu mlna_on_mus mlna_on_ldd; \
 		\
-		nice -n 10 $(MAKE) -j 1 mlna_on_crd mlna_on_car mlna_on_nur mlna_on_adu mlna_on_dia mlna_on_ld4 mlna_on_ban mlna_on_ger mlna_on_stu mlna_on_mus mlna_on_ldd; \
+		nice -n 10 $(MAKE) -j 1 mlna_on_crd mlna_on_car mlna_on_nur mlna_on_adu mlna_on_ban mlna_on_ger mlna_on_dia mlna_on_ld4 mlna_on_stu mlna_on_mus mlna_on_ldd; \
 		echo "✅ [$(shell date '+%Y-%m-%d %H:%M:%S')] FIN exécution parallèle"; \
 	} > "$$LOG_FILE" 2>&1 && \
 	echo "🎉 Toutes les exécutions terminées - Log global: $$LOG_FILE"
