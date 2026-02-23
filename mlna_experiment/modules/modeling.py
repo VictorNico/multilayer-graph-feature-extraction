@@ -472,12 +472,16 @@ def compute_classification_financial_cost(ypred, yreal, financialOption, test_da
 
 
 def compute_confusion_matrix(true_labels, predicted_labels, labels):
-    """
-    Computes the confusion matrix.
-    :param true_labels: true labels
-    :param predicted_labels: predicted labels
-    :param labels:
-    :return:
+    """Compute a confusion matrix from true and predicted label sequences.
+
+    Args:
+        true_labels (list): Ground-truth class labels.
+        predicted_labels (list): Model-predicted class labels.
+        labels (list): Ordered list of unique class labels that defines row/column order.
+
+    Returns:
+        list[list[int]]: Square confusion matrix of shape (n_classes, n_classes)
+            where entry [i][j] is the count of true class i predicted as class j.
     """
     num_classes = len(labels)
     confusion_matrix = [[0] * num_classes for _ in range(num_classes)]
@@ -491,6 +495,15 @@ def compute_confusion_matrix(true_labels, predicted_labels, labels):
 
 
 def precision_macro(confusion_matrix):
+    """Compute macro-averaged precision from a confusion matrix.
+
+    Args:
+        confusion_matrix (list[list[int]]): Square confusion matrix.
+
+    Returns:
+        float: Macro precision — unweighted mean of per-class precisions.
+            Returns 0.0 for any class with no predicted positives (TP + FP = 0).
+    """
     num_classes = len(confusion_matrix)
     precisions = []
     for i in range(num_classes):
@@ -502,6 +515,15 @@ def precision_macro(confusion_matrix):
 
 
 def recall_macro(confusion_matrix):
+    """Compute macro-averaged recall from a confusion matrix.
+
+    Args:
+        confusion_matrix (list[list[int]]): Square confusion matrix.
+
+    Returns:
+        float: Macro recall — unweighted mean of per-class recalls.
+            Returns 0.0 for any class with no actual positives (TP + FN = 0).
+    """
     num_classes = len(confusion_matrix)
     recalls = []
     for i in range(num_classes):
@@ -513,6 +535,15 @@ def recall_macro(confusion_matrix):
 
 
 def f1_macro(confusion_matrix):
+    """Compute macro-averaged F1 score from a confusion matrix.
+
+    Args:
+        confusion_matrix (list[list[int]]): Square confusion matrix.
+
+    Returns:
+        float: Macro F1 — harmonic mean of macro precision and macro recall.
+            Returns 0.0 when precision + recall = 0.
+    """
     p = precision_macro(confusion_matrix)
     r = recall_macro(confusion_matrix)
     denom = p + r
@@ -520,6 +551,15 @@ def f1_macro(confusion_matrix):
 
 
 def accuracy_macro(confusion_matrix):
+    """Compute overall accuracy from a confusion matrix.
+
+    Args:
+        confusion_matrix (list[list[int]]): Square confusion matrix.
+
+    Returns:
+        float: Ratio of correctly classified examples to total examples.
+            Returns 0.0 if the matrix is empty.
+    """
     correct = sum(confusion_matrix[i][i] for i in range(len(confusion_matrix)))
     total = sum(sum(row) for row in confusion_matrix)
     return correct / total if total else 0.0

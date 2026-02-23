@@ -1,124 +1,110 @@
 """
-Script de Gestion de l'Utilisation des Cœurs CPU
+CPU Core Usage Management
 
-Auteur: VICTOR DJIEMBOU
-Date de création: 15/11/2023
-Dernière modification: 15/11/2023
+Author: VICTOR DJIEMBOU
+Created: 15/11/2023
+Last modified: 15/11/2023
 
 Description:
-    Ce script configure et limite l'utilisation des cœurs CPU pour les bibliothèques
-    de calcul scientifique (NumPy, SciPy, scikit-learn) afin d'optimiser les performances
-    et d'éviter la surcharge du système lors des expérimentations.
+    Configures and limits CPU core usage for scientific computing libraries
+    (NumPy, SciPy, scikit-learn) to optimise performance and prevent system
+    overload during experiments.
 
-    Il met en place:
-    - Configuration des threads OpenMP pour les bibliothèques de calcul
-    - Gestion des signaux système (SIGINT, SIGTERM)
-    - Nettoyage automatique des ressources à la sortie
+    Sets up:
+    - OpenMP thread configuration for numerical compute backends
+    - System signal handlers (SIGINT, SIGTERM) for graceful shutdown
+    - Automatic resource cleanup on exit via atexit
 
-Fonctionnalités principales:
-    - Limitation dynamique du nombre de threads via variable d'environnement
-    - Gestion propre des interruptions (Ctrl+C)
-    - Libération des ressources OpenMP/MKL/OpenBLAS
+Key features:
+    - Dynamic thread count limiting via environment variables (OMP, MKL,
+      OpenBLAS, NumExpr) read from the .env ``MAX_CORE`` setting
+    - Clean interruption handling (Ctrl+C)
+    - OpenMP/MKL/OpenBLAS thread pool release on exit
 
 Usage:
-    Ce module est importé au début des autres scripts via:
+    Imported at the top of pipeline scripts:
     from .cpu_limitation_usage import *
 
-Dépendances:
-    - modules.env: Configuration environnement (.env)
-    - os, signal, sys, atexit: Gestion système
+Dependencies:
+    - modules.env: Environment configuration (.env loader)
+    - os, signal, sys, atexit: System management
 """
 # 00_cpu_limitation usage
 from modules.env import *  # Env functions
 import os
 import signal
 
-# Configuration du nombre maximum de threads AVANT l'importation de NumPy/SciPy
-# Ceci est crucial car ces bibliothèques initialisent leurs pools de threads à l'importation
+# Set thread limits BEFORE importing NumPy/SciPy — these libraries initialise
+# their thread pools at import time, so env vars must be set first.
 
-# Chargement de la configuration depuis le fichier .env
+# Load MAX_CORE from .env
 print(load_env_with_path()['max_core'])
 
-# Configuration des variables d'environnement pour limiter les threads
-# Ces variables contrôlent différentes bibliothèques de calcul parallèle:
+# Set environment variables to cap parallel threads across compute backends:
 
-# OMP_NUM_THREADS: OpenMP (utilisé par de nombreuses bibliothèques C/C++)
+# OMP_NUM_THREADS: OpenMP (used by many C/C++ libraries)
 os.environ['OMP_NUM_THREADS'] = load_env_with_path()['max_core']
 
-# MKL_NUM_THREADS: Intel Math Kernel Library (backend de NumPy)
+# MKL_NUM_THREADS: Intel Math Kernel Library (NumPy backend)
 os.environ['MKL_NUM_THREADS'] = load_env_with_path()['max_core']
 
-# OPENBLAS_NUM_THREADS: OpenBLAS (backend alternatif de NumPy)
+# OPENBLAS_NUM_THREADS: OpenBLAS (alternative NumPy backend)
 os.environ['OPENBLAS_NUM_THREADS'] = load_env_with_path()['max_core']
 
-# NUMEXPR_NUM_THREADS: NumExpr (évaluations d'expressions numériques rapides)
+# NUMEXPR_NUM_THREADS: NumExpr (fast numerical expression evaluation)
 os.environ['NUMEXPR_NUM_THREADS'] = load_env_with_path()['max_core']
 
-import sys # Gestion de la sortie du programme
+import sys  # Program exit management
 
 def cleanup():
+    """Explicitly release OpenMP and numerical-compute thread resources.
+
+    Called automatically:
+    - At normal program exit (via ``atexit``).
+    - On receipt of SIGINT or SIGTERM.
+
+    Reduces active thread pools to 1 to force release and prevent orphaned threads.
     """
-    Nettoyage explicite des ressources OpenMP et des threads de calcul
+    print("Cleaning up OpenMP threads...")
 
-    Cette fonction est appelée:
-    - À la sortie normale du programme (via atexit)
-    - Lors d'une interruption (SIGINT, SIGTERM)
-
-    Elle force la fermeture des pools de threads pour libérer les ressources système
-    et éviter les threads orphelins.
-    """
-    print("Nettoyage des threads OpenMP...")
-
-    # Tentative de forcer la fermeture des threads NumPy avec MKL
+    # Attempt to release NumPy/MKL thread pool
     try:
-        # Pour NumPy avec MKL
         import mkl
-        # Réduction à 1 thread pour forcer la libération des autres
-        mkl.set_num_threads(1)
+        mkl.set_num_threads(1)  # Reduce to 1 thread to free the others
     except ImportError:
-        # MKL n'est pas installé ou pas utilisé comme backend
-        pass
+        pass  # MKL not installed or not the active backend
 
-    # Tentative de forcer la fermeture des threads OpenBLAS
+    # Attempt to release OpenBLAS thread pool
     try:
-        # Pour OpenBLAS
         import openblas
-        # Réduction à 1 thread pour forcer la libération des autres
-        openblas.set_num_threads(1)
+        openblas.set_num_threads(1)  # Reduce to 1 thread to free the others
     except ImportError:
-        # OpenBLAS n'est pas installé ou pas utilisé comme backend
-        pass
+        pass  # OpenBLAS not installed or not the active backend
 
 
 def signal_handler(sig, frame):
+    """Handle OS signals for graceful shutdown.
+
+    Invoked by the OS when the process receives SIGINT (Ctrl+C) or SIGTERM.
+    Logs the signal, releases compute resources via :func:`cleanup`, then exits.
+
+    Args:
+        sig (int): Signal number received (e.g. ``signal.SIGINT``).
+        frame: Current execution frame at the point of interruption.
     """
-    Gestionnaire de signaux pour interruptions propres
-
-    Cette fonction est appelée lorsque le programme reçoit un signal système
-    (par exemple, Ctrl+C génère SIGINT).
-
-    Paramètres:
-        sig (int): Numéro du signal reçu
-        frame: Frame d'exécution actuel (contexte d'appel)
-
-    Actions:
-        1. Affiche le signal reçu
-        2. Appelle cleanup() pour libérer les ressources
-        3. Quitte proprement le programme avec code de sortie 0
-    """
-    print(f'Signal {sig} - {frame}reçu, arrêt en cours...')
-    cleanup() # Nettoyage des ressources
-    sys.exit(0) # Sortie propre du programme
+    print(f'Signal {sig} - {frame} received, shutting down...')
+    cleanup()   # Release compute resources
+    sys.exit(0) # Clean exit
 
 
-# Enregistrement des gestionnaires de signaux
-# SIGINT: Interruption depuis le clavier (Ctrl+C)
+# Register signal handlers
+# SIGINT: keyboard interrupt (Ctrl+C)
 signal.signal(signal.SIGINT, signal_handler)
 
-# SIGTERM: Signal de terminaison (commande kill par défaut)
+# SIGTERM: termination signal (default kill command)
 signal.signal(signal.SIGTERM, signal_handler)
 
-# Enregistrement du nettoyage à la sortie normale du programme
+# Register cleanup to run at normal program exit
 import atexit
 
-atexit.register(cleanup)  # cleanup() sera appelé automatiquement à la fin du programme
+atexit.register(cleanup)  # cleanup() is called automatically when the program ends

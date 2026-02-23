@@ -42,12 +42,18 @@ def get_na_columns(dataframe):
 	return NAs
 
 def impute_nan_values(dataframe, variables):
-	"""Replace NAs values within KNN approche
+	"""Impute missing values column by column using median (numeric) or mode (categorical).
+
+	Columns with a missing-value rate below 50 % are imputed in place.
+	Columns at or above 50 % are dropped entirely.
+
 	Args:
-		dataframe: the dataset with NAs dimension
+		dataframe (pd.DataFrame): Dataset containing columns with missing values.
+		variables (list[tuple]): List of (column_name, missing_rate) pairs as returned
+			by get_na_columns().
 
 	Returns:
-		new dataset with NAs replace by neighbor value
+		pd.DataFrame: New DataFrame with missing values imputed or columns dropped.
 	"""
 
 	# imputer = KNNImputer(n_neighbors=5)

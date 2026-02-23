@@ -11,6 +11,34 @@ from modules.env import *  # Env functions
 
 
 def try_split_all_models(df, target, test_size, max_perf, max_tries=100, reset_index=False, verbose=True):
+    """Find a stratified train/test split where the mean F1-macro across all models is below a threshold.
+
+    Repeatedly draws random stratified splits until every class is represented
+    in both sets and the average macro F1-score across all baseline classifiers
+    stays below *max_perf*.  This ensures the split is not trivially easy for
+    the classifiers.
+
+    Args:
+        df (pd.DataFrame): Full dataset including the target column.
+        target (str): Name of the target/label column.
+        test_size (float): Fraction of data to reserve for the test set.
+        max_perf (float): Maximum acceptable average macro F1-score across
+            models.  Splits where the average meets or exceeds this value are
+            rejected.
+        max_tries (int): Maximum number of random seeds to attempt.
+            Default 100.
+        reset_index (bool): If True, reset the index of the returned splits.
+            Default False.
+        verbose (bool): If True, print per-model F1 scores and warnings.
+            Default True.
+
+    Returns:
+        tuple: ``(X_train, X_test, y_train, y_test, seed)`` for the accepted
+            split.
+
+    Raises:
+        Exception: If no valid split is found within *max_tries* attempts.
+    """
     models = init_models()
     print(df[target].value_counts())
     for attempt in range(max_tries):
@@ -68,6 +96,18 @@ def try_split_all_models(df, target, test_size, max_perf, max_tries=100, reset_i
 
 
 def main():
+    """Entry point for the MLNA data-split pipeline (script 02).
+
+    Reads ``--cwd`` and ``--dataset_folder`` from the command line, loads the
+    preprocessed dataset, calls :func:`try_split_all_models` to find a valid
+    split, and saves the train/test CSV files and the original-index split to
+    disk.  Skips execution if a ``*train*`` file already exists in the output
+    directory.
+
+    CLI arguments:
+        --cwd (str): Absolute path to the working directory.
+        --dataset_folder (str): Dataset sub-folder name.
+    """
     # Définition des arguments
     import argparse
 

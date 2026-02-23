@@ -24,29 +24,41 @@ logger = logging.getLogger(__name__)
 
 class LaTeXEmailSender:
     def __init__(self, gmail_user, gmail_password, display_name="Pipeline MLNA"):
-        """
-        Initialise le gestionnaire LaTeX/Email
+        """Initialise the LaTeX compiler and email sender.
 
         Args:
-            gmail_user (str): Adresse Gmail
-            gmail_password (str): Mot de passe d'application Gmail
-            display_name (str): Sender name
+            gmail_user (str): Gmail address used as the sender.
+            gmail_password (str): Gmail App Password (not the regular account password).
+            display_name (str): Sender display name shown in the From header.
+                Default "Pipeline MLNA".
         """
         self.gmail_user = gmail_user
         self.gmail_password = gmail_password
         self.display_name = display_name
 
     def compile_latex(self, tex_file_path, output_dir=None, clean_temp=True):
-        """
-        Compile un fichier LaTeX en PDF
+        """Compile a LaTeX file to PDF using two pdflatex passes.
+
+        Two compilation passes are performed so that cross-references are
+        resolved correctly.  Output is decoded with UTF-8 (falling back to
+        replacement characters on errors).  On failure the .log file is read
+        and forwarded to the logger to aid debugging.
 
         Args:
-            tex_file_path (str): Chemin vers le fichier .tex
-            output_dir (str): Répertoire de sortie (optionnel)
-            clean_temp (bool): Nettoyer les fichiers temporaires
+            tex_file_path (str): Path to the .tex source file.
+            output_dir (str): Directory for the generated PDF.  Defaults to the
+                same directory as the .tex file.
+            clean_temp (bool): Remove auxiliary LaTeX files (.aux, .log, etc.)
+                after successful compilation.  Default True.
 
         Returns:
-            str: Chemin vers le fichier PDF généré
+            str: Absolute path to the generated PDF file.
+
+        Raises:
+            FileNotFoundError: If the .tex file does not exist, or if pdflatex
+                does not produce the expected PDF.
+            RuntimeError: If the first pdflatex pass exits with a non-zero
+                return code.
         """
         tex_path = Path(tex_file_path)
 
@@ -154,8 +166,29 @@ class LaTeXEmailSender:
 
     # Version alternative encore plus robuste
     def compile_latex_robust(self, tex_file_path, output_dir=None, clean_temp=True):
-        """
-        Version encore plus robuste de la compilation LaTeX
+        """Compile a LaTeX file to PDF with multi-encoding fallback.
+
+        More resilient alternative to :meth:`compile_latex`.  The inner
+        ``run_pdflatex_safe`` helper tries UTF-8, latin-1, CP-1252 and
+        ISO-8859-1 in sequence; if all fail the process output is captured as
+        raw bytes and decoded with replacement.  Two pdflatex passes are run
+        to resolve cross-references.
+
+        Args:
+            tex_file_path (str): Path to the .tex source file.
+            output_dir (str): Directory for the generated PDF.  Defaults to the
+                same directory as the .tex file.
+            clean_temp (bool): Remove auxiliary LaTeX files after successful
+                compilation.  Default True.
+
+        Returns:
+            str: Absolute path to the generated PDF file.
+
+        Raises:
+            FileNotFoundError: If the .tex file does not exist, or if pdflatex
+                does not produce the expected PDF.
+            RuntimeError: If the first pdflatex pass exits with a non-zero
+                return code.
         """
         tex_path = Path(tex_file_path)
 
@@ -253,7 +286,12 @@ class LaTeXEmailSender:
             raise
 
     def _clean_temp_files(self, work_dir, base_name):
-        """Nettoie les fichiers temporaires LaTeX"""
+        """Remove LaTeX auxiliary files produced during compilation.
+
+        Args:
+            work_dir (pathlib.Path): Directory containing the auxiliary files.
+            base_name (str): Stem of the .tex file (used to build filenames).
+        """
         temp_extensions = ['.aux', '.log', '.out', '.toc', '.nav', '.snm', '.fls', '.fdb_latexmk']
 
         for ext in temp_extensions:
@@ -263,16 +301,24 @@ class LaTeXEmailSender:
                 logger.debug(f"Supprimé: {temp_file}")
 
     def send_email(self, to_emails, subject, body, pdf_path=None, tex_path=None, cc_emails=None):
-        """
-        Envoie un email avec le PDF et/ou le fichier TEX en pièces jointes
+        """Send an email with optional PDF and/or LaTeX file attachments via Gmail SMTP.
+
+        Connects to smtp.gmail.com:587, upgrades to TLS with STARTTLS, and
+        authenticates using the credentials provided at construction time.
 
         Args:
-            to_emails (list): Liste des destinataires
-            subject (str): Sujet de l'email
-            body (str): Corps de l'email
-            pdf_path (str): Chemin vers le PDF à joindre
-            tex_path (str): Chemin vers le fichier TEX à joindre
-            cc_emails (list): Liste des destinataires en copie
+            to_emails (list[str]): Primary recipient addresses.
+            subject (str): Email subject line.
+            body (str): Plain-text email body (UTF-8).
+            pdf_path (str): Path to a PDF file to attach.  Ignored if None or
+                if the file does not exist.
+            tex_path (str): Path to a .tex file to attach.  Ignored if None or
+                if the file does not exist.
+            cc_emails (list[str]): CC recipient addresses.  Default None.
+
+        Raises:
+            smtplib.SMTPAuthenticationError: If Gmail rejects the credentials.
+            smtplib.SMTPException: For any other SMTP-level error.
         """
         msg = MIMEMultipart()
         if self.display_name:
@@ -354,7 +400,24 @@ def SendReport(
         EMAIL_BODY_,
         CAN_SEND=True
 ):
-    """Fonction principale - exemple d'utilisation"""
+    """Compile a LaTeX report and optionally email it.
+
+    Convenience wrapper that creates a :class:`LaTeXEmailSender`, runs
+    :meth:`compile_latex`, and — when *CAN_SEND* is ``True`` — sends the
+    resulting PDF together with the source .tex file to the specified
+    recipients.  Exits the process with code 1 on any unrecoverable error.
+
+    Args:
+        GMAIL_USER_ (str): Gmail address used as the sender.
+        GMAIL_APP_PASSWORD_ (str): Gmail App Password (not the account password).
+        LATEX_FILE_ (str): Path to the .tex source file to compile.
+        TO_EMAILS_ (list[str]): Primary recipient addresses.
+        CC_EMAILS_ (list[str]): CC recipient addresses.
+        SUBJECT_ (str): Email subject line.
+        EMAIL_BODY_ (str): Plain-text email body.
+        CAN_SEND (bool): If ``True`` (default) the compiled PDF is emailed;
+            if ``False`` only compilation is performed.
+    """
 
     # ================================
     # CONFIGURATION - À MODIFIER

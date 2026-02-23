@@ -377,7 +377,21 @@ def get_SMOTHE_dataset(X, y, random_state=42, sampling_strategy='auto'):
     return X_r, y_r
 
 def random_sample_merge_v2(df, target_column, percentage, min_per_class=2):
-    # Séparation du dataframe en fonction des valeurs de la colonne cible
+    """Stratified random sampling that preserves class distribution.
+
+    Samples a fixed percentage from each class group, guaranteeing at least
+    min_per_class examples per class to avoid empty groups.
+
+    Args:
+        df (pd.DataFrame): Source dataset.
+        target_column (str): Name of the class column used for stratification.
+        percentage (float): Fraction of each class group to sample (0 < p <= 1).
+        min_per_class (int): Minimum number of samples to keep per class. Default 2.
+
+    Returns:
+        pd.DataFrame: Merged stratified sample with reset integer index.
+    """
+    # split the dataframe by target class values
     # lenDF = df.shape[0]
     groups = df.groupby(target_column)
 
@@ -408,7 +422,20 @@ def random_sample_merge_v2(df, target_column, percentage, min_per_class=2):
     return merged_df
 
 def random_sample_merge(df, target_column, percentage):
-    # Séparation du dataframe en fonction des valeurs de la colonne cible
+    """Balanced random sampling based on the minority class size.
+
+    Computes the target sample size from the minority class count times percentage,
+    then draws that many samples from every class group.
+
+    Args:
+        df (pd.DataFrame): Source dataset.
+        target_column (str): Name of the class column used for stratification.
+        percentage (float): Fraction of the minority class to sample from each group.
+
+    Returns:
+        pd.DataFrame: Merged balanced sample with reset integer index.
+    """
+    # split the dataframe by target class values
     lenDF = df.shape[0]
     groups = df.groupby(target_column)
 

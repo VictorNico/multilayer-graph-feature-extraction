@@ -260,8 +260,19 @@ def add_specific_loan_in_mlg(graph, data, features):
     return [f"C{i}-U-{el}" for el in LIST_OF_CUSTOMERS for i in range(LEN_OF_FEATURES)], new_modality_nodes
 
 def remove_specific_loan_from_mlg(graph, borrower_nodes, new_modality_nodes):
-    graph.remove_nodes_from(borrower_nodes)      # arêtes supprimées automatiquement
-    graph.remove_nodes_from(new_modality_nodes)  # nettoyage des modalités orphelines
+    """Remove a specific borrower and its new modality nodes from the multilayer graph.
+
+    Intended to be called after add_specific_loan_in_mlg to restore the graph
+    to its original state (in-place, no deepcopy).
+
+    Args:
+        graph (nx.DiGraph): The multilayer graph to modify in place.
+        borrower_nodes (list[str]): Borrower node labels to remove (e.g. ['C0-U-42', 'C1-U-42']).
+        new_modality_nodes (list[str]): Modality nodes that were absent from the training graph
+            and were added alongside the borrower; removed to avoid orphan nodes.
+    """
+    graph.remove_nodes_from(borrower_nodes)      # edges removed automatically
+    graph.remove_nodes_from(new_modality_nodes)  # clean up orphan modality nodes
 
 # @profile
 def find_indices(list_to_check, item_to_find):
@@ -395,6 +406,23 @@ def get_inter_node_label(graph):
 
 
 def get_all_perso_nodes_labels(graph, borrower, layers):
+    """Return all nodes connected to a borrower across all layers in a single graph traversal.
+
+    Replaces three separate calls to get_combine_perso_nodes_label,
+    get_intra_perso_nodes_label and get_inter_perso_nodes_label, reducing graph
+    traversal from 3 passes to 1.
+
+    Args:
+        graph (nx.DiGraph): The multilayer graph.
+        borrower (int | str): Index of the borrower whose neighbourhood to retrieve.
+        layers (int): Number of layers in the graph.
+
+    Returns:
+        tuple[list, list, list]:
+            - combine: all neighbour nodes (intra + inter).
+            - intra: modality nodes ('-M-' pattern) directly linked to the borrower.
+            - inter: user nodes ('-U-' pattern) linked to the borrower across layers.
+    """
     edges = [
         (A, B)
         for i in range(layers)
@@ -650,6 +678,19 @@ def get_persons(dataframe):
 
 
 def get_maximun_std_descriptor(extracts_1, extracts_2, feats):
+    """Compute the element-wise maximum descriptor value across two extraction sets.
+
+    Used to build a shared normalisation bound when merging train and test descriptors.
+
+    Args:
+        extracts_1 (dict): First descriptor dictionary {feature_name: list_of_values}.
+        extracts_2 (dict): Second descriptor dictionary with the same keys.
+        feats (list[str]): Feature names to process.
+
+    Returns:
+        dict: {feature_name: max_value} where max_value is the overall maximum
+            across both extraction sets for each feature.
+    """
     internalMaxConfig = dict()
     for key in feats:
         internalMaxConfig[key] = max(max(extracts_1[key]),max(extracts_2[key]))
@@ -1064,6 +1105,21 @@ def build_mlg_with_class(data, features, className):
 
 
 def compute_distance_descriptor(graph, k, label, loan_id):
+    """Compute path-based distance descriptors between a borrower and a class label node.
+
+    Temporarily removes the direct edge between the borrower and the class node,
+    then enumerates all remaining simple paths to measure indirect connectivity.
+
+    Args:
+        graph (nx.DiGraph): The multilayer graph including class nodes.
+        k (int): Layer index of the class node.
+        label (int | str): Class label value (e.g. 0 or 1).
+        loan_id (int | str): Borrower identifier.
+
+    Returns:
+        tuple[int, float]: (num_paths, average_length) where num_paths is the count
+            of simple paths and average_length is their mean edge count.
+    """
     # Format loan node and decision label node
     loan_node = f"C-0-U-{loan_id}"
     decision_label_node = f"C-{k}-M-C-{label}"
@@ -1088,18 +1144,20 @@ def compute_distance_descriptor(graph, k, label, loan_id):
 
 
 def removeEdge(graph, k, label, loan_id):
-    """
+    """Remove the edge between a borrower node and its class label node (in-place).
 
-    Parameters
-    ----------
-    graph
-    k
-    label
-    loan_id
+    Used to isolate a test borrower before extracting personalized PageRank
+    descriptors, avoiding information leakage from the class layer.
+    Pair with addEdge to restore the graph after extraction.
 
-    Returns
-    -------
-    modified_graph
+    Args:
+        graph (nx.DiGraph): The multilayer graph to modify in place.
+        k (int): Layer index of the class node.
+        label (int | str): Class label value.
+        loan_id (int | str): Borrower identifier.
+
+    Returns:
+        nx.DiGraph: The same graph object (modified in place).
     """
 
     loan_node = f"C{k}-U-{loan_id}"
@@ -1111,18 +1169,19 @@ def removeEdge(graph, k, label, loan_id):
     return modified_graph
 
 def addEdge(graph, k, label, loan_id):
-    """
+    """Restore the edge between a borrower node and its class label node (in-place).
 
-    Parameters
-    ----------
-    graph
-    k
-    label
-    loan_id
+    Symmetric counterpart of removeEdge. Must be called after descriptor extraction
+    to leave the graph in its original state for the next borrower iteration.
 
-    Returns
-    -------
-    modified_graph
+    Args:
+        graph (nx.DiGraph): The multilayer graph to modify in place.
+        k (int): Layer index of the class node.
+        label (int | str): Class label value.
+        loan_id (int | str): Borrower identifier.
+
+    Returns:
+        nx.DiGraph: The same graph object (modified in place).
     """
 
     loan_node = f"C{k}-U-{loan_id}"

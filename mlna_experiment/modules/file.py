@@ -65,6 +65,14 @@ def load_data_set_from_url(path, na_values, sep='\t', encoding='utf-8', index_co
 
 
 def load_config(config_path):
+    """Load an INI configuration file using configparser.
+
+    Args:
+        config_path (str): Path to the .ini configuration file.
+
+    Returns:
+        configparser.ConfigParser: Parsed configuration object.
+    """
     config = configparser.ConfigParser()
     config.read(config_path)
     return config

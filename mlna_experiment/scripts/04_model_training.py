@@ -34,28 +34,42 @@ def make_builder(
         y_traini=None,
         y_testi=None
 ):
-    """
-    build ML models
-    Parameters
-    ----------
-    fix_imbalance
-    target_variable
-    clfs
-    cwd
-    prefix
-    verbose
-    financialOption
-    domain
-    DATA_OVER
-    withCost
-    x_traini
-    x_testi
-    y_traini
-    y_testi
+    """Train a set of classifiers and save metrics, features, and predictions to disk.
 
-    Returns
-    -------
+    Optionally applies SMOTE to address class imbalance before training.  All
+    evaluation results and train/test splits are persisted under *cwd/evaluation/*.
 
+    Args:
+        fix_imbalance (bool): If True, apply SMOTE to the training set.
+        target_variable (str): Name of the target column.
+        clfs (dict): ``{name: sklearn_estimator}`` mapping of classifiers to train.
+        cwd (str): Output directory; sub-folder ``/evaluation`` is created
+            automatically.
+        prefix (str): Dataset domain name used as a filename prefix.
+        verbose (bool): If True, enable verbose output from the training loop.
+        duration_divider (float): Divisor applied to loan duration for the
+            financial cost metric.
+        rate_divider (float): Divisor applied to the interest rate for the
+            financial cost metric.
+        financialOption (dict): Financial feature configuration forwarded to
+            :func:`train`.
+        original (pd.DataFrame): Original (un-preprocessed) dataset used for
+            financial cost computation.
+        domain (str): Tag used in the saved metric filename.  Default ``'classic'``.
+        DATA_OVER (pd.DataFrame): Pre-merged dataset to split internally.  If
+            None, *x_traini/x_testi/y_traini/y_testi* are used directly.
+            Default None.
+        withCost (bool): If True, compute the financial cost metric.
+            Default True.
+        x_traini (pd.DataFrame): Training feature matrix (used when *DATA_OVER*
+            is None).
+        x_testi (pd.DataFrame): Test feature matrix.
+        y_traini (pd.Series): Training labels.
+        y_testi (pd.Series): Test labels.
+
+    Returns:
+        tuple: ``(domain, store)`` where *store* is the evaluation metrics
+            DataFrame saved to disk.
     """
 
     # test train split
@@ -160,6 +174,46 @@ def build_MlC(
     config_df2=None,
     both=False
 ):
+    """Assemble MlC (classic + graph-enriched) feature sets and run model training.
+
+    Builds all descriptor-augmented feature matrices for both train and test
+    sets (GLO_MX/CX, PER_MX/CX/CY/CXY, GAP_MX/CX/CY/CXY, and optionally
+    BOT_CXY), then calls :func:`make_builder` for each configuration that
+    has not yet produced a metric file.  Pre-existing results are loaded from
+    disk instead of being recomputed.
+
+    Args:
+        x_train (pd.DataFrame): Training feature matrix (classic features only).
+        x_test (pd.DataFrame): Test feature matrix (classic features only).
+        y_train (pd.Series): Training labels.
+        y_test (pd.Series): Test labels.
+        graphWithClass (bool): Determines the CX/MX suffix used in key names
+            and sub-directory paths.
+        config_df (dict): Descriptor DataFrames as produced by
+            :func:`generate_config_df` in script 03 (train and test sets).
+        fix_imbalance (bool): Forwarded to :func:`make_builder`.
+        target_variable (str): Name of the target column.
+        clfs (dict): Classifier mapping forwarded to :func:`make_builder`.
+        domain (str): Dataset domain name used in filenames.
+        verbose (bool): Verbose flag forwarded to :func:`make_builder`.
+        cwd (str): Results root directory for the current (dataset, alpha, type).
+        duration_divider (float): Financial cost parameter.
+        rate_divider (float): Financial cost parameter.
+        withCost (bool): Whether to compute the financial cost metric.
+        financialOption (dict): Financial feature configuration.
+        logic_i_g (list): Accumulator list for GLO builder results; appended
+            in-place.
+        logic_i_p (list): Accumulator list for PER/GAP/BOT builder results;
+            appended in-place.
+        logic_i_pg (list): Unused accumulator (reserved).
+        original (pd.DataFrame): Original dataset for financial cost computation.
+        name (str): Variable/configuration name used to locate sub-directories.
+        mlnL (str): MLNA level path segment.  Default ``'/mlna_1'``.
+        config_df2 (dict): Secondary descriptor DataFrames used for BOT_CXY
+            construction.  Default None.
+        both (bool): If True and *graphWithClass* is True, also build the
+            BOT_CXY descriptor set.  Default False.
+    """
     mlc_cf = dict()
     """
     train

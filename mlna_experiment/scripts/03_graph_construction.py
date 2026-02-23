@@ -1,38 +1,37 @@
 """
 ===============================================================================
-FICHIER: 03_graph_construction.py
+FILE: 03_graph_construction.py
 ===============================================================================
-Auteur: DJIEMBOU TIENTCHEU Victor Nico
-Date de création: 28/11/2023
-Dernière modification: 11/06/2025
+Author: DJIEMBOU TIENTCHEU Victor Nico
+Created: 28/11/2023
+Last modified: 11/06/2025
 
 DESCRIPTION:
-    Ce script gère la construction et l'analyse de graphes multicouches pour
-    l'extraction de descripteurs dans le cadre d'un système d'apprentissage
-    automatique. Il implémente trois modes principaux:
-    - MLNA-1: Analyse monocouche (une variable à la fois)
-    - MLNA-K: Analyse combinatoire (k=2 variables)
-    - MLNA-TOP-K: Analyse des meilleures k variables sélectionnées
+    Builds and analyses multilayer graphs for descriptor extraction within
+    the MLNA supervised machine-learning pipeline.  Three construction modes
+    are implemented:
+    - MLNA-1:     Monolayer analysis — one categorical variable per layer.
+    - MLNA-K:     Combinatorial multilayer analysis — k=2 variables per layer.
+    - MLNA-TOP-K: Top-k selected variables per layer (framework mode).
 
-DÉPENDANCES:
-    - networkx: Pour la manipulation de graphes
-    - pandas: Pour la manipulation de données
-    - numpy: Pour les calculs numériques
-    - modules.preprocessing: Fonctions de prétraitement
-    - modules.file: Fonctions de manipulation de fichiers
-    - modules.graph: Fonctions de construction de graphes
+DEPENDENCIES:
+    - networkx:              Graph construction and manipulation.
+    - pandas / numpy:        Data manipulation and numerical computation.
+    - modules.preprocessing: Combination generation utilities.
+    - modules.file:          File I/O helpers.
+    - modules.graph:         Multilayer graph building and PageRank extraction.
 
 STRUCTURE:
-    1. Extraction de descripteurs depuis les graphes (PageRank)
-    2. Génération de configurations de données
-    3. Construction MLNA-1 (monocouche)
-    4. Construction MLNA-K (multicouche combinatoire)
-    5. Construction MLNA-TOP-K (variables sélectionnées)
-    6. Fonction principale main()
+    1. Descriptor extraction from graphs (PageRank — batched power iteration)
+    2. Descriptor configuration generation and saving
+    3. MLNA-1 construction (monolayer)
+    4. MLNA-K construction (combinatorial multilayer)
+    5. MLNA-TOP-K construction (selected variables)
+    6. main() entry point
 
-UTILISATION:
-    python 03_graph_construction.py --cwd <repertoire> --dataset_folder <nom>
-           --alpha <valeur> --turn <numero> [--graph_with_class]
+USAGE:
+    python -m scripts.03_graph_construction --cwd <dir> --dataset_folder <name>
+           --alpha <value> --turn <number> [--graph_with_class] [--metric <name>]
 ===============================================================================
 """
 
@@ -68,57 +67,50 @@ def extract_descriptors_from_graph_model(
     borrower=None,        # ID de l'emprunteur analysé
     layers=1              # Nombre de couches du graphe
 ):
-    """
-    Extrait les descripteurs basés sur le graphe pour un emprunteur donné.
+    """Extract graph-based descriptors for a single instance.
 
-    Cette fonction calcule deux types de descripteurs:
-    1. Descripteurs GLOBAUX (GLO): Calculés sur l'ensemble du graphe
-    2. Descripteurs PERSONNALISÉS (PER): Calculés avec personnalisation pour l'emprunteur
+    Computes two families of descriptors:
 
-    Les descripteurs incluent:
-    - DEGREE: Degré (nombre de voisins similaires)
-    - INTRA: PageRank intra-couche (nœuds modalités)
-    - INTER: PageRank inter-couche (nœuds emprunteurs)
-    - COMBINE: PageRank combiné
-    - M_*: Maximum des scores de modalités
+    1. **GLO** (global) — PageRank computed over the entire graph with a
+       uniform or type-restricted personalisation vector.
+    2. **PER** (personalised) — PageRank personalised towards the neighbours
+       of *borrower* in the graph.
 
-    Paramètres:
-    -----------
-    graph : networkx.DiGraph
-        Graphe multicouche représentant les relations emprunteur-modalité
-    graphWithClass : bool
-        Si True, inclut les descripteurs basés sur les classes
-    alpha : float (défaut=0.85)
-        Facteur d'amortissement PageRank (probabilité de continuer la marche)
-        Valeur standard: 0.85 (Google)
-    borrower : int
-        Identifiant de l'emprunteur pour lequel extraire les descripteurs
-    layers : int (défaut=1)
-        Nombre de couches du graphe à considérer
+    Descriptor types:
+        - ``DEGREE``: Number of instances sharing the same modality values.
+        - ``INTRA``:  PageRank over intra-layer modality nodes (``-M-`` nodes).
+        - ``INTER``:  PageRank over inter-layer instance nodes (``-U-`` nodes).
+        - ``COMBINE``: PageRank over the full graph.
+        - ``M_*``:    Maximum PageRank score of modality nodes connected to
+                      *borrower*.
+        - ``YN_* / YP_*``: Class-node scores (only when *graphWithClass* is True).
 
-    Retourne:
-    ---------
-    descriptors : dict
-        Dictionnaire contenant tous les descripteurs calculés
-        Format des clés: 'Att_<TYPE>_<CONTEXT>_<MODE>_'
-        - TYPE: DEGREE, INTRA, INTER, COMBINE, M_INTRA, M_INTER, M_COMBINE
-        - CONTEXT: GLO (global), PER (personnalisé)
-        - MODE: MX (sans classe), CX (avec classe)
+    PageRank is computed via a single batched power-iteration over a
+    6-column personalisation matrix, replacing 6 sequential
+    ``nx.pagerank()`` calls.
 
-    Exemple de descripteurs retournés:
-        {
-            'Att_DEGREE_GLO': 10,                  # 10 emprunteurs similaires
-            'Att_INTRA_GLO_MX_': 0.0234,          # Score PageRank intra
-            'Att_M_COMBINE_PER_CX_': 0.0456,      # Score max personnalisé
-            'YN_COMBINE_PER': 0.678,               # Prob. classe négative
-            'YP_COMBINE_PER': 0.322                # Prob. classe positive
-        }
+    Args:
+        graph (nx.DiGraph): Multilayer graph encoding instance-modality relations.
+        graphWithClass (bool): If True, include class-node descriptors (CX suffix
+            and YN/YP keys).
+        alpha (float): PageRank damping factor.  Default 0.85.
+        borrower (int): Row index of the instance to extract descriptors for.
+        layers (int): Number of graph layers (used for DEGREE computation).
+            Default 1.
 
-    Notes:
-    ------
-    - Les descripteurs avec suffixe '_M_' représentent le maximum des modalités
-    - Les descripteurs YN/YP ne sont calculés que si graphWithClass=True
-    - La normalisation des scores est gérée par standard_extraction()
+    Returns:
+        dict: Descriptor dictionary.  Key format: ``'Att_<TYPE>_<CONTEXT>_<MODE>_'``
+            where TYPE ∈ {DEGREE, INTRA, INTER, COMBINE, M_INTRA, M_INTER,
+            M_COMBINE}, CONTEXT ∈ {GLO, PER}, MODE ∈ {MX, CX}.
+            Example::
+
+                {
+                    'Att_DEGREE_GLO': 10,
+                    'Att_INTRA_GLO_MX_': 0.0234,
+                    'Att_M_COMBINE_PER_CX_': 0.0456,
+                    'YN_COMBINE_PER': 0.678,
+                    'YP_COMBINE_PER': 0.322,
+                }
     """
 
     # Initialisation du dictionnaire de descripteurs
@@ -263,60 +255,36 @@ def generate_config_df(
     extracts_p_t=None,     # Descripteurs personnalisés (test)
     name=None,             # Nom de la configuration
 ):
-    """
-    Génère et sauvegarde les configurations de descripteurs extraits.
+    """Organise extracted descriptors into DataFrames and save them to disk.
 
-    Cette fonction organise les descripteurs en DataFrames selon leur type
-    (global/personnalisé, avec/sans classe) et les sauvegarde dans la structure
-    de répertoires appropriée.
+    Assembles train and test descriptor DataFrames for each descriptor family
+    (GLO_MX, GLO_CX, PER_MX, PER_CX, PER_CY, PER_CXY) and writes them as CSV
+    files under the appropriate sub-directory.  Also saves a ``.conf`` pickle
+    containing the complete configuration for later reconstruction.
 
-    Paramètres:
-    -----------
-    graphWithClass : bool
-        Si True, génère des configurations incluant les descripteurs de classe (CY, CXY)
-    mlnL : str
-        Niveau du graphe multicouche ('/mlna_1', '/mlna_2', '/mlna_k_b')
-    cwd : str
-        Chemin du répertoire de travail courant
-    root : str
-        Chemin du répertoire racine du projet
-    domain : str
-        Nom du domaine/dataset (ex: 'german', 'australian')
-    extracts_g : dict
-        Descripteurs globaux pour l'ensemble d'entraînement
-        Format: {'Att_DEGREE_GLO': [val1, val2, ...], ...}
-    extracts_p : dict
-        Descripteurs personnalisés pour l'ensemble d'entraînement
-    extracts_g_t : dict
-        Descripteurs globaux pour l'ensemble de test
-    extracts_p_t : dict
-        Descripteurs personnalisés pour l'ensemble de test
-    name : str
-        Nom de la variable/configuration (ex: nom de l'attribut analysé)
+    Output directory layout::
 
-    Structure de sauvegarde:
-    ------------------------
-    cwd/mlna_X/variable_name/
-        ├── global/
-        │   ├── withClass/
-        │   │   └── descriptors/  # GLO_CX
-        │   └── withoutClass/
-        │       └── descriptors/  # GLO_MX
-        ├── personalized/
-        │   ├── withClass/
-        │   │   └── descriptors/  # PER_CX, PER_CY, PER_CXY
-        │   └── withoutClass/
-        │       └── descriptors/  # PER_MX
-        └── config_df_for_variable_name.conf
+        cwd/mlna_X/<name>/
+            ├── global/withClass/descriptors/        (GLO_CX)
+            ├── global/withoutClass/descriptors/     (GLO_MX)
+            ├── personalized/withClass/descriptors/  (PER_CX, PER_CY, PER_CXY)
+            ├── personalized/withoutClass/descriptors/ (PER_MX)
+            └── config_df_for_<name>_<with|without>Class.conf
 
-    Retourne:
-    ---------
-    None (les fichiers sont sauvegardés sur disque)
-
-    Fichiers générés:
-    -----------------
-    - DataFrames CSV: Descripteurs organisés par type
-    - Fichier .conf: Configuration complète pour reconstruction ultérieure
+    Args:
+        graphWithClass (bool): If True, also produce CY and CXY descriptor
+            DataFrames.
+        mlnL (str): MLNA level path segment (e.g. ``'/mlna_1'``,
+            ``'/mlna_k_b'``).
+        cwd (str): Working directory path (results root for the current alpha).
+        root (str): Project root directory.
+        domain (str): Dataset domain name used in filenames.
+        extracts_g (dict): Global descriptors for the training set.
+            Format: ``{'Att_DEGREE_GLO': [v1, v2, ...], ...}``.
+        extracts_p (dict): Personalised descriptors for the training set.
+        extracts_g_t (dict): Global descriptors for the test set.
+        extracts_p_t (dict): Personalised descriptors for the test set.
+        name (str): Variable/configuration name used in directory and file names.
     """
 
     # Initialisation du dictionnaire de configuration
@@ -474,85 +442,39 @@ def make_mlna_1_variable_v2(
         alpha,                       # Facteur d'amortissement PageRank
         graphWithClass=False         # Inclure les classes dans le graphe
 ):
-    """
-    Construction MLNA-1: Analyse monocouche (une variable à la fois).
+    """Build MLNA-1 graphs and extract monolayer descriptors for each categorical variable.
 
-    Cette fonction construit un graphe multicouche pour CHAQUE variable catégorielle
-    individuellement et extrait les descripteurs correspondants. C'est la première
-    étape du protocole MLNA qui permet d'évaluer l'importance de chaque variable.
+    For each variable in *nominal_factor_colums*, constructs a one-layer
+    multilayer graph, then iterates over train instances (leave-one-out: the
+    edge to the class node is temporarily removed) and test instances (the
+    instance is temporarily added) to extract GLO and PER PageRank descriptors.
+    Descriptors are normalised with :func:`standard_extraction` and saved via
+    :func:`generate_config_df`.  Already-processed variables are skipped.
 
-    Algorithme:
-    -----------
-    1. Pour chaque variable i dans nominal_factor_colums:
-        a. Construire le graphe multicouche MLN avec une seule couche
-        b. Sauvegarder le graphe
-        c. Pour chaque emprunteur du train:
-            - Extraire descripteurs globaux et personnalisés
-            - Retirer l'arête vers sa classe (leave-one-out)
-        d. Pour chaque emprunteur du test:
-            - Ajouter l'emprunteur au graphe
-            - Extraire descripteurs globaux et personnalisés
-        e. Normaliser tous les descripteurs
-        f. Générer et sauvegarder la configuration
+    Algorithm per variable:
+        1. Build the multilayer graph (with or without class nodes).
+        2. Save the graph in GraphML format.
+        3. For each training instance: remove class edge → extract → restore edge.
+        4. For each test instance: add instance → extract → remove instance.
+        5. Remove unused descriptor keys (MX or CX depending on *graphWithClass*).
+        6. Normalise with ``standard_extraction``; apply same scale to test.
+        7. Call ``generate_config_df`` to save DataFrames and ``.conf`` file.
 
-    Paramètres:
-    -----------
-    x_traini, x_testi : pd.DataFrame
-        Ensembles d'entraînement et de test (features uniquement)
-    y_traini, y_testi : pd.Series
-        Labels correspondants
-    OHE : list of np.ndarray
-        Liste des colonnes encodées one-hot pour chaque variable
-        Exemple: [array(['cat1_A', 'cat1_B']), array(['cat2_X', 'cat2_Y', 'cat2_Z'])]
-    nominal_factor_colums : list of str
-        Noms originaux des variables catégorielles
-        Exemple: ['categorical_var1', 'categorical_var2']
-    cwd : str
-        Chemin du répertoire de résultats (ex: 'results/german/0.85/cat')
-    root : str
-        Racine du projet
-    domain : str
-        Nom du dataset
-    target_variable : str
-        Nom de la variable cible (ex: 'loan_status')
-    alpha : float
-        Facteur d'amortissement pour PageRank (généralement 0.85)
-    graphWithClass : bool
-        Si True, construit des graphes incluant les nœuds de classe
-
-    Structure des descripteurs extraits:
-    -------------------------------------
-    extracts_g (globaux):
-        - Att_DEGREE_GLO: Degré des nœuds
-        - Att_INTRA_GLO_XX_: PageRank intra-couche
-        - Att_INTER_GLO_XX_: PageRank inter-couche
-        - Att_COMBINE_GLO_XX_: PageRank combiné
-        - Att_M_*_GLO_XX_: Maximum des modalités
-        (XX = CX avec classe, MX sans classe)
-
-    extracts_p (personnalisés):
-        - Att_DEGREE_PER: Degré personnalisé
-        - Att_*_PER_XX_: PageRank personnalisés
-        - YN_*_PER, YP_*_PER: Probabilités de classe (si graphWithClass)
-        - Att_M_*_PER_XX_: Maximum des modalités personnalisé
-
-    Retourne:
-    ---------
-    None (les résultats sont sauvegardés sur disque)
-
-    Fichiers générés pour chaque variable:
-    ---------------------------------------
-    cwd/mlna_1/variable_name/
-        ├── variable_name_mln.graphml          # Graphe NetworkX
-        ├── global/withoutClass/descriptors/   # Descripteurs globaux
-        ├── personalized/withoutClass/descriptors/  # Descripteurs personnalisés
-        └── config_df_for_variable_name.conf   # Configuration
-
-    Notes:
-    ------
-    - Utilise le leave-one-out pour l'entraînement (retire l'arête vers la classe)
-    - Normalise les descripteurs avec standard_extraction()
-    - Crée un fichier flag à la fin pour éviter les recalculs
+    Args:
+        x_traini (pd.DataFrame): Training feature matrix.
+        x_testi (pd.DataFrame): Test feature matrix.
+        y_traini (pd.Series): Training labels.
+        y_testi (pd.Series): Test labels.
+        OHE (list[np.ndarray]): One-hot-encoded column arrays, one per variable.
+        nominal_factor_colums (list[str]): Original categorical column names
+            (one-to-one with *OHE*).
+        cwd (str): Results directory for the current (dataset, alpha, type).
+        root (str): Project root directory.
+        domain (str): Dataset name used in saved filenames.
+        target_variable (str): Name of the target column.
+        alpha (float): PageRank damping factor.
+        graphWithClass (bool): If True, include class nodes in the graph.
+            Default False.
     """
 
     ## Copie des données pour éviter les modifications
@@ -777,56 +699,37 @@ def make_mlna_k_variable_v2(
         target_variable,             # Variable cible
         graphWithClass=True          # Inclure classes
 ):
-    """
-    Construction MLNA-K: Analyse multicouche combinatoire (k=2 variables).
+    """Build MLNA-K graphs and extract combinatorial multilayer descriptors (k=2).
 
-    Cette fonction explore toutes les combinaisons possibles de 2 variables
-    pour construire des graphes multicouches à 2 couches. Cela permet d'identifier
-    les interactions entre paires de variables.
+    Enumerates all C(n, 2) pairs of categorical variables, builds a two-layer
+    multilayer graph for each pair, and extracts descriptors following the same
+    leave-one-out / temporary-addition protocol as :func:`make_mlna_1_variable_v2`.
+    Results are saved under ``cwd/mlna_2/<var1>_<var2>/``.
 
-    Algorithme:
-    -----------
-    1. Fixer k=2 (nombre de couches)
-    2. Pour chaque combinaison de 2 variables parmi OHE:
-        a. Construire le graphe multicouche avec 2 couches
-        b. Sauvegarder le graphe
-        c. Extraire descripteurs pour train et test
-        d. Normaliser et sauvegarder
+    Algorithm:
+        For each pair of variables (k=2 fixed):
+        1. Build a 2-layer MLN graph.
+        2. Extract and normalise GLO/PER descriptors for train and test.
+        3. Save via :func:`generate_config_df`.
 
-    Différences avec MLNA-1:
-    -------------------------
-    - Graphes à 2 couches au lieu de 1
-    - Exploration combinatoire: C(n,2) graphes où n=nombre de variables
-    - Descripteurs capturent les interactions entre variables
-    - Utilise removeEdge différemment (k=2 au lieu de k=1)
+    Args:
+        x_traini (pd.DataFrame): Training feature matrix.
+        x_testi (pd.DataFrame): Test feature matrix.
+        y_traini (pd.Series): Training labels.
+        y_testi (pd.Series): Test labels.
+        OHE (list[np.ndarray]): One-hot-encoded column arrays.
+        nominal_factor_colums (list[str]): Original categorical column names.
+        cwd (str): Results directory for the current (dataset, alpha, type).
+        root (str): Project root directory.
+        domain (str): Dataset name.
+        alpha (float): PageRank damping factor.
+        target_variable (str): Name of the target column.
+        graphWithClass (bool): If True, include class nodes.  Default True.
 
-    Paramètres:
-    -----------
-    (Mêmes paramètres que make_mlna_1_variable_v2)
-
-    Exemple de combinaisons:
-    ------------------------
-    Si OHE contient 4 variables [A, B, C, D]:
-    Combinaisons générées:
-    - (A, B), (A, C), (A, D)
-    - (B, C), (B, D)
-    - (C, D)
-    Total: C(4,2) = 6 graphes
-
-    Structure de sortie:
-    --------------------
-    cwd/mlna_2/variable1_variable2/
-        ├── variable1_variable2_mln.graphml
-        ├── global/withClass/descriptors/
-        ├── personalized/withClass/descriptors/
-        ├── mixed/withClass/descriptors/
-        └── config_df_for_variable1_variable2.conf
-
-    Notes:
-    ------
-    - Par défaut, graphWithClass=True pour capturer les effets de classe
-    - La liste [2] peut être étendue à [2,3,4,...] pour k>2
-    - Temps de calcul O(n²) où n=nombre de variables
+    Note:
+        Complexity is O(n²) in the number of categorical variables.  The inner
+        loop is currently fixed to k=2 but the structure supports extension to
+        higher k values.
     """
 
     ## Copie des données
@@ -1035,70 +938,43 @@ def make_mlna_top_k_variable_v2(
         graphWithClass=False,        # Inclure classes
         topR=[]                      # Liste ordonnée des meilleures variables
 ):
+    """Build MLNA-TOP-K graphs for the top-k variables selected by the MNIFS protocol.
+
+    Incrementally builds k-layer multilayer graphs for k = 2 … len(topR),
+    always using the first k indices from *topR* (ranked by importance).
+    Unlike :func:`make_mlna_k_variable_v2`, no combinatorial search is
+    performed: the variable order is fixed by *topR*.  Results are saved under
+    ``cwd/mlna_k_b/<top_k_vars>/``.
+
+    Algorithm:
+        For k from 2 to len(topR):
+        1. Select the top-k variable indices: ``layer_config = topR[:k]``.
+        2. Build a k-layer MLN graph.
+        3. Extract and normalise GLO/PER descriptors for train and test.
+        4. Save via :func:`generate_config_df` with mlnL=``'/mlna_k_b'``.
+
+    Example:
+        If topR = [2, 5, 1, 4]:
+        - k=2: layers=[2,5],   saved to ``mlna_2_b/var2_var5/``
+        - k=3: layers=[2,5,1], saved to ``mlna_3_b/var2_var5_var1/``
+        - k=4: layers=[2,5,1,4], saved to ``mlna_4_b/var2_var5_var1_var4/``
+
+    Args:
+        x_traini (pd.DataFrame): Training feature matrix.
+        x_testi (pd.DataFrame): Test feature matrix.
+        y_traini (pd.Series): Training labels.
+        y_testi (pd.Series): Test labels.
+        OHE (list[np.ndarray]): One-hot-encoded column arrays.
+        nominal_factor_colums (list[str]): Original categorical column names.
+        cwd (str): Results directory (typically ``…/select[/metric]/``).
+        root (str): Project root directory.
+        domain (str): Dataset name.
+        target_variable (str): Name of the target column.
+        alpha (float): PageRank damping factor.
+        graphWithClass (bool): If True, include class nodes.  Default False.
+        topR (list[int]): Variable indices ordered by decreasing importance,
+            as produced by the MNIFS selection protocol.  Default [].
     """
-     Construction MLNA-TOP-K: Analyse des meilleures k variables sélectionnées.
-
-     Cette fonction construit des graphes multicouches en ajoutant progressivement
-     les k meilleures variables identifiées par le protocole de sélection MNIFS.
-     Elle permet d'évaluer l'effet cumulatif des meilleures variables.
-
-     Algorithme:
-     -----------
-     1. Récupérer les indices des variables dans topR (ordre décroissant d'importance)
-     2. Pour k de 2 à len(topR):
-         a. Sélectionner les k premières variables de topR
-         b. Construire graphe multicouche avec ces k variables
-         c. Extraire descripteurs pour train et test
-         d. Normaliser et sauvegarder
-
-     Différences avec MLNA-K:
-     -------------------------
-     - Utilise un ordre SPÉCIFIQUE de variables (topR)
-     - Construction incrémentale: k=2, k=3, k=4, ...
-     - Pas de combinaisons: toujours les k meilleures
-     - Sauvegarde dans '/mlna_k_b' (b = best)
-
-     Paramètres:
-     -----------
-     topR : list of int
-         Indices des variables ordonnées par importance décroissante
-         Exemple: [3, 0, 5, 1] signifie var3 > var0 > var5 > var1
-         Obtenu depuis MNIFS (protocole de sélection)
-
-     (Autres paramètres identiques aux fonctions précédentes)
-
-     Exemple d'utilisation:
-     ----------------------
-     Si topR = [2, 5, 1, 4] (4 meilleures variables):
-
-     Itération k=2:
-         Variables: [2, 5]
-         Graphe: mlna_2_b/var2_var5/
-
-     Itération k=3:
-         Variables: [2, 5, 1]
-         Graphe: mlna_3_b/var2_var5_var1/
-
-     Itération k=4:
-         Variables: [2, 5, 1, 4]
-         Graphe: mlna_4_b/var2_var5_var1_var4/
-
-     Structure de sortie:
-     --------------------
-     cwd/select/mlna_k_b/top_k_vars/
-         ├── top_k_vars_mln.graphml
-         ├── global/withClass/descriptors/
-         ├── personalized/withClass/descriptors/
-         ├── mixed/withClass/descriptors/
-         └── config_df_for_top_k_vars.conf
-
-     Notes:
-     ------
-     - Permet d'analyser la performance en fonction du nombre de variables
-     - Identifie le k optimal (elbow point)
-     - Plus efficace que MLNA-K car évite les combinaisons non pertinentes
-     - Utilisé pour la modélisation finale
-     """
 
     ## Copie des données
     x_train, x_test, y_train, y_test = x_traini, x_testi, y_traini, y_testi
@@ -1290,79 +1166,35 @@ def make_mlna_top_k_variable_v2(
 # ============================================================================
 
 def main():
-    """
-    Point d'entrée principal du script de construction de graphes.
+    """Entry point for the MLNA graph-construction pipeline (script 03).
 
-    Cette fonction gère l'exécution du pipeline MLNA en 3 tours (turns):
+    Dispatches to one of three construction modes depending on ``--turn``:
 
-    TURN 1: Construction MLNA-1
-        - Analyse monocouche (une variable à la fois)
-        - Génère les graphes de base
-        - Extrait les descripteurs initiaux
-        - Fichier flag: graph_turn_1_completed.dtvni
+    Turn 1 — MLNA-1 (monolayer):
+        Builds one graph per categorical variable.
+        Completion flag: ``mlna_1/graph_turn_1_completed.dtvni``.
 
-    TURN 2: Construction MLNA-TOP-K
-        - Utilise les résultats de MNIFS (sélection de variables)
-        - Construit les graphes des meilleures k variables
-        - Inclut les classes (graphWithClass=True)
-        - Fichier flag: graph_turn_2_completed.dtvni
+    Turn 2 — MLNA-TOP-K (framework mode):
+        Loads MNIFS selection results and incrementally builds graphs for the
+        top-k variables.  Requires ``--graph_with_class`` in practice.
+        Completion flag: ``select[/<metric>]/graph_turn_2_completed.dtvni``.
 
-    TURN 3: Construction MLNA-2 (Combinatoire)
-        - Explore toutes les paires de variables
-        - Analyse les interactions
-        - Fichier flag: graph_turn_3_completed.dtvni
+    Turn 3 — MLNA-K (combinatorial, k=2):
+        Builds one graph for every pair of categorical variables.
+        Completion flag: ``mlna_2/graph_turn_3_completed.dtvni``.
 
-    Arguments ligne de commande:
-    ----------------------------
-    --cwd : str
-        Répertoire de travail courant (chemin absolu)
-    --dataset_folder : str
-        Nom du dossier du dataset (ex: 'german_credit')
-    --alpha : float
-        Facteur d'amortissement PageRank (0.85 recommandé)
-    --turn : int
-        Numéro du tour à exécuter (1, 2 ou 3)
-    --graph_with_class : flag
-        Si présent, inclut les nœuds de classe dans les graphes
+    CLI arguments:
+        --cwd (str): Absolute path to the working directory.
+        --dataset_folder (str): Dataset sub-folder name.
+        --alpha (float): PageRank damping factor.
+        --turn (int): Construction mode to execute (1, 2, or 3).
+        --graph_with_class (flag): If present, include class nodes in graphs.
+        --metric (str): Optional metric sub-directory used in turn 2 path.
 
-    Fichiers de configuration requis:
-    ----------------------------------
-    - configs/{dataset_folder}/config.ini
-    - processed/{dataset_folder}/preprocessing_*.pkl
-    - splits/{dataset_folder}/{type}/train.csv et test.csv
-
-    Exemples d'utilisation:
-    -----------------------
-    # Tour 1: Construction de base
-    python 03_graph_construction.py \\
-        --cwd /path/to/project \\
-        --dataset_folder german_credit \\
-        --alpha 0.85 \\
-        --turn 1
-
-    # Tour 2: Variables sélectionnées avec classes
-    python 03_graph_construction.py \\
-        --cwd /path/to/project \\
-        --dataset_folder german_credit \\
-        --alpha 0.85 \\
-        --turn 2 \\
-        --graph_with_class
-
-    # Tour 3: Analyse combinatoire
-    python 03_graph_construction.py \\
-        --cwd /path/to/project \\
-        --dataset_folder german_credit \\
-        --alpha 0.85 \\
-        --turn 3
-
-    Flux de données:
-    ----------------
-    1. Chargement configuration (config.ini)
-    2. Chargement données train/test
-    3. Chargement config prétraitement
-    4. Sélection OHE approprié selon target_columns_type
-    5. Exécution du tour demandé
-    6. Création fichier flag de complétion
+    Required inputs:
+        - ``configs/<dataset_folder>/config.ini``
+        - ``<processed_dir>/<dataset_folder>/preprocessing_*.pkl``
+        - ``<split_dir>/<dataset_folder>/<type>/<domain>_train/test.csv``
     """
 
     # ========================================================================

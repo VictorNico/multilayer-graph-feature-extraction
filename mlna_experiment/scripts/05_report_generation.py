@@ -18,21 +18,28 @@ def check_completed_folder(
         motif='model_turn_2_completed.dtvni',
         fold='select'
 ):
-    """ @methods check_completed_folder
-            Look for all completed pipeline folder
-            Parameters
-            ----------
-            results_path: str - the path to the results
-            alphas: list - experimental used alpha values
-            target_columns_type: str - the type of feature analyse focus
-            motif: str - the name of flag result file showing end of the required stage
-            fold: str - the name of the folder where to find out
+    """Return dataset folders where the pipeline has completed for all alpha values.
 
-            Returns
-            -------
-            List of all completed pipeline folder names
+    Walks *results_path* and checks that the completion flag file *motif*
+    exists under ``<child>/<alpha>/<target_columns_type>/<fold>/`` for every
+    alpha value.  Only folders that satisfy this condition for all alphas are
+    returned.
 
-        """
+    Args:
+        results_path (str): Root results directory to scan.
+        alphas (list[float]): Alpha values that must all be completed.
+            Defaults to ``[0.1, 0.2, …, 0.9, 0.85]`` if None.
+        target_columns_type (str): Feature type sub-directory (e.g. ``'cat'``).
+            Default ``''``.
+        motif (str): Completion flag filename to look for.
+            Default ``'model_turn_2_completed.dtvni'``.
+        fold (str): Sub-folder within the alpha directory to inspect.
+            Default ``'select'``.
+
+    Returns:
+        list[str]: Dataset folder names for which the pipeline is complete
+            across all alpha values.
+    """
     # get children folders of the results folder
     if alphas is None:
         alphas = [round(i, 1) for i in np.arange(0.1, 1.0, 0.1)]
@@ -56,6 +63,24 @@ def check_completed_folder(
 
 
 def build_macro_store(approach, logics, configs, metrics, datasets):
+    """Initialise the nested accumulator dictionary used during metric extraction.
+
+    Creates empty-list slots for every valid
+    (approach, logic, config, metric, dataset) combination.  CY and CXY
+    configs are only created for PER and GAP logics.
+
+    Args:
+        approach (list[str]): Embedding approaches, e.g. ``['MlC', 'MCA']``.
+        logics (list[str]): PageRank logic families, e.g. ``['GLO', 'PER', 'GAP']``.
+        configs (list[str]): Descriptor configurations, e.g. ``['MX', 'CX', 'CY', 'CXY']``.
+        metrics (list[str]): Evaluation metric names.
+        datasets (list[str]): Dataset folder names.
+
+    Returns:
+        dict: Nested structure ``{'classic': {metric: {ds: []}},
+            'real': {key: {metric: {ds: []}}},
+            'gain': {key: {metric: {ds: []}}}}``.
+    """
     results = {}
     results['classic'] = {}
     results['real'] = {}
@@ -93,30 +118,40 @@ def metric_extraction(
         models=['LDA','LR','SVM','DT','RF','XGB'],
         metric='accuracy'
 ):
-    """ @methods metric_extraction
-            Look inside completed folder to extract and record saved models performance over some metrics
-            Parameters
-            ----------
-            completed_folder: list - List of all completed pipeline folder names
-            alphas: list - experimental used alpha values
-            configs: list - pipeline possible configurations
-            logics: list - pipeline ways to personalize the pagerank
-            approach: list - pipeline ways to embed new description in model input
-            metrics: list - pipeline evaluation metrics to report
-            glo: bool - if looking for glo results
-            per: bool - if looking for per results
-            gap: bool - if looking for gap results
-            cwd: str - the current working directory
-            target_columns_type: str - the type of feature analyse focus
-            dataset_delimiter: str - result delimiter
-            encoding: str - result encoding file
-            index_col: int - id of index col
+    """Extract and aggregate model performance metrics from completed pipeline folders.
 
-            Returns
-            -------
-            List of all completed pipeline folder names
+    For each (alpha, dataset) pair, loads the MNIFS selection results and the
+    classic baseline metrics, then calls :func:`analyse_files` over the MLNA-1
+    and (if present) MLNA-2 or MLNA-TOP-K result trees.  Returns accumulated
+    gain/real/classic stores and layer-count selection metadata.
 
-        """
+    Args:
+        completed_folder (list[str]): Dataset folder names.  Default [].
+        alphas (list[float]): Alpha values to iterate over.  Defaults to
+            ``[0.1, …, 0.9, 0.85]`` if None.
+        configs (list[str]): Descriptor configurations.  Defaults to
+            ``['MX', 'CX', 'CY', 'CXY']``.
+        logics (list[str]): PageRank logic families; defaults to GLO/PER or
+            GLO/PER/GAP when *gap* is True.
+        approach (list[str]): Embedding approaches.  Defaults to
+            ``['MlC', 'MCA']``.
+        metrics (list[str]): Evaluation metric names.  Defaults to
+            ``['accuracy', 'f1-score', 'precision', 'recall', 'financial-cost']``.
+        glo (bool): Include GLO results.  Default True.
+        per (bool): Include PER results.  Default False.
+        gap (bool): Include GAP results.  Default False.
+        cwd (str): Root results directory.
+        target_columns_type (str): Feature type sub-directory.
+        dataset_delimiter (str): CSV delimiter for result files.
+        encoding (str): File encoding for result files.
+        index_col (int): Index column id for result files.
+        models (list[str]): Classifier names to include.
+        metric (str): Metric key used for MNIFS selection lookup.
+            Default ``'accuracy'``.
+
+    Returns:
+        tuple: ``(elb_macro_store, macro_store, selection_store)``.
+    """
 
     if metrics is None:
         metrics = ['accuracy', 'f1-score', 'precision', 'recall', 'financial-cost']
@@ -167,7 +202,7 @@ def metric_extraction(
             selection_store[result_folder][alpha][metric if metric.strip() else 'accuracy'] = list(mnifs_config['model'][metric].values() if metric.strip() else mnifs_config['model'].values())
             selection_store[result_folder][alpha]['predicted_best_k'] = mnifs_config['bestAccK'] if metric.strip() else mnifs_config['bestK']
             elb = otsu_method(list(mnifs_config['model'][metric].values() if metric.strip() else mnifs_config['model'].values()))
-            print('otsu', elb, result_folder, alpha)
+            # print('otsu', elb, result_folder, alpha)
 
             if sum([f'classic_metric' in file for _, _, files in
                     os.walk(cwd + f'{result_folder}/evaluation') for
@@ -372,30 +407,32 @@ def shap_extraction(
         n=2,
         metric='accuracy'
 ):
-    """ @methods metric_extraction
-            Look inside completed folder to extract and record saved models performance over some metrics
-            Parameters
-            ----------
-            completed_folder: list - List of all completed pipeline folder names
-            alphas: list - experimental used alpha values
-            configs: list - pipeline possible configurations
-            logics: list - pipeline ways to personalize the pagerank
-            approach: list - pipeline ways to embed new description in model input
-            metrics: list - pipeline evaluation metrics to report
-            glo: bool - if looking for glo results
-            per: bool - if looking for per results
-            gap: bool - if looking for gap results
-            cwd: str - the current working directory
-            target_columns_type: str - the type of feature analyse focus
-            dataset_delimiter: str - result delimiter
-            encoding: str - result encoding file
-            index_col: int - id of index col
+    """Aggregate SHAP importance vectors from BOT_CXY result files across datasets.
 
-            Returns
-            -------
-            List of all completed pipeline folder names
+    For each (alpha, dataset) pair, loads the BOT_CXY descriptor result files
+    and calls :func:`analyse_files_for_shap_value` to route per-column SHAP
+    vectors to their descriptor family, average across folds, and build a
+    LaTeX SHAP summary with stacked-bar plots.
 
-        """
+    Args:
+        completed_folder (list[str]): Dataset folder names to process.  Default [].
+        alphas (list[float]): Alpha values to iterate over.  Defaults to
+            ``[0.1, …, 0.9, 0.85]`` if None.
+        cwd (str): Root results directory.
+        target_columns_type (str): Feature type sub-directory.
+        dataset_delimiter (str): CSV delimiter for result files.
+        encoding (str): File encoding for result files.
+        index_col (int): Index column id for result files.
+        top (int): Number of top features to display per model.  Default 10.
+        models (list[str]): Classifier names to include.
+        n (int): Number of models per LaTeX table row.  Default 2.
+        metric (str): Metric key used to locate the MNIFS selection sub-directory.
+            Default ``'accuracy'``.
+
+    Returns:
+        str: LaTeX source string produced by
+            :func:`analyse_files_for_shap_value`.
+    """
     if completed_folder is None:
         completed_folder = []
     if target_columns_type is None:

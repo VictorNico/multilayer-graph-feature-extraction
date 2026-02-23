@@ -13,6 +13,18 @@ from modules.env import *  # Env functions
 ##          Methods definition
 #################################################
 def remove_rare_classes(df, target_column, min_count=10):
+    """Remove rows belonging to classes with fewer than *min_count* occurrences.
+
+    Args:
+        df (pd.DataFrame): Input dataframe.
+        target_column (str): Name of the target/label column.
+        min_count (int): Minimum number of samples required to keep a class.
+            Default 10.
+
+    Returns:
+        pd.DataFrame: Filtered dataframe with rare-class rows removed and the
+            index reset.
+    """
     class_counts = df[target_column].value_counts()
     rare_classes = class_counts[class_counts < min_count].index
     print(f"[INFO] Classes supprimées (trop rares) : {list(rare_classes)}")
@@ -20,17 +32,21 @@ def remove_rare_classes(df, target_column, min_count=10):
     return df[~df[target_column].isin(rare_classes)].reset_index(drop=True)
 
 # @profile
-def make_eda(dataframe, cwd, dir_name, verbose,processed_dir):
-    """Lookup NAs values in the dataset and apply a preprocessing on it
+def make_eda(dataframe, cwd, dir_name, verbose, processed_dir):
+    """Detect and impute missing values in the dataset.
+
+    Identifies columns with NA values, saves the list to disk, then applies
+    median/mode imputation via :func:`impute_nan_values`.
 
     Args:
-        dataframe:
-        cwd:
-        dir_name:
-        verbose:
+        dataframe (pd.DataFrame): Input dataset.
+        cwd (str): Current working directory (used to build the save path).
+        dir_name (str): Dataset folder name appended to *cwd/processed_dir*.
+        verbose (bool): If True, print NA-column information to stdout.
+        processed_dir (str): Sub-directory name for preprocessed artefacts.
 
     Returns:
-        A new dataframe without NA values
+        pd.DataFrame: Copy of *dataframe* with missing values imputed.
     """
     df = dataframe.copy(deep=True)
     if isinstance(dataframe, pd.DataFrame):
@@ -56,21 +72,30 @@ def make_eda(dataframe, cwd, dir_name, verbose,processed_dir):
 
 
 # @profile
-def make_preprocessing(dataset, to_remove, domain, cwd, dir_name, target_variable, verbose,processed_dir):
-    """Apply some framework preprocessing like, OHE, LableEncoding, normalisation, discretization
+def make_preprocessing(dataset, to_remove, domain, cwd, dir_name, target_variable, verbose, processed_dir):
+    """Apply the full preprocessing pipeline: OHE, label encoding, normalisation, and discretisation.
+
+    Steps performed in order:
+        1. Drop irrelevant columns and remove rare classes (< 5 samples).
+        2. One-hot encode nominal categorical columns.
+        3. Label-encode the target column if categorical.
+        4. Min-max normalise uniform numeric columns.
+        5. Robust-scale numeric columns containing outliers.
+        6. Entropy-based discretise all numeric columns into 3 bins.
+        7. One-hot encode the discretised numeric columns.
+
+    Each intermediate result and column-group metadata are saved to disk
+    under ``cwd/processed_dir/dir_name/``.
 
     Args:
-        dataset:
-        to_remove:
-        domain:
-        cwd:
-        dir_name:
-        target_variable:
-        verbose
-        levels
-
-    Returns:
-        A tuple of parameters which are need to nexted framework execution
+        dataset (pd.DataFrame): Preprocessed-EDA dataframe (no NA values).
+        to_remove (list[str]): Column names to drop before processing.
+        domain (str): Dataset domain name used in saved filenames.
+        cwd (str): Current working directory.
+        dir_name (str): Dataset folder name.
+        target_variable (str): Name of the target/label column.
+        verbose (bool): If True, print column-group and shape information.
+        processed_dir (str): Sub-directory name for preprocessed artefacts.
     """
 
     # delete attribut which are not helpfull
@@ -286,6 +311,19 @@ def make_preprocessing(dataset, to_remove, domain, cwd, dir_name, target_variabl
 
 
 def main():
+    """Entry point for the MLNA preprocessing pipeline (script 01).
+
+    Reads ``--cwd`` and ``--dataset_folder`` from the command line, loads the
+    raw CSV, applies stratified sampling (controlled by ``portion`` in config),
+    runs EDA, and calls :func:`make_preprocessing` to produce the fully
+    preprocessed artefacts.  Skips execution if a ``preprocessing_*.pkl`` file
+    already exists in the output directory.
+
+    CLI arguments:
+        --cwd (str): Absolute path to the working directory.
+        --dataset_folder (str): Dataset sub-folder name matching a
+            ``configs/<name>/config.ini`` file.
+    """
     # Définition des arguments
     import argparse
 

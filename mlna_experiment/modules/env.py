@@ -5,7 +5,18 @@ from pathlib import Path
 
 
 def load_env_with_path():
-    """Chargement avec chemin spécifique vers le fichier .env"""
+    """Load environment variables from the .env file located in the current directory.
+
+    Returns:
+        dict: A dictionary containing all pipeline configuration values:
+            - gmail_user (str): Gmail address for notifications.
+            - gmail_password (str): Gmail App Password.
+            - recipients (list[str]): Primary email recipients.
+            - email_cc (list[str]): CC email recipients.
+            - alphas (list[float]): Cost-sensitive alpha values.
+            - max_core (str): Maximum number of CPU cores to use.
+            - size_divider (float): Memory management divisor for graph size.
+    """
     # Chemin vers le fichier .env
     env_path = Path('.') / '.env'
 

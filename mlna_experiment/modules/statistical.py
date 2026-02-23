@@ -208,6 +208,14 @@ dicto = {'accuracy':'Acc', 'f1-score':'F1', 'precision':'P', 'recall':'R', 'fina
 
 
 def pretty_print(data):
+    """Pretty-print a nested data structure to the terminal using colour highlighting.
+
+    Keys are printed in green, scalar/list values in cyan, and opening/closing
+    braces/brackets in yellow.  Uses colorama for cross-platform ANSI support.
+
+    Args:
+        data: Any JSON-serialisable Python object (dict, list, str, number, etc.).
+    """
     def format_value(item):
         if isinstance(item, list):
             return [f"{Fore.CYAN}{val}{Style.RESET_ALL}" for val in item]
@@ -306,12 +314,47 @@ def load_results(
         index_col=None,
         metric=''
 ):
-    """
-    Load results from a results folder.
+    """Load and index result CSV files from the pipeline output directory.
 
-    OPTIMISATION : au lieu de 22×N_attributs appels os.walk() (un par (approach,logic,config)),
-    on fait 1 seul os.walk() du répertoire racine puis on filtre en mémoire.
-    Gain mesuré : O(22×N) → O(1) en I/O disque, critique pour grande échelle (DMKD).
+    Performs a single ``os.walk()`` pass over the result tree and filters in
+    memory rather than one walk per (approach, logic, config) combination.
+    This reduces disk I/O from O(22 × N_attributes) to O(1) — important for
+    large-scale experiments.
+
+    Args:
+        outputs_path (str): Root directory containing alpha-partitioned results.
+        _type (str): Target-column type sub-directory (e.g. ``"withClass"``).
+        k (int): Number of layers per combination (1 for MLNA-1, >1 for MLNA-K).
+        alpha (float | str): Cost-sensitive weight used to name the sub-directory.
+        per (bool): Include personalised-PageRank (PER) descriptor families.
+            Default True.
+        glo (bool): Include global-PageRank (GLO) descriptor families.
+            Default True.
+        mix (bool): Include mixed GAP descriptor families.  Default True.
+        bot (bool): Include BOT_CXY (both-mode) descriptor family.  Default False.
+        isRand (bool): Use the random-combination naming convention (``mlna_k``)
+            instead of the framework naming (``mlna_k_b``).  Default False.
+        match (callable): Predicate applied to filenames; only matching files are
+            loaded.  Default: ``lambda x: True`` (accept all).
+        attributs (list[str]): Sub-directories (attribute combinations) to scan.
+            Default None (treated as empty list).
+        isBest (bool): Append a ``/select[/metric]`` segment to the path to load
+            feature-selection results.  Default False.
+        dataset_delimiter (str): CSV column separator forwarded to
+            :func:`load_data_set_from_url`.  Default None.
+        encoding (str): File encoding forwarded to :func:`load_data_set_from_url`.
+            Default None.
+        index_col (int | str): Index column forwarded to
+            :func:`load_data_set_from_url`.  Default None.
+        metric (str): Metric sub-directory appended after ``/select`` when
+            *isBest* is True and a non-empty string is supplied.  Default ''.
+
+    Returns:
+        dict: Nested dictionary with structure
+            ``{approach: {family: {config: [DataFrame, ...]}}}``.
+            *approach* ∈ ``{'MlC', 'MCA'}``,
+            *family* ∈ ``{'GLO', 'PER', 'GAP', 'BOT'}`` (absent families are
+            ``None``), *config* ∈ ``{'MX', 'CX', 'CY', 'CXY'}``.
     """
 
     if attributs is None:
@@ -422,6 +465,19 @@ def load_results(
 def build_compare_feature_selection_protocole(
         store
 ):
+    """Build a LaTeX tabular comparing feature-selection protocol results across datasets and alphas.
+
+    Produces a resizable LaTeX ``tabular`` environment with datasets as columns,
+    alpha values as row groups, and selection methods as sub-rows.  Values that
+    exceed the ``'réel'`` baseline are typeset in bold.
+
+    Args:
+        store (dict): Nested dict ``{dataset: {method: {alpha: value}}}`` where
+            *value* is a numeric score to display.
+
+    Returns:
+        str: LaTeX tabular source string (without a surrounding table/figure wrapper).
+    """
     # add the resize box to ensure the scale of the table will be contain's inside the width space avalable.
     # start setting up the tabular dimensions setting
     datasets = list(store.keys())
@@ -495,15 +551,18 @@ def build_compare_feature_selection_protocole(
 
 
 def bestThreshold(numbers):
-    """
-    find the optimal threshold
-    Parameters
-    ----------
-    data
+    """Find the first index where successive differences change significantly.
 
-    Returns
-    -------
-    limit
+    Iterates over consecutive differences of *numbers* and returns the index of
+    the first difference whose deviation from the mean exceeds one standard
+    deviation.
+
+    Args:
+        numbers (list[float]): Sequence of numeric values (e.g. sorted accuracies).
+
+    Returns:
+        int: Index of the detected threshold.  Returns ``len(numbers) - 1`` if no
+            significant change is found.
     """
     diffs = [numbers[i] - numbers[i + 1] for i in range(len(numbers) - 1)]
     mean_diff = statistics.mean(diffs)
@@ -516,6 +575,21 @@ def bestThreshold(numbers):
     return result
 
 def cumulative_difference_threshold(accuracies, threshold_percent=0.8):
+    """Find the cut-off index that captures a given fraction of the total accuracy drop.
+
+    Sorts *accuracies* in descending order, computes successive differences, and
+    returns the index at which the cumulative sum of differences reaches
+    *threshold_percent* of the total drop.
+
+    Args:
+        accuracies (list[float]): Unsorted accuracy values.
+        threshold_percent (float): Fraction of total drop to capture (0–1).
+            Default 0.8.
+
+    Returns:
+        int: Cut-off index in the sorted list.  Returns ``len(accuracies)`` if
+            the threshold is never reached.
+    """
     sorted_accuracies = sorted(accuracies, reverse=True)
     diffs = [sorted_accuracies[i] - sorted_accuracies[i+1] for i in range(len(sorted_accuracies)-1)]
     total_diff = sum(diffs)
@@ -527,6 +601,21 @@ def cumulative_difference_threshold(accuracies, threshold_percent=0.8):
     return len(accuracies)
 
 def cusum_threshold_v1(accuracies, k=0.5, h=5):
+    """Detect a significant accuracy drop using a one-sided CUSUM control chart.
+
+    Sorts *accuracies* in descending order and accumulates deviations below the
+    mean minus a slack *k*.  Returns the first index where the cumulative sum
+    exceeds the decision threshold *h*.
+
+    Args:
+        accuracies (list[float]): Unsorted accuracy values.
+        k (float): Allowable slack (reference value).  Default 0.5.
+        h (float): Decision threshold.  Default 5.
+
+    Returns:
+        int: Index of the detected change point in the sorted list.  Returns
+            ``len(accuracies)`` if no change point is found.
+    """
     sorted_accuracies = sorted(accuracies, reverse=True)
     mean_acc = np.mean(sorted_accuracies)
 
@@ -539,13 +628,21 @@ def cusum_threshold_v1(accuracies, k=0.5, h=5):
     return len(accuracies)
 
 def cusum_threshold_v2(accuracies, h_threshold=1.0, drift=0.01):
-    """
-    Détecte le point de stabilisation (changement de régime) via CUSUM.
+    """Detect the stabilisation point of a metric series via a CUSUM algorithm.
 
-    Parameters:
-    - accuracies: Liste des scores de précision.
-    - h_threshold: Seuil de décision (sensibilité).
-    - drift: Marge de changement tolérée (souvent la moyenne des variations attendues).
+    Computes the first-order differences of *accuracies*, centres them on their
+    mean minus a *drift* term, and accumulates the positive deviations.  Returns
+    the index at which the cumulative sum first exceeds *h_threshold*, signalling
+    a regime change (i.e. the curve has stopped improving).
+
+    Args:
+        accuracies (list[float]): Metric values in the order they were produced.
+        h_threshold (float): Decision threshold (sensitivity).  Default 1.0.
+        drift (float): Allowable drift subtracted from each increment.  Default 0.01.
+
+    Returns:
+        int: Index of the detected stabilisation point.  Returns
+            ``len(accuracies) - 1`` if no clear change point is found.
     """
     n = len(accuracies)
     if n < 2: return 0
@@ -573,41 +670,38 @@ def cusum_threshold_v2(accuracies, h_threshold=1.0, drift=0.01):
 
 
 def elbow_method(accuracies):
-    """
-    Détecte le point de coude (elbow) dans une courbe de précisions triées.
+    """Detect the elbow point in a sorted accuracy curve using geometric projection.
 
-    Cette méthode géométrique identifie le point qui s'éloigne le plus de la droite
-    reliant le premier et le dernier point de la courbe. Ce point représente le
-    compromis optimal entre le nombre de features et la performance.
+    Identifies the point with the greatest perpendicular distance from the line
+    connecting the first and last point of the descending-sorted curve.  This
+    geometric elbow represents the optimal trade-off between the number of
+    features and model performance.
 
-    Principe mathématique :
-    ----------------------
-    1. Trace une droite entre le premier point (meilleure précision) et le dernier
-    2. Pour chaque point, calcule sa distance perpendiculaire à cette droite
-    3. Le coude est le point avec la distance maximale
+    Mathematical principle:
+        1. Draw a line from the first point (highest accuracy) to the last.
+        2. For each point, compute its perpendicular distance to this line via
+           orthogonal projection.
+        3. The elbow is the point with the maximum perpendicular distance.
 
-    La distance perpendiculaire est calculée via projection orthogonale :
-    - Projection du vecteur point-origine sur la droite
-    - Calcul du vecteur de rejet (composante perpendiculaire)
-    - Distance = norme euclidienne du vecteur de rejet
+    The perpendicular distance is the Euclidean norm of the rejection vector
+    ``v − proj_l(v)``, where ``proj_l(v)`` is the orthogonal projection of ``v``
+    onto the line direction.
 
     Args:
-        accuracies (list[float]): Liste des précisions (non triées)
+        accuracies (list[float]): Unsorted accuracy values.
 
     Returns:
-        int: Indice du coude dans la liste triée (décroissante)
-             Retourne len(accuracies) - 1 si le coude est aux positions 0 ou 1
+        int: Index of the elbow in the descending-sorted list (incremented by 1).
+            Returns ``len(accuracies) - 1`` when the elbow is at position 0 or 1
+            (no significant elbow detected).
 
     Example:
         >>> accuracies = [0.95, 0.94, 0.92, 0.85, 0.80, 0.78]
         >>> elbow_method(accuracies)
-        3  # Correspond à la précision 0.85 dans la liste triée
+        3  # corresponds to accuracy 0.85 in the sorted list
 
-    Notes:
-        - Les précisions sont automatiquement triées par ordre décroissant
-        - La fonction utilise l'indice dans la liste triée, pas la liste originale
-        - Si le coude détecté est à l'indice 0 ou 1, retourne le dernier indice
-          (cas où il n'y a pas de coude significatif)
+    Note:
+        Accuracies are automatically sorted in descending order before analysis.
     """
     # Trier les précisions par ordre décroissant
     sorted_accuracies = sorted(accuracies, reverse=True)
@@ -654,6 +748,19 @@ def elbow_method(accuracies):
 
 
 def otsu_method(metrics):
+    """Find the cut-off index using Otsu's thresholding method.
+
+    Applies Otsu's algorithm (originally from image processing) to a 1-D array
+    of metric values to find the threshold that minimises intra-class variance.
+    Returns the number of values in the upper class (those ≥ the Otsu threshold)
+    in the descending-sorted array, i.e. the count of "useful" top elements.
+
+    Args:
+        metrics (list[float] | array-like): Numeric metric values.
+
+    Returns:
+        int: Cut-off index (minimum 1) in the descending-sorted array.
+    """
     from skimage.filters import threshold_otsu
 
     # Votre liste de points (vecteur 1D)
@@ -672,6 +779,19 @@ def otsu_method(metrics):
 
 
 def jenkspy_method(metrics):
+    """Find the cut-off index using Jenks natural breaks optimisation.
+
+    Splits *metrics* into two classes using the Fisher–Jenks algorithm to
+    minimise within-class variance.  Returns the number of values in the upper
+    class (those ≥ the critical break) in the sorted array.
+
+    Args:
+        metrics (list[float]): Numeric metric values.  Requires at least 3 values
+            with non-zero variance; falls back to ``len(metrics) // 2`` otherwise.
+
+    Returns:
+        int: Cut-off index (minimum 1) in the sorted array.
+    """
     import jenkspy
 
     if len(metrics) < 3:  # Besoin d'au moins 3 valeurs pour 2 classes
@@ -703,63 +823,42 @@ def jenkspy_method(metrics):
         return len(metrics) // 2
 
 def elbow_method_v2(points):
-    """
-    Détecte le point de coude (elbow) dans une courbe de valeurs.
+    """Detect the elbow point in a value curve using vectorised NumPy projection.
 
-    Cette implémentation vectorisée utilise NumPy pour calculer efficacement
-    les distances perpendiculaires de tous les points à la droite reliant
-    le premier et le dernier point. Le coude est le point le plus éloigné
-    de cette droite.
+    Vectorised alternative to :func:`elbow_method`.  Computes the perpendicular
+    distance of every point to the line connecting the first and last point using
+    NumPy array operations, making it more efficient for large inputs.
 
-    Principe mathématique :
-    ----------------------
-    Pour chaque point P_i, on calcule :
-    1. Le vecteur v_i du premier point à P_i
-    2. La projection de v_i sur la droite (premier-dernier point)
-    3. La distance perpendiculaire = ||v_i - proj(v_i)||
+    Mathematical principle:
+        For each point P_i:
+        1. Compute the vector v_i from the first point to P_i.
+        2. Compute the scalar projection of v_i onto the normalised line
+           direction l_norm.
+        3. Perpendicular distance = ``‖v_i − (v_i · l_norm) * l_norm‖``.
 
-    Formule de projection :
-        proj_l(v) = (v · l_norm) * l_norm
-    où l_norm est le vecteur directeur normalisé de la droite.
+    Projection formula:
+        ``proj_l(v) = (v · l_norm) * l_norm``
+        where l_norm is the unit vector of the (first, last) line.
 
     Args:
-        points (list ou array): Liste de valeurs numériques représentant
-                                une courbe (ex: précisions, inerties, scores)
-                                Les points n'ont pas besoin d'être triés.
+        points (list | array-like): Numeric values representing a curve
+            (e.g. accuracies, inertias, scores).  Values need not be sorted.
 
     Returns:
-        int: Indice du point de coude dans la liste
-             - Si moins de 3 points : retourne len(points) - 1
-             - Si le coude est à l'indice 0 ou 1 : retourne len(points) - 1
-               (indique l'absence de coude significatif)
+        int: Index of the elbow point.
+            Returns ``len(points) - 1`` for fewer than 3 points or when the
+            detected elbow index is ≤ 1 (no significant elbow).
 
-    Complexité:
-        Temps: O(n) où n = len(points)
-        Espace: O(n) pour les tableaux temporaires
+    Complexity:
+        Time: O(n),  Space: O(n).
 
     Example:
         >>> accuracies = [0.95, 0.92, 0.88, 0.75, 0.72, 0.70]
         >>> elbow_method_v2(accuracies)
-        3  # Le coude est à l'indice 3 (valeur 0.75)
+        3  # elbow at index 3 (value 0.75)
 
-        >>> # Visualisation typique d'un coude
-        >>> # Précision
-        >>> #   |
-        >>> # 1.0|●
-        >>> # 0.9| ●
-        >>> # 0.8|  ●___
-        >>> # 0.7|     ●●●  <- Après le coude, la courbe s'aplatit
-        >>> #   +----------> Nombre de features
-
-    Notes:
-        - Version optimisée avec opérations vectorisées NumPy
-        - Plus performante que les boucles Python pour n > 100
-        - Les coordonnées x sont les indices (0, 1, 2, ..., n-1)
-        - Les coordonnées y sont les valeurs de la liste points
-
-    Voir aussi:
-        - elbow_method() : Version avec lambdas et euclidean()
-        - KneeLocator (kneed package) : Implémentation plus sophistiquée
+    See also:
+        :func:`elbow_method` — scalar implementation using lambdas and euclidean().
     """
     n_points = len(points)
 
@@ -821,16 +920,23 @@ def proto_precision_tikz(
         datasets,
         layout_config=None
 ):
-    """
-    Génère un document TikZ avec des matrices pour comparer les précisions Elbow vs CUSUM
+    """Generate a TikZ picture comparing Elbow vs CUSUM precision matrices per dataset.
+
+    Produces a LaTeX ``tikzpicture`` environment containing one comparison matrix
+    per dataset.  Each matrix row corresponds to a tolerance level and each column
+    pair shows the Elbow and CUSUM precision values for that dataset.
 
     Args:
-        tolerances: liste des tolérances (ex: [0.0, 0.01, 0.02, ...])
-        elbow_results: dict {tolerance: {dataset: precision}}
-        cusum_results: dict {tolerance: {dataset: precision}}
-        datasets: liste des noms de datasets
-        output_file: nom du fichier de sortie
-        layout_config: dict avec configuration du layout (optionnel)
+        tolerances (list[float]): Tolerance levels (e.g. ``[0.0, 0.01, 0.02, ...]``).
+        elbow_results (dict): ``{tolerance: {dataset: precision}}`` for the Elbow method.
+        cusum_results (dict): ``{tolerance: {dataset: precision}}`` for the CUSUM method.
+        datasets (list[str]): Dataset display names.
+        layout_config (dict): Optional layout overrides.  Supported keys:
+            ``matrices_per_row``, ``matrix_spacing_x``, ``matrix_spacing_y``,
+            ``cell_width``, ``cell_height``, ``header_width``, ``header_height``.
+
+    Returns:
+        str: LaTeX ``tikzpicture`` source string.
     """
 
     # Configuration par défaut du layout
@@ -928,6 +1034,20 @@ def proto_precision_tab(
         datasets,
         store
 ):
+    """Build a LaTeX tabular comparing threshold-method precision across datasets.
+
+    Produces a resizable ``tabular`` with datasets grouped as multi-column headers
+    and tolerance levels as rows.  Each cell shows the precision rounded to two
+    decimal places.
+
+    Args:
+        tolerances (list[float]): Tolerance levels used as row labels.
+        datasets (list[str]): Dataset names used as column group labels.
+        store (dict): ``{method: {tolerance: {dataset: precision}}}`` mapping.
+
+    Returns:
+        str: LaTeX tabular source string.
+    """
     # add the resize box to ensure the scale of the table will be contain's inside the width space avalable.
     # start setting up the tabular dimensions setting
     methods = list(store.keys())
@@ -984,13 +1104,24 @@ def proto_precision_tab(
     return table
 
 def vector_matching_precision(v1, v2, tolerance=0):
-    """
-    Calcule la précision de correspondance entre deux vecteurs.
+    """Compute the element-wise matching precision between two equal-length vectors.
 
-    :param v1: Premier vecteur
-    :param v2: Deuxième vecteur
-    :param tolerance: Tolérance pour considérer deux valeurs comme correspondantes
-    :return: Pourcentage de correspondance entre les vecteurs
+    Two elements are considered matching when their absolute difference is at most
+    *tolerance*.  The precision is the fraction of matching pairs expressed as a
+    percentage.
+
+    Args:
+        v1 (array-like): First vector of numeric values.
+        v2 (array-like): Second vector of numeric values.  Must have the same
+            length as *v1*.
+        tolerance (float): Maximum allowed absolute difference for a match.
+            Default 0 (exact equality).
+
+    Returns:
+        float: Percentage of element pairs within *tolerance* (0–100).
+
+    Raises:
+        ValueError: If *v1* and *v2* have different lengths.
     """
     if len(v1) != len(v2):
         raise ValueError("Les vecteurs doivent avoir la même longueur")
@@ -1004,6 +1135,33 @@ def vector_matching_precision(v1, v2, tolerance=0):
 
 
 def selection_proto(records, metric='accuracy'):
+    """Apply and compare multiple layer-count selection heuristics across datasets.
+
+    For each (dataset, alpha) pair in *records*, computes the optimal layer count
+    according to four methods (Elbow, CUSUM-v1, Otsu, Jenks) and looks up the
+    corresponding best accuracy.  Also computes the true best accuracy for
+    comparison.
+
+    Args:
+        records (dict): Nested dict
+            ``{dataset: {alpha: {metric: list, 'list': [(layer, _, acc), ...],
+            'predicted_best_k': ...}}}``.  The ``'list'`` key holds
+            ``(layer, _, accuracy)`` tuples and *metric* holds a list of
+            per-layer scores.
+        metric (str): Metric key used to retrieve per-layer scores.
+            Default ``'accuracy'``.
+
+    Returns:
+        tuple:
+            - pd.DataFrame: Row-per-(dataset, alpha) table with columns
+              ``dataset``, ``alpha``, ``elbowThreshold``,
+              ``cumulative_difference_threshold``, ``otsu``, ``jenkspy``,
+              ``realThreshold``.
+            - str: LaTeX tabular source produced by
+              :func:`build_compare_feature_selection_protocole`.
+            - tuple: Five ``{dataset: [values]}`` dicts for real, Elbow, CUSUM,
+              Otsu, and Jenks accuracy values respectively.
+    """
     # result structure
     resultDict = {
         'dataset': [],
@@ -1093,6 +1251,34 @@ def analyse_files(
         metricA='accuracy'
 
 ):
+    """Accumulate per-model gain and absolute metric values across descriptor configurations.
+
+    For each (model, metric, approach, logic, config, result-file) combination,
+    computes the relative gain over the classic baseline and appends both the gain
+    and the raw value to the appropriate slot in *macro_metrics*.  When *metricA*
+    matches the current metric and the config is ``'MX'``, the
+    ``(layer, model, value)`` triple is also appended to *list_of_accuracy* for
+    elbow-method analysis.
+
+    Args:
+        models_name (list[str]): Classifier names (used as DataFrame row indices).
+        metrics (list[str]): Metric column names to process
+            (e.g. ``['accuracy', 'f1-score']``).
+        files (dict): Nested ``{approach: {logic: {config: [DataFrame, ...]}}}``
+            dict as returned by :func:`load_results`.
+        classic_f (pd.DataFrame): Baseline metrics DataFrame indexed by model name.
+        macro_metrics (dict): Accumulator dict with keys ``'gain'``, ``'real'``,
+            ``'classic'``; modified in-place.
+        result_folder (str): Label for the current fold/dataset used as a sub-key.
+        list_of_accuracy (list): Running list of ``(layer, model, value)`` triples;
+            modified in-place.
+        layer (int): Current layer count (used as the first element of each triple).
+        metricA (str): Metric name whose values are recorded in *list_of_accuracy*.
+            Default ``'accuracy'``.
+
+    Returns:
+        tuple: Updated ``(list_of_accuracy, macro_metrics)``.
+    """
     for index4, model in enumerate(models_name):
         # now fetch ours results to store
         for metric in list(set(classic_f.columns) & set(metrics)):  # accuracy and f1-score and/or financial cost
@@ -1125,7 +1311,7 @@ def analyse_files(
                             # )
 
                             def calculate_gain_percentage(new_value, baseline_value, epsilon=1e-8):
-                                """Calcule le pourcentage de gain entre deux valeurs."""
+                                """Compute the percentage gain of new_value over baseline_value."""
                                 new_rounded = round(new_value, 4)
                                 baseline_rounded = round(baseline_value, 4)
 
@@ -1179,7 +1365,15 @@ def count_pattern_matches(dataframe, pattern):
 
 
 def sum_absolute_matches(dataframe, pattern):
-    """Calcule la somme des valeurs absolues des colonnes pour les lignes correspondant au pattern."""
+    """Return the per-row sum of absolute values for rows whose index matches a regex pattern.
+
+    Args:
+        dataframe (pd.DataFrame): DataFrame to filter and aggregate.
+        pattern (str): Regular-expression pattern applied to ``dataframe.index``.
+
+    Returns:
+        pd.Series: Per-row absolute-value sums for the matching rows.
+    """
     # On filtre les index qui correspondent au regex pattern
     matched_df = dataframe[dataframe.index.str.contains(pattern, regex=True)]
 
@@ -1189,7 +1383,15 @@ def sum_absolute_matches(dataframe, pattern):
 
 
 def sum_absolute_matches_total(dataframe, pattern):
-    """Retourne la somme globale des valeurs absolues pour les lignes dont l'index matche le pattern."""
+    """Return the scalar sum of all absolute values for rows whose index matches a regex pattern.
+
+    Args:
+        dataframe (pd.DataFrame): DataFrame to filter and aggregate.
+        pattern (str): Regular-expression pattern applied to ``dataframe.index``.
+
+    Returns:
+        float: Sum of all absolute values across matching rows and all columns.
+    """
     # 1. Sélectionner les lignes via l'index avec le regex
     matched_df = dataframe[dataframe.index.str.contains(pattern, regex=True, na=False)]
 
@@ -1203,6 +1405,29 @@ def analyse_files_for_shap_value(
         top=10,
         n=2
 ):
+    """Aggregate per-descriptor SHAP importances and produce a LaTeX SHAP summary.
+
+    For each model and result folder, reads SHAP importance vectors from the
+    BOT/CXY result files, routes each column to its descriptor family bucket
+    (e.g. INTER_GLO_CX, PER_MX, DEGREE), averages across folds, and computes
+    the fraction of total importance attributable to each descriptor type.  Also
+    generates standalone TikZ stacked-bar plots grouped *n* models per row.
+
+    Args:
+        models_name (dict): ``{classifier_key: display_label}`` mapping.
+        files (dict): Nested
+            ``{result_folder: {approach: {logic: {config: [DataFrame, ...]}}}}``
+            dict as returned by :func:`load_results`, expected to contain a
+            ``files[folder]["MlC"]["BOT"]["CXY"]`` list.
+        result_folders (list[str]): Result folder names used for column grouping.
+        top (int): Number of top features (by total absolute importance) to display
+            per model.  Default 10.
+        n (int): Number of models to place side-by-side in each LaTeX table row.
+            Default 2.
+
+    Returns:
+        str: LaTeX source containing stacked-bar SHAP plots and a summary table.
+    """
     template_descripteurs = {
         'INTER_GLO_CX': [],
         'INTER_GLO_MX': [],
@@ -1527,7 +1752,17 @@ class_colors = {
 }
 
 def get_additional_colors(n_classes):
-    """Génère des couleurs supplémentaires si plus de 4 classes"""
+    """Return an RGB colour mapping for *n_classes* classes.
+
+    Extends the four predefined colours in ``class_colors`` with additional
+    palette entries when more than four classes are required.
+
+    Args:
+        n_classes (int): Total number of classes to generate colours for.
+
+    Returns:
+        dict: ``{'Classe i': '{RGB}{R,G,B}'}`` mapping for ``i`` in ``0..n_classes-1``.
+    """
     additional_colors = [
         '{RGB}{148,0,211}',  # Violet
         '{RGB}{255,140,0}',  # Orange foncé
@@ -1546,7 +1781,23 @@ def get_additional_colors(n_classes):
 
     return all_colors
 def create_standalone_shap_plot(df_shap, model_name, fd, top):
-    """Crée un SHAP summary plot standalone pour un modèle"""
+    """Generate a standalone LaTeX/TikZ stacked-bar SHAP summary plot.
+
+    Produces a ``tikzpicture`` environment with one ``addplot`` bar series per
+    output class.  Features are ordered by descending total absolute importance
+    (as already sorted in *df_shap*).
+
+    Args:
+        df_shap (pd.DataFrame): Rows = feature names, columns = class names,
+            values = mean absolute SHAP values.  Should already be sorted by
+            descending total importance and trimmed to the desired *top* features.
+        model_name (str): Classifier display name used in the chart title.
+        fd (str): Fold/dataset label used in the chart title and figure label.
+        top (int): Number of features displayed (used in the commented caption).
+
+    Returns:
+        str: LaTeX ``tikzpicture`` source string.
+    """
 
     n_features, n_classes = df_shap.shape
     feature_names = [name.replace("_", "\\_") for name in df_shap.index.tolist()]
@@ -1628,6 +1879,19 @@ def create_standalone_shap_plot(df_shap, model_name, fd, top):
 
 # === 3. Convertir les vecteurs SHAP de string en liste de float ===
 def parse_vector(text):
+    """Parse a string representation of a numeric vector into a Python list.
+
+    Expects the format produced by NumPy's default ``__str__`` method, e.g.
+    ``"[0.12 -0.34 0.56]"``.  Strips outer brackets, splits on whitespace, and
+    converts each token to ``float``.
+
+    Args:
+        text (str): String representation of a numeric array.
+
+    Returns:
+        list[float] | float: Parsed list of floats, or ``numpy.nan`` if parsing
+            fails.
+    """
     try:
         # Enlever les crochets et séparer par les espaces
         # print(type(text),text, "//")

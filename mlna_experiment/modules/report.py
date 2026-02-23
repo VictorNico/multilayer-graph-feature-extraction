@@ -51,10 +51,24 @@ mpl.rcParams['figure.facecolor'] = '#00000000'
 #Acceps a list of IpyTable objects and returns a table which contains each IpyTable in a cell
 # @profile
 def multi_table(table_list):
+        """Render a list of IPython tables side by side in a single HTML row.
+
+        Args:
+            table_list (list): List of IPython display objects that implement _repr_html_().
+
+        Returns:
+            IPython.core.display.HTML: HTML object with all tables arranged horizontally.
+        """
         return HTML('<table><tr style="background-color:#2020d1; color: #FFFFFF;">' +  ''.join(['<td>' + table._repr_html_() + '</td>' for table in table_list]) +'</tr></table>')
 
 # @profile
 def plot_graph(CRP_G_1):
+        """Draw and save a multilayer graph using NetworkX with colour-coded edges and nodes.
+
+        Args:
+            CRP_G_1 (nx.DiGraph): Directed multilayer graph whose nodes and edges carry
+                a 'color' attribute.
+        """
         # show
         colors = nx.get_edge_attributes(CRP_G_1,'color').values()
         colorsN = nx.get_node_attributes(CRP_G_1,'color').values()
@@ -71,6 +85,20 @@ def plot_graph(CRP_G_1):
 
 # @profile
 def custom_color(dataframe, graph_a=[]):
+    """Assign display colours to feature columns based on their descriptor type.
+
+    Columns whose name contains '_PER' are coloured green (personalized PageRank),
+    '_GLO' columns are yellow (global PageRank), and all others are dodgerblue
+    (classic features).
+
+    Args:
+        dataframe (pd.Index | array-like): Column names of the features to colour.
+        graph_a (list): Unused — reserved for future graph-aware colour logic.
+
+    Returns:
+        list: [colors, cols] where colors is a list of colour strings and cols is
+            the list of column names.
+    """
     cols= dataframe.tolist()
     colors= []
     for col in cols:
@@ -83,6 +111,11 @@ def custom_color(dataframe, graph_a=[]):
     return [colors, cols]
 
 class color:
+   """ANSI escape codes for terminal text formatting.
+
+   Usage:
+       print(color.BOLD + "text" + color.END)
+   """
    PURPLE = '\033[95m'
    CYAN = '\033[96m'
    DARKCYAN = '\033[36m'
@@ -95,9 +128,20 @@ class color:
    END = '\033[0m'
 
 def get_color():
+    """Return the color class for use in terminal output formatting.
+
+    Returns:
+        type: The color class exposing ANSI code constants (BOLD, RED, GREEN, etc.).
+    """
     return color
 
 def model_desc():
+    """Return the display name mapping for all supported classifiers.
+
+    Returns:
+        dict: {short_key: display_label} mapping used in report tables and plots
+            (e.g. {'LDA': 'LDA', 'RF': 'RF', ...}).
+    """
     modelD = {
         'LDA': 'LDA',
         'LR': 'LR',
@@ -111,7 +155,24 @@ def model_desc():
     return modelD
 
 # @profile
-def plot_features_importance_as_barh(data, getColor, modelDictName,plotTitle, cwd, graph_a=[], save=True, prefix=None):
+def plot_features_importance_as_barh(data, getColor, modelDictName, plotTitle, cwd, graph_a=[], save=True, prefix=None):
+    """Plot horizontal bar charts of SHAP feature importances for each classifier.
+
+    One chart is produced per classifier row in data. Only the top 20 features
+    (by absolute importance) are displayed. Charts are saved as PNG files under
+    cwd/plots/ when save=True.
+
+    Args:
+        data (pd.DataFrame): Rows = classifier names, columns = feature importances
+            plus metric columns ('accuracy', 'precision', 'recall', 'f1-score').
+        getColor (callable): Function(data, graph_a) returning [colors, cols].
+        modelDictName (dict): Classifier key → display label mapping.
+        plotTitle (str): Title string used for the chart and the saved filename.
+        cwd (str): Working directory; plots are saved in cwd/plots/.
+        graph_a (list): Passed through to getColor for colour logic.
+        save (bool): If True, save charts to disk and close figures. Default True.
+        prefix: Unused — reserved for future path prefix logic.
+    """
     for index in data.index.values.tolist():
         ok = data.drop([
                 'f1-score',
@@ -164,6 +225,21 @@ def plot_features_importance_as_barh(data, getColor, modelDictName,plotTitle, cw
 
 # @profile
 def print_summary(table_list, modelDict):
+    """Render an HTML comparison table of classifier metrics across multiple feature sets.
+
+    For each classifier, each feature set's metrics are shown in a row.
+    The best metric value per classifier is highlighted in blue bold.
+
+    Args:
+        table_list (list[tuple]): List of (step_label, metrics_dataframe) pairs where
+            step_label is a display string and metrics_dataframe has classifier names
+            as index and 'accuracy', 'precision', 'recall', 'f1-score' as columns.
+        modelDict (dict): Classifier key → display label mapping.
+
+    Returns:
+        tuple: (IPython.core.display.HTML, str) — the HTML display object and the
+            raw HTML string.
+    """
     baseline = table_list[0][1].index.values.tolist()
     head = '<tr><td></td><td></td><td>Accuracy</td>'+'<td>Precision</td><td>Recall</td><td>F1-score</td></tr>'
     body = ''
@@ -191,7 +267,17 @@ def print_summary(table_list, modelDict):
 
 # @profile
 def create_file(content, cwd, filename, extension=".html", prefix=None):
-    """
+    """Write string content to a timestamped file in the cwd/reports/ directory.
+
+    Args:
+        content (str): Text content to write (HTML, LaTeX, plain text, etc.).
+        cwd (str): Working directory; the file is written to cwd/reports/.
+        filename (str): Base filename (without timestamp or extension).
+        extension (str): File extension including the dot. Default ".html".
+        prefix: Unused — reserved for future path prefix logic.
+
+    Returns:
+        str: Full path of the created file.
     """
 
     create_domain(cwd+'/reports/')
